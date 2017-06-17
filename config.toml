@@ -7,7 +7,7 @@ metaDataFormat = "yaml"
 pygmentsUseClasses = false
 pygmentCodeFences = false
 disqusShortname = "problemofpoints"
-#googleAnalytics = "XXX"
+googleAnalytics = "UA-101215414-1"
 
 relativeurls = true
 ignoreFiles = ["\\.Rmd$", "_files$", "_cache$"]
