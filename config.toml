@@ -6,7 +6,7 @@ theme = "beautifulhugo"
 metaDataFormat = "yaml"
 pygmentsUseClasses = false
 pygmentCodeFences = false
-#disqusShortname = "XXX"
+disqusShortname = "problemofpoints"
 #googleAnalytics = "XXX"
 
 relativeurls = true
