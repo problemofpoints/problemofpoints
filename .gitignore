@@ -17,5 +17,6 @@
 *.knit.md
 
 # blogdown ignore files
-/public/
+public
 .Rproj.user
+blogdown
