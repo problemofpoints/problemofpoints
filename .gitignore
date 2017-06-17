@@ -18,3 +18,4 @@
 
 # blogdown ignore files
 /public/
+.Rproj.user
