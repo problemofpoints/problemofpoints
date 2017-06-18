@@ -18,22 +18,22 @@ ignoreFiles = ["\\.Rmd$", "_files$", "_cache$"]
 [Params]
   subtitle = "Data-driven thoughts about insurance, investments, and strategy in an uncertain world"
 #  logo = "img/avatar-icon.png"
-  favicon = false
+  favicon = "img/favicons-black-letter-P.ico"
   dateFormat = "January 2, 2006"
   commit = false
   rss = true
   comments = true
 #  gcse = "012345678901234567890:abcdefghijk" # Get your code from google.com/cse. Make sure to go to "Look and Feel" and change Layout to "Full Width" and Theme to "Classic"
 
-[[Params.bigimg]]
-  src = "img/triangle.jpg"
-  desc = "Triangle"
+#[[Params.bigimg]]
+#  src = "img/triangle.jpg"
+#  desc = "Triangle"
 #[[Params.bigimg]]
 #  src = "img/sphere.jpg"
 #  desc = "Sphere"
-#[[Params.bigimg]]
-#  src = "img/hexagon.jpg"
-#  desc = "Hexagon"
+[[Params.bigimg]]
+  src = "img/hexagon.jpg"
+  desc = "Hexagon"
 
 #[Author]
 #  name = "Some Person"
