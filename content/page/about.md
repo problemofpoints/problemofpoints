@@ -10,13 +10,9 @@ comments: false
 
 >-[David McCullough](http://www.neh.gov/whoweare/mccullough/interview.html)
 
-<br>
-
 > I count myself one of the number of those who write as they learn and learn as they write.
 
 >-[John Calvin, citing Augustine of Hippo](http://books.google.com/books?id=eABeezea4dwC&pg=RA1-PA5&lpg=RA1-PA5&dq=calvin+I+count+myself+one+of+the+number+of+those&source=bl&ots=Xjf6pCE17u&sig=0cVqI26G6Xjlxw-NUf_gAgMgLA8&hl=en&ei=-0HPStLqJMnTlAfVlISpCg&sa=X&oi=book_result&ct=result&resnum=1#v=onepage&q=calvin%20I%20count%20myself%20one%20of%20the%20number%20of%20those&f=false)
-
-<br>
 
 > Deep Work: Professional activities performed in a state of distraction-free concentration that push your cognitive capabilities to their limit. These efforts create new value, improve your skill, and are hard to replicate.
 
