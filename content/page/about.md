@@ -10,19 +10,23 @@ comments: false
 
 >-[David McCullough](http://www.neh.gov/whoweare/mccullough/interview.html)
 
+<br>
+
 > I count myself one of the number of those who write as they learn and learn as they write.
 
 >-[John Calvin, citing Augustine of Hippo](http://books.google.com/books?id=eABeezea4dwC&pg=RA1-PA5&lpg=RA1-PA5&dq=calvin+I+count+myself+one+of+the+number+of+those&source=bl&ots=Xjf6pCE17u&sig=0cVqI26G6Xjlxw-NUf_gAgMgLA8&hl=en&ei=-0HPStLqJMnTlAfVlISpCg&sa=X&oi=book_result&ct=result&resnum=1#v=onepage&q=calvin%20I%20count%20myself%20one%20of%20the%20number%20of%20those&f=false)
+
+<br>
 
 > Deep Work: Professional activities performed in a state of distraction-free concentration that push your cognitive capabilities to their limit. These efforts create new value, improve your skill, and are hard to replicate.
 
 >-[*Deep Work: Rules for Focused Success in a Distracted World*](https://www.amazon.com/Deep-Work-Focused-Success-Distracted/dp/1455586692)
 
-The purpose of this blog is to help me think clearly and learn. Think of it as a running journal of my musings about topics that I find interesting. The audience is first myself, both my current and future self.  If others find it helpful, then that's an added bonus!
+The purpose of this blog is to help me think clearly and learn. There is too much to learn and remember in this life to not take the time to solidify my thoughts. The audience for this blog is first myself, both my current and future self.  If others find it helpful, then that's an added bonus!
 
 # Topics discussed on this blog
 
-My background is in insurance, investments, and data science. This blog will touch on items related to each of those topics in addition to general business themes or whatever else strikes my fancy at any given time. 
+My background is in insurance, finance, and data science. This blog will touch on items related to each of these topics in addition to general business themes or whatever else I am learning at the time. 
 
 # Explanation of the blog name
 
@@ -34,4 +38,4 @@ My background is in insurance, investments, and data science. This blog will tou
 
 This blog is named after the classic probability game of the same name that was the impetus for the beginning of modern probability theory.  [Blaise Pascal](https://en.m.wikipedia.org/wiki/Blaise_Pascal) and [Pierre de Fermat](https://en.m.wikipedia.org/wiki/Pierre_de_Fermat)  exchanged a series of letters in 1654 discussing the solution to this problem that ultimately gave birth to probability theory as we know it today. Both Pascal and Fermat were geniuses in several fields of science. 
 
-We live in an uncertain world. How should we divide up our finite resources:  capital, time, energy. 
+We live in an uncertain world. How should we divide up our finite resources:  capital, time, and energy. 
