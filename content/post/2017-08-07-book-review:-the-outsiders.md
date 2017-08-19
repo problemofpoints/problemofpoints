@@ -80,4 +80,3 @@ Cash flow is driver of long term value, not reported earnings.
 
 
 As a group, they shared old-fashioned, premodern values including frugality, humility, independence, and an unusual combination of conservatism and boldness. They typically worked out of bare-bones offices (of which they were inordinately proud), generally eschewed perks such as corporate planes, avoided the spotlight wherever possible, and rarely communicated with Wall Street or the business press. They also actively avoided bankers and other advisers, preferring their own counsel and that of a select group around them. (Page 3)
-
