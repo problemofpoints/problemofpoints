@@ -4,7 +4,7 @@ subtitle: Eight Unconventional CEOs and Their Radically Rational Blueprint for S
 date: 2017-08-19
 slug: book-review-the-outsiders
 tags: [book review]
-draft: true
+draft: false
 ---
 
 # The Outsiders
