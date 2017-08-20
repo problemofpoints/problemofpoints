@@ -1,8 +1,7 @@
 # Blog post ideas
 
-## Outsiders book review
-
-## Summary of interesting quotes from earnings calls
+[x] Outsiders book review
+[ ] Summary of interesting quotes from earnings calls
 
 ## Insurance "Outsiders"
 - apply it to insurance
