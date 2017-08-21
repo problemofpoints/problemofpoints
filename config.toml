@@ -16,7 +16,7 @@ ignoreFiles = ["\\.Rmd$", "_files$", "_cache$"]
     post = "/:year/:month/:day/:slug/"
 
 [Params]
-  subtitle = "Data-driven thoughts about insurance, finance, and strategy in an uncertain world"
+  subtitle = "Capital allocation in an uncertain world"
 #  logo = "img/avatar-icon.png"
   favicon = "img/favicons-black-letter-P.ico"
   dateFormat = "January 2, 2006"

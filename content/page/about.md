@@ -18,11 +18,13 @@ comments: false
 
 >-[*Deep Work: Rules for Focused Success in a Distracted World*](https://www.amazon.com/Deep-Work-Focused-Success-Distracted/dp/1455586692)
 
-The purpose of this blog is to help me think clearly and learn. There is too much to learn and remember in this life to not take the time to solidify my thoughts. The audience for this blog is first myself, both my current and future self.  If others find it helpful, then that's an added bonus!
+The purpose of this blog is to help me think clearly and learn. We only have a finite amount of capital - whether financial, intellectual, relational, time - and we need to think well about how to effectively allocate it. 
+
+The audience for this blog is first myself, both my current and future self.  If others find it helpful, then that's an added bonus!
 
 # Topics discussed on this blog
 
-My background is in insurance, finance, and data science. This blog will touch on items related to each of these topics in addition to general business themes or whatever else I am learning at the time. 
+My background is in insurance, finance, and data science. This blog will touch on items related to each of these topics in addition to general business themes and whatever else I think is important to allocate capital towards.
 
 # Explanation of the blog name
 
@@ -34,4 +36,4 @@ My background is in insurance, finance, and data science. This blog will touch o
 
 This blog is named after the classic probability game of the same name that was the impetus for the beginning of modern probability theory.  [Blaise Pascal](https://en.m.wikipedia.org/wiki/Blaise_Pascal) and [Pierre de Fermat](https://en.m.wikipedia.org/wiki/Pierre_de_Fermat)  exchanged a series of letters in 1654 discussing the solution to this problem that ultimately gave birth to probability theory as we know it today. Both Pascal and Fermat were geniuses in several fields of science. 
 
-We live in an uncertain world. How should we divide up our finite resources:  capital, time, and energy. 
+We live in an uncertain world. How should we divide up our various forms of capital?
