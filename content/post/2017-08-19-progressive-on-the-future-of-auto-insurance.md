@@ -1,16 +1,16 @@
 ---
 title: Progressive on the future of auto insurance
-date: '2017-08-19'
+date: '2017-08-20'
 slug: progressive-on-the-future-of-auto-insurance
 tags:
   - insurance
 subtitle: ''
-draft: true
+draft: false
 ---
 
 # Auto insurance market
 
-Progressive used their [Q2 2017 earnings call](http://phx.corporate-ir.net/External.File?t=1&item=VHlwZT0yfFBhcmVudElEPTUyNjA1NDN8Q2hpbGRJRD02NzcwNTU=) to provide an update on their view of the future of the auto insurance industry. Specifically, the potential impact of new technologies that will decrease auto accident frequency.
+Progressive used their [Q2 2017 earnings call](http://investors.progressive.com/phoenix.zhtml?c=81824&p=irol-EventDetails&EventId=5260543) to provide an update on their view of the future of the auto insurance industry. Specifically, the potential impact of new technologies and shared mobility.
 
 {{< figure src="/post/PGR-mkt.png" caption="source: PGR Q2 2017 earnings call" >}}
 
@@ -24,7 +24,7 @@ Many experts are projecting the demise of personal auto insurance due to technol
 
 {{< figure src="/post/PGR-freq-trends.png" caption="source: PGR Q2 2017 earnings call" >}}
 
-In 2013 Progressive, along with everyone else, projected a continued decrease in auto accident frequency trends. In reality, frequency trends have increased in the past three years. The consensus reasons for this increase include greater miles driven - due to low gas prices and an improving economy - and increases in distracted driving.
+In 2013, Progressive, along with everyone else, projected a continued decrease in auto accident frequency trends. In reality, frequency trends have increased in the past three years. The consensus reasons for this increase include greater miles driven - due to low gas prices and an improving economy - and increased distracted driving.
 
 {{< figure src="/post/PGR-car ownership.png" caption="source: PGR Q2 2017 earnings call" >}}
 
@@ -40,7 +40,7 @@ Progressive analyzed the historical penetration of electronic stability control 
 
 > the average age of the vehicle on the roads today is up to 11.6 years. And this is two years higher than the average back in 2002.
 
-This slow adoption rate of new technology results in a gradual reduction of frequency trends. A hypothetical new technology that takes 20 years to acheive 47% penetration and results in a 15% reduction in frequency when fully deployed, only impacts claims frequency trend by 0.4% per year.
+This slow adoption rate of new technology results in a gradual reduction of claim frequency. A hypothetical new technology that takes 20 years to acheive 47% penetration and results in a 15% reduction in frequency when fully deployed, only impacts claims frequency trend by 0.4% per year.
 
 There are a lot of items that can impact the adoption of new vehicle technologies, but given how slowly the vehicle fleet turns over, Progressive's estimates seem reasonable.
 

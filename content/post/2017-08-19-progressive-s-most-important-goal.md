@@ -1,6 +1,6 @@
 ---
 title: Progressive's most important goal
-date: '2017-08-19'
+date: '2017-08-24'
 slug: progressive-s-most-important-goal
 tags:
   - insurance

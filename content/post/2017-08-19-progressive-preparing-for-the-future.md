@@ -1,6 +1,6 @@
 ---
 title: Progressive - preparing for the future
-date: '2017-08-19'
+date: '2017-08-22'
 slug: progressive-preparing-for-the-future
 categories: []
 tags:
@@ -11,7 +11,7 @@ draft: true
 
 # Progressive's opportunity
 
-Following on from the [prior post]({{< relref "2017-08-19-progressive-on-the-future-of-auto-insurance.md" >}}), Progressive also briefly discussed strategy during their [Q2 2017 earnings call](http://phx.corporate-ir.net/External.File?t=1&item=VHlwZT0yfFBhcmVudElEPTUyNjA1NDN8Q2hpbGRJRD02NzcwNTU=). 
+Following on from the [prior post]({{< relref "2017-08-19-progressive-on-the-future-of-auto-insurance.md" >}}), Progressive also briefly discussed strategy during their [Q2 2017 earnings call](http://investors.progressive.com/phoenix.zhtml?c=81824&p=irol-EventDetails&EventId=5260543). 
 
 {{< figure src="/post/PGR-mkt.png" caption="source: PGR Q2 2017 earnings call" >}}
 
