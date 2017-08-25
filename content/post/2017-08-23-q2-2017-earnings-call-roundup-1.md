@@ -7,7 +7,7 @@ categories: []
 tags:
   - insurance
 subtitle: ''
-draft: true
+draft: false
 ---
 
 Quotes from Q2 2017 earnings calls related to innovation, future strategy, or capital allocation.
@@ -22,7 +22,7 @@ Quotes from Q2 2017 earnings calls related to innovation, future strategy, or ca
 
 # Chubb
 
-> These savings are directly contributing to our margins in the phase of declining rates and continuing loss cost trends while giving us room to invest in our competitive profile, including our technology, our talent, new lines of business and future operating efficiency. We are investing substantial sums, talent and time in positioning this Company to be a leader in a digital age, because the economy globally is digitizing. This includes our organization structure, cycle times of change, expertise and skill sets of our people, data and analytics, robotics, the front-end customer experience to the customer back-end claims experience and the very definition of the products we sell. This is not just strategy, we are quietly executing. - Evan Greenberg, CEO Chubb
+> We are investing substantial sums, talent and time in positioning this Company to be a leader in a digital age, because the economy globally is digitizing. This includes our organization structure, cycle times of change, expertise and skill sets of our people, data and analytics, robotics, the front-end customer experience to the customer back-end claims experience and the very definition of the products we sell. This is not just strategy, we are quietly executing. - Evan Greenberg, CEO Chubb
 
 > But at the same time those same capabilities will be delivered through new clients at the intermediary, dot-com type intermediaries, where potential customers are buying other services and products and its natural that it at that time they consider insurance, you are licensing your business your small business, you are setting up the accounting and financing of your small business. It’s a time that you will consider insurance as an example, there will be many like that. You taking out a loan for your business and technology enables those other forms of distribution. The customer will buy it from a desktop, the customer will buy it from a mobile device, they will buy it any time anywhere and they will service it anytime anywhere. This is not futuristic in the sense of measuring it in years from now. It’s on our door step, this is the next two years or shorter, it will be iterative, it will only get better and better and better. There won’t be one winner, there will be a number of them. - Evan Greenberg, CEO Chubb
 
@@ -34,11 +34,12 @@ Quotes from Q2 2017 earnings calls related to innovation, future strategy, or ca
 
 > Our risk funding flexibility is key as we match risks with the best source and form of capital. This will enable us to keep providing attractive risk to capital partners while enhancing our ROE and benefiting our own shareholders.
 
+
 Sources:
 
-- https://seekingalpha.com/article/4089124-travelers-trv-ceo-alan-schnitzer-q2-2017-results-earnings-call-transcript
-- https://seekingalpha.com/article/4090509-w-r-berkleys-wrb-ceo-robert-berkley-q2-2017-results-earnings-call-transcript
-- https://seekingalpha.com/article/4090742-chubbs-cb-ceo-evan-greenberg-q2-2017-results-earnings-call-transcript
-- https://seekingalpha.com/article/4091076-xl-group-xl-q2-2017-results-earnings-call-transcript
-- https://seekingalpha.com/article/4091335-axis-capitals-axs-ceo-albert-benchimol-q2-2017-results-earnings-call-transcript
+- [The Travelers' (TRV) CEO Alan Schnitzer on Q2 2017 Results - Earnings Call Transcript](https://seekingalpha.com/article/4089124-travelers-trv-ceo-alan-schnitzer-q2-2017-results-earnings-call-transcript)
+- [W.R. Berkley's (WRB) CEO Robert Berkley on Q2 2017 Results - Earnings Call Transcript](https://seekingalpha.com/article/4090509-w-r-berkleys-wrb-ceo-robert-berkley-q2-2017-results-earnings-call-transcript)
+- [Chubb's (CB) CEO Evan Greenberg on Q2 2017 Results - Earnings Call Transcript](https://seekingalpha.com/article/4090742-chubbs-cb-ceo-evan-greenberg-q2-2017-results-earnings-call-transcript)
+- [XL Group (XL) Q2 2017 Results - Earnings Call Transcript](https://seekingalpha.com/article/4091076-xl-group-xl-q2-2017-results-earnings-call-transcript)
+- [AXIS Capital's (AXS) CEO Albert Benchimol on Q2 2017 Results - Earnings Call Transcript](https://seekingalpha.com/article/4091335-axis-capitals-axs-ceo-albert-benchimol-q2-2017-results-earnings-call-transcript)
 

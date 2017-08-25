@@ -40,10 +40,11 @@ Quotes from Q2 2017 earnings calls related to innovation, future strategy, or ca
 
 > Having said that we just don't want to see disruption happen and we react to it so, we have actively sent our strategy team out to Silicon Valley to the various incubators we actually have one here in Cincinnati we've been up to Detroit to talk to those that are actually making the automated cars. So we're keeping our thumb on the polls and really what I see us doing is to take away the things that we learn, try to find opportunities in the claims area or whatever area it is that we could execute our personal touch business model better by better using technology.
 
+
 Sources:
 
-- https://seekingalpha.com/article/4091379-marsh-and-mclennan-cos-mmc-q2-2017-results-earnings-call-transcript
-- https://seekingalpha.com/article/4092129-hartford-financial-services-groups-hig-ceo-christopher-swift-q2-2017-results-earnings-call
-- https://seekingalpha.com/article/4093868-allstate-ceo-tom-wilson-q2-2017-results-earnings-call-transcript
-- https://seekingalpha.com/article/4094523-american-international-groups-aig-ceo-brian-duperreault-q2-2017-results-earnings-call
-- https://seekingalpha.com/article/4094373-cincinnati-financials-cinf-ceo-steve-johnston-q2-2017-results-earnings-call-transcript
+- [Marsh & McLennan Cos. (MMC) Q2 2017 Results - Earnings Call Transcript](https://seekingalpha.com/article/4091379-marsh-and-mclennan-cos-mmc-q2-2017-results-earnings-call-transcript)
+- [Hartford Financial Services Group's (HIG) CEO Christopher Swift on Q2 2017 Results - Earnings Call Transcript](https://seekingalpha.com/article/4092129-hartford-financial-services-groups-hig-ceo-christopher-swift-q2-2017-results-earnings-call)
+- [The Allstate (ALL) CEO Tom Wilson on Q2 2017 Results - Earnings Call Transcript](https://seekingalpha.com/article/4093868-allstate-ceo-tom-wilson-q2-2017-results-earnings-call-transcript)
+- [American International Group's (AIG) CEO Brian Duperreault on Q2 2017 Results - Earnings Call Transcript](https://seekingalpha.com/article/4094523-american-international-groups-aig-ceo-brian-duperreault-q2-2017-results-earnings-call)
+- [Cincinnati Financial's (CINF) CEO Steve Johnston on Q2 2017 Results - Earnings Call Transcript](https://seekingalpha.com/article/4094373-cincinnati-financials-cinf-ceo-steve-johnston-q2-2017-results-earnings-call-transcript)
