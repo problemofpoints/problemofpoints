@@ -37,3 +37,7 @@ My background is in insurance, finance, and data science. This blog will touch o
 This blog is named after the classic probability game of the same name that was the impetus for the beginning of modern probability theory.  [Blaise Pascal](https://en.m.wikipedia.org/wiki/Blaise_Pascal) and [Pierre de Fermat](https://en.m.wikipedia.org/wiki/Pierre_de_Fermat)  exchanged a series of letters in 1654 discussing the solution to this problem that ultimately gave birth to probability theory as we know it today. Both Pascal and Fermat were geniuses in several fields of science. 
 
 We live in an uncertain world. How should we divide up our various forms of capital?
+
+# Contact 
+
+Feel free to [email me](mailto:problemofpoints@gmail.com).
