@@ -7,7 +7,7 @@ categories: []
 tags:
   - insurance
 subtitle: ''
-draft: true
+draft: false
 ---
 
 Quotes from Q2 2017 earnings calls related to innovation, future strategy, or capital allocation.
