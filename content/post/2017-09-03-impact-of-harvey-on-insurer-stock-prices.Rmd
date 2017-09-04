@@ -1,0 +1,53 @@
+---
+title: Impact of Harvey on Insurer Stock Prices
+author: ''
+date: '2017-09-03'
+slug: impact-of-harvey-on-insurer-stock-prices
+categories: []
+tags:
+  - stocks
+subtitle: ''
+draft: true
+---
+
+```{r setup}
+
+knitr::opts_chunk$set(
+	# fig.align = "center",
+	# fig.path = "figures/",
+	message = FALSE,
+	warning = FALSE,
+	echo = FALSE 
+)
+
+library(tidyverse)
+library(tidyquant)
+library(CausalImpact)
+
+```
+
+```{r import-stock-prices, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+stock_tickers <- list('AMEX','NASDAQ','NYSE') %>% map_df(tq_exchange) %>% 
+  filter(industry == 'Property-Casualty Insurers' & !is.na(market.cap)) %>%
+  mutate(market_cap = if_else(stringr::str_sub(market.cap,start = -1)=="M",1e6,1e9) *
+           as.numeric(stringr::str_sub(market.cap,start = 2, end = -2))) %>%
+  dplyr::select(symbol, company, sector, industry, market_cap) %>%
+  arrange(desc(market_cap))
+
+  # dplyr::select(symbol, company, sector, industry) %>% 
+  # tq_get(get = "key.stats", complete_cases = FALSE) %>% 
+  # mutate(market_cap = map_dbl(key.stats, Market.Capitalization), 
+  #        book_value = map_dbl(key.stats, Book.Value),
+  #        price_to_book = map_dbl(key.stats, Price.to.Book)) %>%
+  # select(-key.stats) %>%
+
+stock_prices <- stock_tickers %>% tq_get(get = "stock.prices", from = '2017-04-01', to = '2017-09-01') %>%
+  tq_mutate(select = adjusted, mutate_fun = periodReturn, period = "daily", col_rename = "daily_returns")
+
+sp500_price <- tibble(symbol = "SPY") %>% tq_get(get = "stock.prices", 
+                                                 from = '2017-04-01', to = '2017-09-01') %>%
+  tq_mutate(select = adjusted, mutate_fun = periodReturn, period = "daily", col_rename = "daily_returns")
+
+```
+
