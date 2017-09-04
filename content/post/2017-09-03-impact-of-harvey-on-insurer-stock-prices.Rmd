@@ -42,12 +42,16 @@ stock_tickers <- list('AMEX','NASDAQ','NYSE') %>% map_df(tq_exchange) %>%
   #        price_to_book = map_dbl(key.stats, Price.to.Book)) %>%
   # select(-key.stats) %>%
 
-stock_prices <- stock_tickers %>% tq_get(get = "stock.prices", from = '2017-04-01', to = '2017-09-01') %>%
-  tq_mutate(select = adjusted, mutate_fun = periodReturn, period = "daily", col_rename = "daily_returns")
+stock_prices <- stock_tickers %>% tq_get(get = "stock.prices", from = '2017-01-01', to = '2017-09-01') %>%
+  group_by(symbol) %>%
+  tq_mutate(select = adjusted, mutate_fun = periodReturn, period = "daily", type = "log", col_rename = "daily_returns")
 
 sp500_price <- tibble(symbol = "SPY") %>% tq_get(get = "stock.prices", 
-                                                 from = '2017-04-01', to = '2017-09-01') %>%
-  tq_mutate(select = adjusted, mutate_fun = periodReturn, period = "daily", col_rename = "daily_returns")
+                                                 from = '2017-01-01', to = '2017-09-01') %>%
+  tq_mutate(select = adjusted, mutate_fun = periodReturn, period = "daily", type = "log", col_rename = "daily_returns")
+
+sp500_price <- sp500_price %>% mutate(sp500 = adjusted, sp500_returns = daily_returns)
+stock_prices <- stock_prices %>% left_join(sp500_price %>% dplyr::select(date, sp500, sp500_returns), by = "date")
 
 ```
 
@@ -92,12 +96,21 @@ stock_prices %>% filter(symbol %in% stock_tickers$symbol[1:6]) %>%
 ```
 
 
-```
-
 ```{r causal-impact}
 
+model_data_mat <- stock_prices %>% ungroup() %>% filter(symbol == "AXS") %>% 
+  mutate(var = if_else(daily_returns > 0.02, 1, 0)) %>%
+  # dplyr::select(adjusted, sp500) %>%
+  dplyr::select(daily_returns, sp500_returns, var) %>%
+  as.matrix()
 
+impact_analysis <- CausalImpact(model_data_mat,
+                                pre.period = c(1, nrow(model_data_mat) - 7),
+                                post.period = c(nrow(model_data_mat)-7+1, nrow(model_data_mat)),
+                                model.args = list(niter = 1000, prior.level.sd = 0.1))
 
+plot(impact_analysis)
+summary(impact_analysis)
 
 ```
 
