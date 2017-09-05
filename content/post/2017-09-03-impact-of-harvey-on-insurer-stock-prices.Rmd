@@ -26,7 +26,7 @@ library(CausalImpact)
 
 ```
 
-```{r import-stock-prices, message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r import-stock-prices, message=FALSE, warning=FALSE, cache=TRUE}
 
 stock_tickers <- list('AMEX','NASDAQ','NYSE') %>% map_df(tq_exchange) %>% 
   filter(industry == 'Property-Casualty Insurers' & !is.na(market.cap)) %>%
@@ -96,23 +96,49 @@ stock_prices %>% filter(symbol %in% stock_tickers$symbol[1:6]) %>%
 ```
 
 
-```{r causal-impact}
+```{r causal-impact-1}
 
-model_data_mat <- stock_prices %>% ungroup() %>% filter(symbol == "AXS") %>% 
-  mutate(var = if_else(daily_returns > 0.02, 1, 0)) %>%
-  # dplyr::select(adjusted, sp500) %>%
-  dplyr::select(daily_returns, sp500_returns, var) %>%
-  as.matrix()
+run_causal_impact <- function(stock_data){
+  
+  model_data_mat <- stock_data %>% ungroup() %>% 
+    mutate(var = if_else(daily_returns > 0.02, 1, 0)) %>%
+    # dplyr::select(adjusted, sp500) %>%
+    dplyr::select(daily_returns, sp500_returns, var) %>%
+    as.matrix()
+  
+  impact_analysis <- CausalImpact(model_data_mat,
+                                  pre.period = c(1, nrow(model_data_mat) - 7),
+                                  post.period = c(nrow(model_data_mat)-7+1, nrow(model_data_mat)),
+                                  model.args = list(niter = 1000, prior.level.sd = 0.1))
+  
+  impact_analysis
+}
 
-impact_analysis <- CausalImpact(model_data_mat,
-                                pre.period = c(1, nrow(model_data_mat) - 7),
-                                post.period = c(nrow(model_data_mat)-7+1, nrow(model_data_mat)),
-                                model.args = list(niter = 1000, prior.level.sd = 0.1))
+impact_model <- run_causal_impact(stock_prices %>% filter(symbol == "AXS"))
 
-plot(impact_analysis)
-summary(impact_analysis)
+plot(impact_model)
+summary(impact_model)
+# plot(impact_analysis$model$bsts.model, y = "components")
+
 
 ```
 
+```{r causal-impact-2, cache=TRUE}
 
+causal_models <- stock_prices %>% #filter(symbol %in% stock_tickers$symbol[1:20]) %>%
+  group_by(symbol, company, sector, industry, market_cap) %>% nest() %>%
+  mutate(model = map(data, ~run_causal_impact(.x))) %>% dplyr::select(-data)
+
+causal_models <- causal_models %>% 
+  mutate(model_summary = map(model, ~ as_tibble(.x$summary[2,]))) %>% 
+  unnest(model_summary)
+
+```
+
+```{r output}
+
+causal_models %>% arrange(AbsEffect)
+
+
+```
 
