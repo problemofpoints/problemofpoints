@@ -1,0 +1,102 @@
+---
+title: Impact of Harvey on Insurer Stock Prices
+author: ''
+date: '2017-09-03'
+slug: impact-of-harvey-on-insurer-stock-prices-1
+categories: []
+tags:
+  - stocks
+subtitle: ''
+draft: true
+---
+
+```{r setup}
+
+knitr::opts_chunk$set(
+	# fig.align = "center",
+	# fig.path = "figures/",
+	message = FALSE,
+	warning = FALSE,
+	echo = FALSE 
+)
+
+library(tidyverse)
+library(tidyquant)
+
+```
+
+```{r import-stock-prices, message=FALSE, warning=FALSE, cache=TRUE}
+
+stock_tickers <- list('AMEX','NASDAQ','NYSE') %>% map_df(tq_exchange) %>% 
+  filter(industry == 'Property-Casualty Insurers' & !is.na(market.cap)) %>%
+  mutate(market_cap = if_else(stringr::str_sub(market.cap,start = -1)=="M",1e6,1e9) *
+           as.numeric(stringr::str_sub(market.cap,start = 2, end = -2))) %>%
+  dplyr::select(symbol, company, sector, industry, market_cap) %>%
+  arrange(desc(market_cap))
+
+stock_prices <- stock_tickers %>% tq_get(get = "stock.prices", from = '2017-01-01', to = '2017-09-01') %>%
+  group_by(symbol) %>%
+  tq_mutate(select = adjusted, mutate_fun = periodReturn, period = "daily", type = "arithmetic", 
+            col_rename = "daily_returns")
+
+sp500_price <- tibble(symbol = "SPY") %>% tq_get(get = "stock.prices", 
+                                                 from = '2017-01-01', to = '2017-09-01') %>%
+  tq_mutate(select = adjusted, mutate_fun = periodReturn, period = "daily", type = "arithmetic", 
+            col_rename = "daily_returns")
+
+sp500_price <- sp500_price %>% mutate(sp500 = adjusted, sp500_returns = daily_returns)
+stock_prices <- stock_prices %>% left_join(sp500_price %>% dplyr::select(date, sp500, sp500_returns), by = "date")
+
+```
+
+
+```{r initial-plot}
+
+end <- as_date("2017-09-01")
+start <- end - weeks(6)
+
+stock_prices %>% filter(symbol %in% stock_tickers$symbol[1:6]) %>%
+    filter(date >= start - days(2 * 15)) %>%
+    ggplot(aes(x = date, y = close, group = symbol)) +
+    geom_rect(aes(x = date, xmin = as_date("2017-08-23"), xmax = as_date("2017-09-01"), 
+                  ymin = -Inf, ymax = +Inf, group = symbol), fill = "#F2F2F2") +
+    geom_candlestick(aes(open = open, high = high, low = low, close = close)) +
+    labs(title = "P&C Insurers Stock Price", 
+         subtitle = "Impact of Hurricane Harvey",
+         y = "Closing Price", x = "") + 
+    coord_x_date(xlim = c(start, end)) +
+    facet_wrap(~ symbol, ncol = 2, scale = "free_y") + 
+    AonECM::ggThemeAon()
+
+```
+
+
+```{r initial-plot-2}
+
+stock_prices %>% filter(symbol %in% stock_tickers$symbol[1:6]) %>%
+  filter(date >= start - days(2 * 15)) %>%
+  ggplot(aes(x = date, y = daily_returns, group = symbol)) +
+  geom_rect(aes(x = date, xmin = as_date("2017-08-23"), xmax = as_date("2017-09-01"), 
+                ymin = -Inf, ymax = +Inf, group = symbol), fill = "#F2F2F2") +
+  geom_col(aes(fill = daily_returns < 0)) +
+  labs(title = "P&C Insurers Daily Stock Returns (%)", 
+       subtitle = "Impact of Hurricane Harvey",
+       y = "Daily price change (%)", x = "") + 
+  coord_x_date(xlim = c(start, end)) +
+  facet_wrap(~ symbol, ncol = 2, scale = "fixed") + 
+  AonECM::ggThemeAon() + scale_fill_tq() + theme(legend.position =  "none") +
+  scale_y_continuous(labels = scales::percent_format())
+
+
+```
+
+Cumulative change since Harvey.
+
+```{r cum-change}
+
+
+
+```
+
+
+

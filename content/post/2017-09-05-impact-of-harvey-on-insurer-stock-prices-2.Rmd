@@ -1,8 +1,8 @@
 ---
 title: Impact of Harvey on Insurer Stock Prices
 author: ''
-date: '2017-09-03'
-slug: impact-of-harvey-on-insurer-stock-prices
+date: '2017-09-06'
+slug: impact-of-harvey-on-insurer-stock-prices-2
 categories: []
 tags:
   - stocks
@@ -52,46 +52,6 @@ sp500_price <- tibble(symbol = "SPY") %>% tq_get(get = "stock.prices",
 
 sp500_price <- sp500_price %>% mutate(sp500 = adjusted, sp500_returns = daily_returns)
 stock_prices <- stock_prices %>% left_join(sp500_price %>% dplyr::select(date, sp500, sp500_returns), by = "date")
-
-```
-
-
-```{r initial-plot}
-
-end <- as_date("2017-09-01")
-start <- end - weeks(6)
-
-stock_prices %>% filter(symbol %in% stock_tickers$symbol[1:6]) %>%
-    filter(date >= start - days(2 * 15)) %>%
-    ggplot(aes(x = date, y = close, group = symbol)) +
-    geom_rect(aes(x = date, xmin = as_date("2017-08-23"), xmax = as_date("2017-09-01"), 
-                  ymin = -Inf, ymax = +Inf, group = symbol), fill = "#F2F2F2") +
-    geom_candlestick(aes(open = open, high = high, low = low, close = close)) +
-    labs(title = "P&C Insurers Stock Price", 
-         subtitle = "Impact of Hurricane Harvey",
-         y = "Closing Price", x = "") + 
-    coord_x_date(xlim = c(start, end)) +
-    facet_wrap(~ symbol, ncol = 2, scale = "free_y") + 
-    AonECM::ggThemeAon()
-
-```
-
-```{r initial-plot-2}
-
-stock_prices %>% filter(symbol %in% stock_tickers$symbol[1:6]) %>%
-  filter(date >= start - days(2 * 15)) %>%
-  ggplot(aes(x = date, y = daily_returns, group = symbol)) +
-  geom_rect(aes(x = date, xmin = as_date("2017-08-23"), xmax = as_date("2017-09-01"), 
-                ymin = -Inf, ymax = +Inf, group = symbol), fill = "#F2F2F2") +
-  geom_col(aes(fill = daily_returns < 0)) +
-  labs(title = "P&C Insurers Daily Stock Returns (%)", 
-       subtitle = "Impact of Hurricane Harvey",
-       y = "Daily price change (%)", x = "") + 
-  coord_x_date(xlim = c(start, end)) +
-  facet_wrap(~ symbol, ncol = 2, scale = "fixed") + 
-  AonECM::ggThemeAon() + scale_fill_tq() + theme(legend.position =  "none") +
-  scale_y_continuous(labels = scales::percent_format())
-
 
 ```
 
