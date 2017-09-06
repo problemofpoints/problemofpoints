@@ -25,9 +25,7 @@ library(widgetframe)
 
 ```
 
-# Impact of Hurricane Harvey on U.S. P&C (Re)Insurers Stock Prices
-
-Calculate change in stock price from August 23, 2017 thru September 1, 2017. Call this the estimated impact of Hurricane Harvey. 
+Below we calculate the change in stock price from August 23, 2017 thru September 1, 2017 for P&C (re)insurers. We use that number as the estimated impact of Hurricane Harvey on a given stock. Since we do not have company specific loss estimates at this time, the impact mostly reflects investors expectations of which companies have the greatest exposure to loss. Therefore, we would expect companies with greater concentration in TX, and in this case TX auto, to see a larger impact.
 
 ```{r set-dates}
 
@@ -89,9 +87,9 @@ impact_of_event <- stock_prices %>% filter(post_event == 1) %>% group_by(symbol)
 
 ```
 
-# Graph of Recent Stock Prices
+# Graph of recent stock prices
 
-Graph the recent stock prices for the six companies that were most impacted by Harvey. Event time period is highlighted in gray.
+The graph below shows the recent open/high/low/close stock prices for the six companies that were most impacted by Harvey. The post event time period is highlighted in gray.
 
 ```{r initial-plot}
 
@@ -99,7 +97,7 @@ stock_prices %>% filter(symbol %in% impact_of_event$symbol[1:6]) %>%
   filter(date >= start_graph - days(2 * 15)) %>%
   mutate(symbol = factor(symbol, levels = impact_of_event$symbol[1:6])) %>%
   ggplot(aes(x = date, y = close, group = symbol)) +
-  geom_rect(aes(x = date, xmin = start_event, xmax = end_event, 
+  geom_rect(aes(xmin = start_event, xmax = end_event, 
                 ymin = -Inf, ymax = +Inf, group = symbol), fill = "#F2F2F2") +
   geom_candlestick(aes(open = open, high = high, low = low, close = close)) +
   labs(title = "P&C Insurers Stock Price", 
@@ -111,7 +109,16 @@ stock_prices %>% filter(symbol %in% impact_of_event$symbol[1:6]) %>%
 
 ```
 
-Daily returns for these same stocks. S&P 500 was flat over the Harvey time period. 
+Comments on companies:
+
+- **XL:** Not intuitive choice for largest impact. They do have substantial reinsurance exposure in addition to their primary commercial lines. Stock price had already fallen post Q2 earnings call, so may be hangover from that event.
+- **PGR:** Top five auto market share in TX. 
+- **AFSI:** AmTrust does have material exposure through Republic, and cats adversely impacted results over first two quarters. However, there also was a recent negative WSJ article that may have re-kindled negative sentiment towards AFSI.
+- **HALL:** Small TX regional carrier.
+- **TRV:** Meaningful market share in HO, Auto, and Commercial lines in TX.
+- **RNR:** Cat focused reinsurer. 
+
+Daily returns for these same stocks is shown below. The S&P 500 was flat over the Harvey time period. Multiple days of greater than one percent drops as Harvey made landfall and sat over Houston.
 
 ```{r initial-plot-2}
 
@@ -119,7 +126,7 @@ stock_prices %>% filter(symbol %in% impact_of_event$symbol[1:6]) %>%
   filter(date >= start_graph - days(2 * 15)) %>%
   mutate(symbol = factor(symbol, levels = impact_of_event$symbol[1:6])) %>%
   ggplot(aes(x = date, y = daily_returns, group = symbol)) +
-  geom_rect(aes(x = date, xmin = start_event, xmax = end_event, 
+  geom_rect(aes(xmin = start_event, xmax = end_event, 
                 ymin = -Inf, ymax = +Inf, group = symbol), fill = "#F2F2F2") +
   geom_col(aes(fill = daily_returns < 0)) +
   labs(title = "P&C Insurers Daily Stock Returns (%)", 
@@ -135,25 +142,32 @@ stock_prices %>% filter(symbol %in% impact_of_event$symbol[1:6]) %>%
 
 # Summary table
 
-Impact on each stock.
+The table below shows the cumulative impact on stock prices for all U.S. P&C (re)insurers. The final column includes the change in market capitalization. Due to its size, CB lost the most market value at just over \$2B. 
+
+#### Impact of Hurricane Harvey on P&C (Re)Insurer Stock Prices
 
 ```{r summary-datatable}
 
 dt_impact_of_event <- impact_of_event %>% dplyr::select(-sp500_cum_return) %>% 
+  mutate(market_cap_change = market_cap_change / 1e6) %>%
   DT::datatable(  
   options = list(
-     columnDefs = list(list(className = 'dt-center')),
+     columnDefs = list(list(className = 'dt-left')),
      pageLength = 15, lengthMenu = c(10, 15, 20, 25)),
   fillContainer = TRUE, rownames = FALSE,
-                caption = "Impact of Hurricane Harvey on P&C (Re)Insurer Stock Prices", 
-  colnames = c("Ticker", "Company", "Initial Stock Price", "End Stock Price", "% change", "Market Cap change")) %>%
-    formatCurrency(c(3:4), '', digits = 2) %>% formatCurrency(6, '', digits = 0) %>% formatPercentage(5, digits = 1)
+                # caption = "Impact of Hurricane Harvey on P&C (Re)Insurer Stock Prices", 
+  caption = htmltools::tags$caption(
+    style = 'caption-side: top; text-align: left;', htmltools::em('from August 23, 2017 to September 1, 2017')),
+  colnames = c("Ticker", "Company", "Initial stock price", "End stock price", "% change", "Market cap change ($m)")) %>%
+    formatCurrency(c(3:4), '', digits = 2) %>% formatCurrency(6, '', digits = 1) %>% formatPercentage(5, digits = 1)
 
 frameWidget(dt_impact_of_event, width = '100%')
 
 ```
 
 <br>
+
+The impacts fit with our prior expectation of larger impacts for TX heavy carriers, auto carriers, and cat focused reinsurers. In the absence of actual company loss estimates, that is the best that investors can do. We will have to wait and see how things actually turn out.
 
 ```{r summary-graph}
 
@@ -163,7 +177,8 @@ impact_of_event %>% mutate(symbol = factor(symbol, levels = rev(impact_of_event$
   geom_col(fill = "#0083A9") + geom_text(aes(label = scales::percent(round(cum_return,3))), size = 3, nudge_y = -0.0025) +
   coord_flip() + AonECM::ggThemeAon() +
   scale_y_continuous(labels = scales::percent_format()) + xlab(NULL) + ylab("Cumulative stock price change since event") +
-  ggtitle("Largest cumulative stock price changes", subtitle = "since Hurricane Harvey")
+  ggtitle("Largest cumulative stock price changes", subtitle = "since Hurricane Harvey") +
+  labs(caption = "*from August 23, 2017 to September 1, 2017")
 
 ```
 
