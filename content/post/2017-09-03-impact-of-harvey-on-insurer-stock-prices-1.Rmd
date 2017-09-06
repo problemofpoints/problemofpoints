@@ -2,12 +2,12 @@
 title: Impact of Harvey on Insurer Stock Prices - Part 1
 author: ''
 date: '2017-09-06'
-slug: impact-of-harvey-on-insurer-stock-prices-1
+slug: impact-of-harvey-on-insurer-stock-prices-part-1
 categories: []
 tags:
   - stocks
 subtitle: ''
-draft: true
+draft: false
 ---
 
 ```{r setup, include=FALSE}
@@ -24,6 +24,10 @@ library(DT)
 library(widgetframe)
 
 ```
+
+# Impact of Hurricane Harvey on U.S. P&C (Re)Insurers Stock Prices
+
+Calculate change in stock price from August 23, 2017 thru September 1, 2017. Call this the estimated impact of Hurricane Harvey. 
 
 ```{r set-dates}
 
@@ -85,6 +89,9 @@ impact_of_event <- stock_prices %>% filter(post_event == 1) %>% group_by(symbol)
 
 ```
 
+# Graph of Recent Stock Prices
+
+Graph the recent stock prices for the six companies that were most impacted by Harvey. Event time period is highlighted in gray.
 
 ```{r initial-plot}
 
@@ -104,6 +111,7 @@ stock_prices %>% filter(symbol %in% impact_of_event$symbol[1:6]) %>%
 
 ```
 
+Daily returns for these same stocks. S&P 500 was flat over the Harvey time period. 
 
 ```{r initial-plot-2}
 
@@ -125,6 +133,9 @@ stock_prices %>% filter(symbol %in% impact_of_event$symbol[1:6]) %>%
 
 ```
 
+# Summary table
+
+Impact on each stock.
 
 ```{r summary-datatable}
 
