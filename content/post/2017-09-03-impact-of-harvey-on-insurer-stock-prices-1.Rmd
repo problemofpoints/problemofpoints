@@ -1,7 +1,7 @@
 ---
 title: Impact of Harvey on Insurer Stock Prices
 author: ''
-date: '2017-09-03'
+date: '2017-09-06'
 slug: impact-of-harvey-on-insurer-stock-prices-1
 categories: []
 tags:
@@ -25,22 +25,43 @@ library(tidyquant)
 
 ```
 
+```{r set-dates}
+
+start_event <- as_date("2017-08-23")
+end_event <- as_date("2017-09-02")
+start_stock <- as_date("2017-01-01")
+start_graph <- end_event - weeks(6)
+
+```
+
 ```{r import-stock-prices, message=FALSE, warning=FALSE, cache=TRUE}
 
+# get a list of all the Property-Casualty Insurers from the major US stock exchanges
 stock_tickers <- list('AMEX','NASDAQ','NYSE') %>% map_df(tq_exchange) %>% 
-  filter(industry == 'Property-Casualty Insurers' & !is.na(market.cap)) %>%
+  filter((industry == 'Property-Casualty Insurers' | symbol %in% c("AGII", "ERIE", "AIZ")) & !is.na(market.cap)) %>%
   mutate(market_cap = if_else(stringr::str_sub(market.cap,start = -1)=="M",1e6,1e9) *
            as.numeric(stringr::str_sub(market.cap,start = 2, end = -2))) %>%
   dplyr::select(symbol, company, sector, industry, market_cap) %>%
   arrange(desc(market_cap))
 
-stock_prices <- stock_tickers %>% tq_get(get = "stock.prices", from = '2017-01-01', to = '2017-09-01') %>%
-  group_by(symbol) %>%
+# get shares outstanding from most recent 10Q balance sheet; per Google finance
+stock_shares <- stock_tickers %>% tq_get(get = "financials") %>% group_by(symbol) %>% 
+  filter(type == "BS") %>% mutate(shares = map_dbl(quarter, ~ .x$value[.x$group == 42][1] * 1e6)) %>%
+  dplyr::select(symbol, shares)
+
+# not able to get XL shares outstanding, so manually put it in as of Q2 2017
+stock_tickers <- stock_tickers %>% left_join(stock_shares, by = "symbol") %>%
+  mutate(shares = if_else(symbol == "XL", 257.94 * 1e6, shares)) %>% filter(!is.na(shares))
+
+# now get the historical stock prices for all of the tickers; calculate daily returns
+stock_prices <- stock_tickers %>% tq_get(get = "stock.prices", from = start_stock, to = end_event) %>% 
+  filter(!is.na(adjusted)) %>% dplyr::group_by(symbol) %>%
   tq_mutate(select = adjusted, mutate_fun = periodReturn, period = "daily", type = "arithmetic", 
             col_rename = "daily_returns")
 
+# get S&P 500 historical prices; use for comparison and CausalImpact calculation
 sp500_price <- tibble(symbol = "SPY") %>% tq_get(get = "stock.prices", 
-                                                 from = '2017-01-01', to = '2017-09-01') %>%
+                                                 from = start_stock, to = end_event) %>%
   tq_mutate(select = adjusted, mutate_fun = periodReturn, period = "daily", type = "arithmetic", 
             col_rename = "daily_returns")
 
@@ -52,19 +73,16 @@ stock_prices <- stock_prices %>% left_join(sp500_price %>% dplyr::select(date, s
 
 ```{r initial-plot}
 
-end <- as_date("2017-09-01")
-start <- end - weeks(6)
-
 stock_prices %>% filter(symbol %in% stock_tickers$symbol[1:6]) %>%
-    filter(date >= start - days(2 * 15)) %>%
+    filter(date >= start_graph - days(2 * 15)) %>%
     ggplot(aes(x = date, y = close, group = symbol)) +
-    geom_rect(aes(x = date, xmin = as_date("2017-08-23"), xmax = as_date("2017-09-01"), 
+    geom_rect(aes(x = date, xmin = start_event, xmax = end_event, 
                   ymin = -Inf, ymax = +Inf, group = symbol), fill = "#F2F2F2") +
     geom_candlestick(aes(open = open, high = high, low = low, close = close)) +
     labs(title = "P&C Insurers Stock Price", 
          subtitle = "Impact of Hurricane Harvey",
          y = "Closing Price", x = "") + 
-    coord_x_date(xlim = c(start, end)) +
+    coord_x_date(xlim = c(start_graph, end_event)) +
     facet_wrap(~ symbol, ncol = 2, scale = "free_y") + 
     AonECM::ggThemeAon()
 
@@ -74,15 +92,15 @@ stock_prices %>% filter(symbol %in% stock_tickers$symbol[1:6]) %>%
 ```{r initial-plot-2}
 
 stock_prices %>% filter(symbol %in% stock_tickers$symbol[1:6]) %>%
-  filter(date >= start - days(2 * 15)) %>%
+  filter(date >= start_graph - days(2 * 15)) %>%
   ggplot(aes(x = date, y = daily_returns, group = symbol)) +
-  geom_rect(aes(x = date, xmin = as_date("2017-08-23"), xmax = as_date("2017-09-01"), 
+  geom_rect(aes(x = date, xmin = start_event, xmax = end_event, 
                 ymin = -Inf, ymax = +Inf, group = symbol), fill = "#F2F2F2") +
   geom_col(aes(fill = daily_returns < 0)) +
   labs(title = "P&C Insurers Daily Stock Returns (%)", 
        subtitle = "Impact of Hurricane Harvey",
        y = "Daily price change (%)", x = "") + 
-  coord_x_date(xlim = c(start, end)) +
+  coord_x_date(xlim = c(start_graph, end_event)) +
   facet_wrap(~ symbol, ncol = 2, scale = "fixed") + 
   AonECM::ggThemeAon() + scale_fill_tq() + theme(legend.position =  "none") +
   scale_y_continuous(labels = scales::percent_format())
@@ -94,7 +112,17 @@ Cumulative change since Harvey.
 
 ```{r cum-change}
 
+stock_prices <- stock_prices %>% mutate(post_event = if_else(date >= start_event, 1, 0)) %>%
+  group_by(symbol, post_event) %>% mutate(cum_return = if_else(post_event == 1, cumprod(1 + daily_returns) - 1, 0)) %>%
+  mutate(sp500_cum_return = if_else(post_event == 1, cumprod(1 + sp500_returns) - 1, 0)) %>% ungroup()
 
+impact_of_event <- stock_prices %>% filter(post_event == 1) %>% group_by(symbol) %>%
+  summarise(company = company[1], start_price = first(open), end_price = last(adjusted), 
+            cum_return = last(cum_return), sp500_cum_return = last(sp500_cum_return),
+            market_cap_change = shares[1] * first(open) * cum_return) %>% ungroup() %>% 
+  arrange(cum_return)
+
+impact_of_event
 
 ```
 
