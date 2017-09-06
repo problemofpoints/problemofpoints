@@ -1,5 +1,5 @@
 ---
-title: Impact of Harvey on Insurer Stock Prices
+title: Impact of Harvey on Insurer Stock Prices - Part 1
 author: ''
 date: '2017-09-06'
 slug: impact-of-harvey-on-insurer-stock-prices-1
@@ -10,18 +10,18 @@ subtitle: ''
 draft: true
 ---
 
-```{r setup}
+```{r setup, include=FALSE}
 
 knitr::opts_chunk$set(
-	# fig.align = "center",
-	# fig.path = "figures/",
+	echo = FALSE,
 	message = FALSE,
-	warning = FALSE,
-	echo = FALSE 
+	warning = FALSE
 )
 
 library(tidyverse)
 library(tidyquant)
+library(DT)
+library(widgetframe)
 
 ```
 
@@ -71,28 +71,45 @@ stock_prices <- stock_prices %>% left_join(sp500_price %>% dplyr::select(date, s
 ```
 
 
+```{r cum-change}
+
+stock_prices <- stock_prices %>% mutate(post_event = if_else(date >= start_event, 1, 0)) %>%
+  group_by(symbol, post_event) %>% mutate(cum_return = if_else(post_event == 1, cumprod(1 + daily_returns) - 1, 0)) %>%
+  mutate(sp500_cum_return = if_else(post_event == 1, cumprod(1 + sp500_returns) - 1, 0)) %>% ungroup()
+
+impact_of_event <- stock_prices %>% filter(post_event == 1) %>% group_by(symbol) %>%
+  summarise(company = company[1], start_price = first(open), end_price = last(adjusted), 
+            cum_return = last(cum_return), sp500_cum_return = last(sp500_cum_return),
+            market_cap_change = shares[1] * first(open) * cum_return) %>% ungroup() %>% 
+  arrange(cum_return)
+
+```
+
+
 ```{r initial-plot}
 
-stock_prices %>% filter(symbol %in% stock_tickers$symbol[1:6]) %>%
-    filter(date >= start_graph - days(2 * 15)) %>%
-    ggplot(aes(x = date, y = close, group = symbol)) +
-    geom_rect(aes(x = date, xmin = start_event, xmax = end_event, 
-                  ymin = -Inf, ymax = +Inf, group = symbol), fill = "#F2F2F2") +
-    geom_candlestick(aes(open = open, high = high, low = low, close = close)) +
-    labs(title = "P&C Insurers Stock Price", 
-         subtitle = "Impact of Hurricane Harvey",
-         y = "Closing Price", x = "") + 
-    coord_x_date(xlim = c(start_graph, end_event)) +
-    facet_wrap(~ symbol, ncol = 2, scale = "free_y") + 
-    AonECM::ggThemeAon()
+stock_prices %>% filter(symbol %in% impact_of_event$symbol[1:6]) %>%
+  filter(date >= start_graph - days(2 * 15)) %>%
+  mutate(symbol = factor(symbol, levels = impact_of_event$symbol[1:6])) %>%
+  ggplot(aes(x = date, y = close, group = symbol)) +
+  geom_rect(aes(x = date, xmin = start_event, xmax = end_event, 
+                ymin = -Inf, ymax = +Inf, group = symbol), fill = "#F2F2F2") +
+  geom_candlestick(aes(open = open, high = high, low = low, close = close)) +
+  labs(title = "P&C Insurers Stock Price", 
+       subtitle = "Impact of Hurricane Harvey",
+       y = "Closing Price", x = "") + 
+  coord_x_date(xlim = c(start_graph, end_event)) +
+  facet_wrap(~ symbol, ncol = 2, scale = "free_y") + 
+  AonECM::ggThemeAon()
 
 ```
 
 
 ```{r initial-plot-2}
 
-stock_prices %>% filter(symbol %in% stock_tickers$symbol[1:6]) %>%
+stock_prices %>% filter(symbol %in% impact_of_event$symbol[1:6]) %>%
   filter(date >= start_graph - days(2 * 15)) %>%
+  mutate(symbol = factor(symbol, levels = impact_of_event$symbol[1:6])) %>%
   ggplot(aes(x = date, y = daily_returns, group = symbol)) +
   geom_rect(aes(x = date, xmin = start_event, xmax = end_event, 
                 ymin = -Inf, ymax = +Inf, group = symbol), fill = "#F2F2F2") +
@@ -108,23 +125,34 @@ stock_prices %>% filter(symbol %in% stock_tickers$symbol[1:6]) %>%
 
 ```
 
-Cumulative change since Harvey.
 
-```{r cum-change}
+```{r summary-datatable}
 
-stock_prices <- stock_prices %>% mutate(post_event = if_else(date >= start_event, 1, 0)) %>%
-  group_by(symbol, post_event) %>% mutate(cum_return = if_else(post_event == 1, cumprod(1 + daily_returns) - 1, 0)) %>%
-  mutate(sp500_cum_return = if_else(post_event == 1, cumprod(1 + sp500_returns) - 1, 0)) %>% ungroup()
+dt_impact_of_event <- impact_of_event %>% dplyr::select(-sp500_cum_return) %>% 
+  DT::datatable(  
+  options = list(
+     columnDefs = list(list(className = 'dt-center')),
+     pageLength = 15, lengthMenu = c(10, 15, 20, 25)),
+  fillContainer = TRUE, rownames = FALSE,
+                caption = "Impact of Hurricane Harvey on P&C (Re)Insurer Stock Prices", 
+  colnames = c("Ticker", "Company", "Initial Stock Price", "End Stock Price", "% change", "Market Cap change")) %>%
+    formatCurrency(c(3:4), '', digits = 2) %>% formatCurrency(6, '', digits = 0) %>% formatPercentage(5, digits = 1)
 
-impact_of_event <- stock_prices %>% filter(post_event == 1) %>% group_by(symbol) %>%
-  summarise(company = company[1], start_price = first(open), end_price = last(adjusted), 
-            cum_return = last(cum_return), sp500_cum_return = last(sp500_cum_return),
-            market_cap_change = shares[1] * first(open) * cum_return) %>% ungroup() %>% 
-  arrange(cum_return)
-
-impact_of_event
+frameWidget(dt_impact_of_event, width = '100%')
 
 ```
 
+<br>
 
+```{r summary-graph}
+
+impact_of_event %>% mutate(symbol = factor(symbol, levels = rev(impact_of_event$symbol))) %>%
+  slice(1:20) %>%
+  ggplot(aes(y = cum_return, x = symbol)) +
+  geom_col(fill = "#0083A9") + geom_text(aes(label = scales::percent(round(cum_return,3))), size = 3, nudge_y = -0.0025) +
+  coord_flip() + AonECM::ggThemeAon() +
+  scale_y_continuous(labels = scales::percent_format()) + xlab(NULL) + ylab("Cumulative stock price change since event") +
+  ggtitle("Largest cumulative stock price changes", subtitle = "since Hurricane Harvey")
+
+```
 

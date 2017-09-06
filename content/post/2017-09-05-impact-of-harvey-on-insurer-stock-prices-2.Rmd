@@ -1,5 +1,5 @@
 ---
-title: Impact of Harvey on Insurer Stock Prices
+title: Impact of Harvey on Insurer Stock Prices - Part 2
 author: ''
 date: '2017-09-07'
 slug: impact-of-harvey-on-insurer-stock-prices-2
@@ -26,29 +26,45 @@ library(CausalImpact)
 
 ```
 
-```{r import-stock-prices, message=FALSE, warning=FALSE, cache=TRUE}
+```{r set-dates}
 
+start_event <- as_date("2017-08-23")
+end_event <- as_date("2017-09-02")
+start_stock <- as_date("2017-01-01")
+start_graph <- end_event - weeks(6)
+
+```
+
+```{r import-stock-prices, eval=FALSE, message=FALSE, warning=FALSE, cache=TRUE, include=FALSE}
+
+# get a list of all the Property-Casualty Insurers from the major US stock exchanges
 stock_tickers <- list('AMEX','NASDAQ','NYSE') %>% map_df(tq_exchange) %>% 
-  filter(industry == 'Property-Casualty Insurers' & !is.na(market.cap)) %>%
+  filter((industry == 'Property-Casualty Insurers' | symbol %in% c("AGII", "ERIE", "AIZ")) & !is.na(market.cap)) %>%
   mutate(market_cap = if_else(stringr::str_sub(market.cap,start = -1)=="M",1e6,1e9) *
            as.numeric(stringr::str_sub(market.cap,start = 2, end = -2))) %>%
   dplyr::select(symbol, company, sector, industry, market_cap) %>%
   arrange(desc(market_cap))
 
-  # dplyr::select(symbol, company, sector, industry) %>% 
-  # tq_get(get = "key.stats", complete_cases = FALSE) %>% 
-  # mutate(market_cap = map_dbl(key.stats, Market.Capitalization), 
-  #        book_value = map_dbl(key.stats, Book.Value),
-  #        price_to_book = map_dbl(key.stats, Price.to.Book)) %>%
-  # select(-key.stats) %>%
+# get shares outstanding from most recent 10Q balance sheet; per Google finance
+stock_shares <- stock_tickers %>% tq_get(get = "financials") %>% group_by(symbol) %>% 
+  filter(type == "BS") %>% mutate(shares = map_dbl(quarter, ~ .x$value[.x$group == 42][1] * 1e6)) %>%
+  dplyr::select(symbol, shares)
 
-stock_prices <- stock_tickers %>% tq_get(get = "stock.prices", from = '2017-01-01', to = '2017-09-01') %>%
-  group_by(symbol) %>%
-  tq_mutate(select = adjusted, mutate_fun = periodReturn, period = "daily", type = "log", col_rename = "daily_returns")
+# not able to get XL shares outstanding, so manually put it in as of Q2 2017
+stock_tickers <- stock_tickers %>% left_join(stock_shares, by = "symbol") %>%
+  mutate(shares = if_else(symbol == "XL", 257.94 * 1e6, shares)) %>% filter(!is.na(shares))
 
+# now get the historical stock prices for all of the tickers; calculate daily returns
+stock_prices <- stock_tickers %>% tq_get(get = "stock.prices", from = start_stock, to = end_event) %>% 
+  filter(!is.na(adjusted)) %>% dplyr::group_by(symbol) %>%
+  tq_mutate(select = adjusted, mutate_fun = periodReturn, period = "daily", type = "arithmetic", 
+            col_rename = "daily_returns")
+
+# get S&P 500 historical prices; use for comparison and CausalImpact calculation
 sp500_price <- tibble(symbol = "SPY") %>% tq_get(get = "stock.prices", 
-                                                 from = '2017-01-01', to = '2017-09-01') %>%
-  tq_mutate(select = adjusted, mutate_fun = periodReturn, period = "daily", type = "log", col_rename = "daily_returns")
+                                                 from = start_stock, to = end_event) %>%
+  tq_mutate(select = adjusted, mutate_fun = periodReturn, period = "daily", type = "arithmetic", 
+            col_rename = "daily_returns")
 
 sp500_price <- sp500_price %>% mutate(sp500 = adjusted, sp500_returns = daily_returns)
 stock_prices <- stock_prices %>% left_join(sp500_price %>% dplyr::select(date, sp500, sp500_returns), by = "date")
@@ -56,7 +72,7 @@ stock_prices <- stock_prices %>% left_join(sp500_price %>% dplyr::select(date, s
 ```
 
 
-```{r causal-impact-1}
+```{r causal-impact-1, eval=FALSE, include=FALSE}
 
 run_causal_impact <- function(stock_data){
   
@@ -83,7 +99,7 @@ summary(impact_model)
 
 ```
 
-```{r causal-impact-2, cache=TRUE}
+```{r causal-impact-2, eval=FALSE, cache=TRUE, include=FALSE}
 
 causal_models <- stock_prices %>% #filter(symbol %in% stock_tickers$symbol[1:20]) %>%
   group_by(symbol, company, sector, industry, market_cap) %>% nest() %>%
@@ -95,7 +111,7 @@ causal_models <- causal_models %>%
 
 ```
 
-```{r output}
+```{r output, eval=FALSE, include=FALSE}
 
 causal_models %>% arrange(AbsEffect)
 

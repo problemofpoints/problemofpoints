@@ -1,0 +1,101 @@
+---
+title: Impact of Harvey on Insurer Stock Prices - Part 2
+author: ''
+date: '2017-09-07'
+slug: impact-of-harvey-on-insurer-stock-prices-2
+categories: []
+tags:
+  - stocks
+subtitle: ''
+draft: true
+---
+
+
+
+<pre class="r"><code>knitr::opts_chunk$set(
+    # fig.align = &quot;center&quot;,
+    # fig.path = &quot;figures/&quot;,
+    message = FALSE,
+    warning = FALSE,
+    echo = FALSE 
+)
+
+library(tidyverse)</code></pre>
+<pre><code>## Warning: package &#39;tidyverse&#39; was built under R version 3.3.2</code></pre>
+<pre><code>## Loading tidyverse: ggplot2
+## Loading tidyverse: tibble
+## Loading tidyverse: tidyr
+## Loading tidyverse: readr
+## Loading tidyverse: purrr
+## Loading tidyverse: dplyr</code></pre>
+<pre><code>## Warning: package &#39;ggplot2&#39; was built under R version 3.3.2</code></pre>
+<pre><code>## Warning: package &#39;tibble&#39; was built under R version 3.3.3</code></pre>
+<pre><code>## Warning: package &#39;tidyr&#39; was built under R version 3.3.3</code></pre>
+<pre><code>## Warning: package &#39;readr&#39; was built under R version 3.3.3</code></pre>
+<pre><code>## Warning: package &#39;purrr&#39; was built under R version 3.3.3</code></pre>
+<pre><code>## Warning: package &#39;dplyr&#39; was built under R version 3.3.3</code></pre>
+<pre><code>## Conflicts with tidy packages ----------------------------------------------</code></pre>
+<pre><code>## filter(): dplyr, stats
+## lag():    dplyr, stats</code></pre>
+<pre class="r"><code>library(tidyquant)</code></pre>
+<pre><code>## Warning: package &#39;tidyquant&#39; was built under R version 3.3.3</code></pre>
+<pre><code>## Loading required package: lubridate</code></pre>
+<pre><code>## Warning: package &#39;lubridate&#39; was built under R version 3.3.2</code></pre>
+<pre><code>## 
+## Attaching package: &#39;lubridate&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:base&#39;:
+## 
+##     date</code></pre>
+<pre><code>## Loading required package: PerformanceAnalytics</code></pre>
+<pre><code>## Warning: package &#39;PerformanceAnalytics&#39; was built under R version 3.3.3</code></pre>
+<pre><code>## Loading required package: xts</code></pre>
+<pre><code>## Warning: package &#39;xts&#39; was built under R version 3.3.3</code></pre>
+<pre><code>## Loading required package: zoo</code></pre>
+<pre><code>## Warning: package &#39;zoo&#39; was built under R version 3.3.3</code></pre>
+<pre><code>## 
+## Attaching package: &#39;zoo&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     as.Date, as.Date.numeric</code></pre>
+<pre><code>## 
+## Attaching package: &#39;xts&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:dplyr&#39;:
+## 
+##     first, last</code></pre>
+<pre><code>## 
+## Attaching package: &#39;PerformanceAnalytics&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:graphics&#39;:
+## 
+##     legend</code></pre>
+<pre><code>## Loading required package: quantmod</code></pre>
+<pre><code>## Warning: package &#39;quantmod&#39; was built under R version 3.3.3</code></pre>
+<pre><code>## Loading required package: TTR</code></pre>
+<pre><code>## Warning: package &#39;TTR&#39; was built under R version 3.3.3</code></pre>
+<pre><code>## Version 0.4-0 included new data defaults. See ?getSymbols.</code></pre>
+<pre><code>## 
+## Attaching package: &#39;tidyquant&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:dplyr&#39;:
+## 
+##     as_tibble</code></pre>
+<pre><code>## The following object is masked from &#39;package:tibble&#39;:
+## 
+##     as_tibble</code></pre>
+<pre class="r"><code>library(CausalImpact)</code></pre>
+<pre><code>## Warning: package &#39;CausalImpact&#39; was built under R version 3.3.3</code></pre>
+<pre><code>## Loading required package: bsts</code></pre>
+<pre><code>## Warning: package &#39;bsts&#39; was built under R version 3.3.3</code></pre>
+<pre><code>## Loading required package: BoomSpikeSlab</code></pre>
+<pre><code>## Warning: package &#39;BoomSpikeSlab&#39; was built under R version 3.3.3</code></pre>
+<pre><code>## Loading required package: Boom</code></pre>
+<pre><code>## Warning: package &#39;Boom&#39; was built under R version 3.3.3</code></pre>
+<pre><code>## Loading required package: MASS</code></pre>
+<pre><code>## 
+## Attaching package: &#39;MASS&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:dplyr&#39;:
+## 
+##     select</code></pre>
+<pre><code>## 
+## Attaching package: &#39;Boom&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:stats&#39;:
+## 
+##     rWishart</code></pre>
