@@ -208,25 +208,24 @@ create_summary_tbl <- function(ci_model){
   
   summary_tbl <- ci_model$series %>% as_tibble() %>% last() %>% 
     dplyr::select(response, point.pred, point.pred.lower, point.pred.upper) %>%
-    mutate(pct_impact = response / point.pred - 1, pct_impact_lower = response / point.pred.lower - 1, 
-           pct_impact_upper = response / point.pred.upper - 1) %>% 
+    mutate(pct_impact = response / point.pred - 1, pct_impact_lower = response / point.pred.upper - 1, 
+           pct_impact_upper = response / point.pred.lower - 1) %>% 
     bind_cols(impact_of_event %>% filter_(~ symbol == ticker)) %>%
     mutate(market_cap_impact_point = pct_impact * market_cap, market_cap_impact_lower = pct_impact_lower * market_cap,
            market_cap_impact_upper = pct_impact_upper * market_cap) %>%
     dplyr::select(symbol, company, pct_impact, pct_impact_lower, pct_impact_upper, 
-                  market_cap_impact_point, market_cap_impact_lower, market_cap_impact_upper) %>%
-    mutate_at(3:5, funs(scales::percent(round(., digits = 3)))) %>% 
-    mutate_at(6:8, funs(scales::comma(round(. / 1e6, digits = 1))))
-  
+                  market_cap_impact_point, market_cap_impact_lower, market_cap_impact_upper) 
   summary_tbl
 }
 
-summary_tbl <- create_summary_tbl(impact_model)
+summary_tbl <- create_summary_tbl(impact_model) %>%
+    mutate_at(3:5, funs(scales::percent(round(., digits = 3)))) %>% 
+    mutate_at(6:8, funs(scales::comma(round(. / 1e6, digits = 1))))
 
 knitr::kable(summary_tbl, format = "html", col.names = c("Ticker", "Company", "Estimated", 
                                                     "Lower bound", "Upper bound", "Estimated",
                                                     "Lower bound", "Upper bound")) %>%
-  kable_styling() %>% add_header_above(c(" " = 1, " " = 1, "Stock price impact (%)" = 3, "Market cap impact ($M)" = 3))
+  kable_styling() %>% add_header_above(c(" " = 1, " " = 1, "Stock price impact (%)" = 3, "Market cap impact ($m)" = 3))
 
 ```
 
@@ -243,7 +242,7 @@ Include range of impact on stock price at Sept 1. Use a pointrange plot to graph
 
 ```{r causal-impact-all, cache=TRUE}
 
-causal_models <- stock_prices %>%
+causal_models <- stock_prices %>% filter(symbol %in% stock_tickers$symbol[1:5]) %>%
   group_by(symbol, company, sector, industry, market_cap) %>% nest() %>%
   mutate(model = map(data, ~ run_causal_impact(.x, 0.05, FALSE))) %>% dplyr::select(-data)
 
@@ -253,10 +252,46 @@ causal_models <- causal_models %>%
 
 ```
 
-```{r output}
+```{r causal-impact-all-dt}
 
-causal_models %>% arrange(AbsEffect)
+summary_tbl_all <- causal_models %>% 
+  dplyr::select(c(1:2, 9:14)) %>% mutate_at(6:8, funs(. / 1e6)) %>%
+  left_join(impact_of_event %>% dplyr::select(symbol, cum_return), by = 'symbol') %>%
+  mutate(expected = cum_return - pct_impact) %>%
+  dplyr::select(c(1:2), cum_return, expected, c(3:8)) %>%
+  arrange(pct_impact)
+  
+dt_impact_of_event <- summary_tbl_all %>%
+  DT::datatable(  
+  options = list(
+     columnDefs = list(list(className = 'dt-left')),
+     pageLength = 15, lengthMenu = c(10, 15, 20, 25)),
+  fillContainer = TRUE, rownames = FALSE,
+  # caption = htmltools::tags$caption(
+  #   style = 'caption-side: top; text-align: left;', htmltools::em('from August 23, 2017 to September 1, 2017')),
+  colnames = c("Ticker", "Company", "Actual return", "Expected return", "Event impact", "Lower", "Upper", 
+               "Market cap change ($m)", "Lower", "Upper")) %>%
+  formatCurrency(c(8:10), '', digits = 1) %>% formatPercentage(3:7, digits = 1)
 
+frameWidget(dt_impact_of_event, width = '95%')
+
+```
+
+<br>
+
+```{r causal-impact-all-graph}
+
+summary_tbl_all %>% mutate(symbol = factor(symbol, levels = rev(summary_tbl_all$symbol))) %>%
+  slice(1:20) %>%
+  ggplot(aes(y = pct_impact, x = symbol)) +
+  geom_hline(yintercept = 0, colour = "#808080") +
+  geom_pointrange(aes(ymin = pct_impact_lower, ymax = pct_impact_upper), colour = "#0083A9") +
+  geom_point(aes(y = pct_impact), colour = "#0083A9") +
+  geom_text(aes(label = scales::percent(round(pct_impact,3))), size = 3, nudge_y = -0.0025) +
+  coord_flip() + AonECM::ggThemeAon() +
+  scale_y_continuous(labels = scales::percent_format()) + xlab(NULL) + ylab("% impact on stock price") +
+  ggtitle("Largest estimated event impact on stock price", subtitle = "95% credible interval of impact") 
+  # labs(caption = "*from August 23, 2017 to September 1, 2017")
 
 ```
 
