@@ -39,7 +39,8 @@ start_graph <- end_event - weeks(6)
 
 ```
 
-```{r import-stock-prices, message=FALSE, warning=FALSE, cache=TRUE}
+
+```{r import-tickers}
 
 # get a list of all the Property-Casualty Insurers from the major US stock exchanges
 stock_tickers <- list('AMEX','NASDAQ','NYSE') %>% map_df(tq_exchange) %>% 
@@ -58,6 +59,11 @@ stock_shares <- stock_tickers %>% tq_get(get = "financials") %>% group_by(symbol
 stock_tickers <- stock_tickers %>% left_join(stock_shares, by = "symbol") %>%
   mutate(shares = if_else(symbol == "XL", 257.94 * 1e6, shares)) %>% filter(!is.na(shares))
 
+```
+
+
+```{r import-stock-prices, message=FALSE, warning=FALSE, cache=TRUE}
+
 # now get the historical stock prices for all of the tickers; calculate daily returns
 stock_prices <- stock_tickers %>% tq_get(get = "stock.prices", from = start_stock, to = end_event) %>% 
   filter(!is.na(adjusted)) %>% dplyr::group_by(symbol) %>%
@@ -74,6 +80,7 @@ sp500_price <- sp500_price %>% mutate(sp500 = adjusted, sp500_returns = daily_re
 stock_prices <- stock_prices %>% left_join(sp500_price %>% dplyr::select(date, sp500, sp500_returns), by = "date")
 
 ```
+
 
 ```{r cum-change}
 
@@ -149,7 +156,8 @@ run_causal_impact <- function(stock_data, prior_level_sd = 0.05, use_dynamic = F
   impact_analysis <- CausalImpact(model_data_mat,
                                   pre.period = c(1, nrow(model_data_mat) - 7),
                                   post.period = c(nrow(model_data_mat)-7+1, nrow(model_data_mat)),
-                                  model.args = list(niter = 1000, prior.level.sd = prior_level_sd, dynamic.regression = use_dynamic))
+                                  model.args = list(niter = 1000, prior.level.sd = prior_level_sd, 
+                                                    dynamic.regression = use_dynamic))
   
   impact_analysis
 }
@@ -160,11 +168,31 @@ Explain output. Graph and summary table.
 
 ```{r causal-impact-example}
 
-impact_model <- run_causal_impact(stock_prices %>% filter(symbol == "XL"), 0.05, FALSE)
+impact_model <- run_causal_impact(stock_prices %>% filter(symbol == "TRV"), 0.05, FALSE)
 
 plot(impact_model)
 summary(impact_model)
 impact_model$series[nrow(impact_model$series)]$response / impact_model$series[nrow(impact_model$series)]$point.pred - 1
+
+graph_tbl <- stock_prices %>% filter(symbol == "TRV") %>% bind_cols(as_tibble(impact_model$series)) %>%
+  dplyr::select(symbol, company, date, adjusted, point.pred, 
+                point.pred.lower, point.pred.upper, point.effect, point.effect.lower, point.effect.upper) 
+
+graph_tbl <- graph_tbl %>% dplyr::select(symbol, company, date, actual = adjusted, 
+                                         fitted = point.pred, lower = point.pred.lower, upper = point.pred.upper) %>% 
+  mutate(facet_var = "Stock Price") %>%
+  bind_rows(graph_tbl %>% dplyr::select(symbol, company, date, actual = point.effect, 
+                                         fitted = point.effect, lower = point.effect.lower, upper = point.effect.upper) %>%
+              mutate(facet_var = "Stock: Actual - Expected")) %>%
+  mutate(hline = if_else(facet_var == "Stock: Actual - Expected", 0, NA_real_))
+
+graph_tbl %>% ggplot(aes(x = date)) + 
+  geom_vline(xintercept = start_event, linetype = 1, colour = "#808080") + geom_line(aes(y = hline)) +
+  geom_line(aes(y = fitted), linetype = "dashed") + geom_line(aes(y = actual), colour = "#e31a1c", size = 0.5) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = "#BFBFBF", alpha = 0.5) +
+  facet_grid(facet_var ~ ., scales = "free_y") + AonECM::ggThemeAon() + scale_color_tq() +
+  theme(panel.spacing = unit(1.5, "lines")) + ylab(NULL) + xlab(NULL) +
+  ggtitle('Actual vs. Estimated Stock Price', subtitle = "Impact of Harvey")
 
 ```
 
