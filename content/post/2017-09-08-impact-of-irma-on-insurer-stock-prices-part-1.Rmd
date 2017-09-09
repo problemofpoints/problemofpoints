@@ -7,7 +7,7 @@ categories: []
 tags:
   - stocks
 subtitle: ''
-draft: true
+draft: false
 ---
 
 ```{r setup, include=FALSE}
@@ -28,7 +28,7 @@ library(kableExtra)
 
 ```
 
-P&C (re)insurer stock price reactions to Hurricane Irma. Below we show the cumulative change in stock price from September 4 thru September 7. 
+P&C (re)insurer stock price reactions to Hurricane Irma. Below we show the cumulative change in stock price from September 4 thru September 8. 
 
 ```{r set-dates}
 
@@ -67,7 +67,9 @@ stock_tickers <- stock_tickers %>% left_join(stock_shares, by = "symbol") %>%
 
 # now get the historical stock prices for all of the tickers; calculate daily returns
 stock_prices <- stock_tickers %>% tq_get(get = "stock.prices", from = start_stock, to = end_event) %>% 
-  filter(!is.na(adjusted)) %>% dplyr::group_by(symbol) %>%
+  filter(!is.na(adjusted)) 
+
+stock_prices <- stock_prices %>% timetk::tk_tbl() %>% dplyr::group_by(symbol) %>%
   tq_mutate(select = adjusted, mutate_fun = periodReturn, period = "daily", type = "arithmetic", 
             col_rename = "daily_returns")
 
