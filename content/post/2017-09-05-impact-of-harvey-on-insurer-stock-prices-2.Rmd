@@ -93,7 +93,7 @@ stock_prices <- stock_prices %>% mutate(post_event = if_else(date >= start_event
 impact_of_event <- stock_prices %>% filter(post_event == 1) %>% group_by(symbol) %>%
   summarise(company = company[1], start_price = first(open), end_price = last(adjusted), 
             cum_return = last(cum_return), sp500_cum_return = last(sp500_cum_return),
-            market_cap_change = shares[1] * first(open) * cum_return, market_cap = market_cap[1]) %>% ungroup() %>% 
+            market_cap_change = shares[1] * first(open) * cum_return, market_cap = shares[1] * first(open)) %>% ungroup() %>% 
   arrange(cum_return)
 
 ```
@@ -204,13 +204,13 @@ This method also provides us a measure of the uncertainty of our estimates, show
 
 ```{r causal-impact-example-ouput-2}
 
-create_summary_tbl <- function(ci_model){
+create_summary_tbl <- function(ci_model, ticker_sym){
   
   summary_tbl <- ci_model$series %>% timetk::tk_tbl() %>% last() %>% 
     dplyr::select(response, point.pred, point.pred.lower, point.pred.upper) %>%
     mutate(pct_impact = response / point.pred - 1, pct_impact_lower = response / point.pred.upper - 1, 
            pct_impact_upper = response / point.pred.lower - 1) %>% 
-    bind_cols(impact_of_event %>% filter_(~ symbol == ticker)) %>%
+    bind_cols(impact_of_event %>% filter_(~ symbol == ticker_sym)) %>%
     mutate(market_cap_impact_point = pct_impact * market_cap, market_cap_impact_lower = pct_impact_lower * market_cap,
            market_cap_impact_upper = pct_impact_upper * market_cap) %>%
     dplyr::select(symbol, company, pct_impact, pct_impact_lower, pct_impact_upper, 
@@ -218,7 +218,7 @@ create_summary_tbl <- function(ci_model){
   summary_tbl
 }
 
-summary_tbl <- create_summary_tbl(impact_model) %>%
+summary_tbl <- create_summary_tbl(impact_model, ticker) %>%
     mutate_at(3:5, funs(scales::percent(round(., digits = 3)))) %>% 
     mutate_at(6:8, funs(scales::comma(round(. / 1e6, digits = 1))))
 
@@ -250,7 +250,7 @@ causal_models <- stock_prices %>% #filter(symbol %in% stock_tickers$symbol[1:5])
 ```{r causal-impact-all-2}
 
 causal_models <- causal_models %>% 
-  mutate(model_summary = map(model, ~ create_summary_tbl(.x))) %>% 
+  mutate(model_summary = map2(model, symbol, ~ create_summary_tbl(.x, .y))) %>% 
   unnest(model_summary)
 
 ```
