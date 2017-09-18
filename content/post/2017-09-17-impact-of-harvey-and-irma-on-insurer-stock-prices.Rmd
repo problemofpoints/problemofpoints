@@ -1,0 +1,311 @@
+---
+title: Impact of Harvey and Irma on Insurer Stock Prices
+author: ''
+date: '2017-09-17'
+slug: impact-of-harvey-and-irma-on-insurer-stock-prices
+categories: []
+tags:
+  - stocks
+subtitle: ''
+draft: true
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+
+library(tidyverse)
+library(tidyquant)
+library(timetk)
+library(CausalImpact)
+library(DT)
+library(widgetframe)
+library(kableExtra)
+
+```
+
+This post does a proper [event study](https://en.wikipedia.org/wiki/Event_study) using a Google developed package called [CausalImpact](https://google.github.io/CausalImpact/CausalImpact.html). The goal of the analysis is to estimate what the stock prices *would* have been had the event, in this case Hurricane Harvey and Hurricane Irma, had not occurred (this is called the counterfactual). There are many ways that we could estimate this counterfactual, but the key is to use variables that were themselves *not affected by the event*. In this case, we use the change in the S&P 500 to estimate what our returns would have been, similar to a traditional capital asset pricing model beta style approach. The CausalImpact package uses fancy statistical methods to help us to this and access reliability of our results. 
+
+```{r set-dates}
+
+start_event <- as_date("2017-08-23")
+end_event <- as_date("2017-09-16")
+start_stock <- as_date("2017-01-01")
+start_graph <- end_event - weeks(6)
+
+```
+
+
+```{r import-tickers, cache=TRUE}
+
+# get a list of all the Property-Casualty Insurers from the major US stock exchanges
+stock_tickers <- list('AMEX','NASDAQ','NYSE') %>% map_df(tq_exchange) %>% 
+  filter((industry == 'Property-Casualty Insurers' | symbol %in% c("AGII", "ERIE", "AIZ")) & !is.na(market.cap)) %>%
+  mutate(market_cap = if_else(stringr::str_sub(market.cap,start = -1)=="M",1e6,1e9) *
+           as.numeric(stringr::str_sub(market.cap,start = 2, end = -2))) %>%
+  dplyr::select(symbol, company, sector, industry, market_cap) %>%
+  arrange(desc(market_cap))
+
+# get shares outstanding from most recent 10Q balance sheet; per Google finance
+stock_shares <- stock_tickers %>% tq_get(get = "financials") %>% group_by(symbol) %>% 
+  filter(type == "BS") %>% mutate(shares = map_dbl(quarter, ~ .x$value[.x$group == 42][1] * 1e6)) %>%
+  dplyr::select(symbol, shares)
+
+# not able to get XL shares outstanding, so manually put it in as of Q2 2017
+stock_tickers <- stock_tickers %>% left_join(stock_shares, by = "symbol") %>%
+  mutate(shares = if_else(symbol == "XL", 257.94 * 1e6, shares)) %>% filter(!is.na(shares))
+
+```
+
+
+```{r import-stock-prices, cache=TRUE}
+
+# now get the historical stock prices for all of the tickers; calculate daily returns
+stock_prices <- stock_tickers %>% tq_get(get = "stock.prices", from = start_stock, to = end_event) %>% 
+  filter(!is.na(adjusted)) %>% dplyr::group_by(symbol) %>%
+  tq_mutate(select = adjusted, mutate_fun = periodReturn, period = "daily", type = "arithmetic", 
+            col_rename = "daily_returns")
+
+# get S&P 500 historical prices; use for comparison and CausalImpact calculation
+sp500_price <- tibble(symbol = "SPY") %>% tq_get(get = "stock.prices", 
+                                                 from = start_stock, to = end_event) %>%
+  tq_mutate(select = adjusted, mutate_fun = periodReturn, period = "daily", type = "arithmetic", 
+            col_rename = "daily_returns")
+
+sp500_price <- sp500_price %>% mutate(sp500 = adjusted, sp500_returns = daily_returns)
+stock_prices <- stock_prices %>% left_join(sp500_price %>% 
+                                             dplyr::select(date, sp500, sp500_returns), by = "date")
+
+```
+
+
+```{r cum-change}
+
+stock_prices <- stock_prices %>% mutate(post_event = if_else(date >= start_event, 1, 0)) %>%
+  group_by(symbol, post_event) %>% mutate(cum_return = if_else(post_event == 1, cumprod(1 + daily_returns) - 1, 0)) %>%
+  mutate(sp500_cum_return = if_else(post_event == 1, cumprod(1 + sp500_returns) - 1, 0)) %>% ungroup()
+
+impact_of_event <- stock_prices %>% filter(post_event == 1) %>% group_by(symbol) %>%
+  summarise(company = company[1], start_price = first(open), end_price = last(adjusted), 
+            cum_return = last(cum_return), sp500_cum_return = last(sp500_cum_return),
+            market_cap_change = shares[1] * first(open) * cum_return, market_cap = shares[1] * first(open)) %>% ungroup() %>% 
+  arrange(cum_return)
+
+```
+
+# Estimating what could have been
+
+We will use TRV as an example to illustrate the methodology. The graph below shows the daily returns for TRV stock and the S&P 500 (SPY) over the six weeks prior to September 15. We need to estimate what returns could have been for the seventeen days highlighted in gray using the actual returns from SPY over those days. 
+
+```{r sample-graph}
+
+stock_prices %>% filter(symbol == 'TRV') %>% dplyr::select(symbol, date, daily_returns) %>%
+  bind_rows(sp500_price %>% dplyr::select(symbol, date, daily_returns)) %>%
+  filter(date >= start_graph - days(2 * 15)) %>%
+  ggplot(aes(x = date, y = daily_returns, group = symbol)) +
+  geom_rect(aes(xmin = start_event, xmax = end_event, 
+                ymin = -Inf, ymax = +Inf, group = symbol), fill = "#F2F2F2") +
+  geom_col(aes(fill = daily_returns < 0)) +
+  labs(title = "Daily Stock Returns (%)", 
+       subtitle = "Six weeks ending September 15, 2017",
+       y = "Daily price change (%)", x = "") + 
+  coord_x_date(xlim = c(start_graph, end_event)) +
+  facet_wrap(~ symbol, scale = "fixed") + 
+  AonECM::ggThemeAon() + scale_fill_tq() + theme(legend.position =  "none") +
+  scale_y_continuous(labels = scales::percent_format())
+
+
+```
+
+The graph below shows the data that we will use to estimate the returns. The cumulative index returns since January 2017 show that TRV stock does broadly move with the S&P 500. The linear correlation coefficient between the TRV and S&P 500 daily returns for this time period is around 30%.
+
+You can clearly see the divergence in the two time series in the gray box representing the Hurricanes Harvey and Irma time period.
+
+```{r sample-graph-2}
+
+stock_prices %>% filter(symbol == 'TRV') %>% dplyr::select(symbol, date, adjusted) %>%
+  bind_rows(sp500_price %>% dplyr::select(symbol, date, adjusted)) %>%
+  group_by(symbol) %>% mutate(index = adjusted / first(adjusted)) %>%
+  ggplot(aes(x = date, y = index, group = symbol)) +
+  geom_rect(aes(xmin = start_event, xmax = end_event, 
+                ymin = -Inf, ymax = +Inf, group = symbol), fill = "#F2F2F2") +
+  geom_line(aes(colour = symbol)) +
+  labs(title = "SPY vs. TRV", 
+       subtitle = "January 2017 - September 15, 2017",
+       y = "Stock price index (Jan 3, 2017 = 1.0)", x = "") + 
+  coord_x_date() +
+  AonECM::ggThemeAon() + scale_color_tq() + theme(legend.position = "right") +
+  scale_y_continuous(labels = scales::percent_format())
+
+
+```
+
+```{r causal-impact-func}
+
+run_causal_impact <- function(stock_data, prior_level_sd = 0.05, n_days_back = 10, use_dynamic = FALSE){
+  
+  model_data_mat <- stock_data %>% ungroup() %>% 
+    mutate(var = if_else(daily_returns > 0.02, 1, 0)) %>%
+    dplyr::select(adjusted, sp500, var) %>%
+    as.matrix()
+
+  impact_analysis <- CausalImpact(model_data_mat, alpha = 0.1,
+                                  pre.period = c(1, nrow(model_data_mat) - n_days_back),
+                                  post.period = c(nrow(model_data_mat)-n_days_back+1, nrow(model_data_mat)),
+                                  model.args = list(niter = 1000, prior.level.sd = prior_level_sd, 
+                                                    dynamic.regression = use_dynamic))
+  
+  impact_analysis
+}
+
+```
+
+Now we can apply the statistical method to the data and derive an estimate of the impact of Harvey and Irma. The graph below shows the fitted data versus the actual stock price. The fit is good enough for our purposes. The key piece of information is the actual versus fitted results after the vertical line on August 23. You can see that the fitted results as shown by the dotted line indicate a slight increase in stock price over the event time period. In reality, the stock price decreased throughout this period. The difference between actual and expected during the event period is the estimated impact of Harvey and Irma. The bottom graph shows this difference, which is just under \$10 by September 15, or 6%.
+
+```{r causal-impact-example}
+
+ticker <- "TRV"
+impact_model <- run_causal_impact(stock_prices %>% filter_(~ symbol == ticker), 0.05, 17, FALSE)
+
+```
+
+
+```{r causal-impact-example-ouput-1}
+
+graph_tbl <- stock_prices %>% filter_(~ symbol == ticker) %>% bind_cols(timetk::tk_tbl(impact_model$series)) %>%
+  dplyr::select(symbol, company, date, adjusted, point.pred, 
+                point.pred.lower, point.pred.upper, point.effect, point.effect.lower, point.effect.upper) 
+
+graph_tbl <- graph_tbl %>% dplyr::select(symbol, company, date, actual = adjusted, 
+                                         fitted = point.pred, lower = point.pred.lower, upper = point.pred.upper) %>% 
+  mutate(facet_var = "Stock Price") %>%
+  bind_rows(graph_tbl %>% dplyr::select(symbol, company, date, actual = point.effect, 
+                                         fitted = point.effect, lower = point.effect.lower, upper = point.effect.upper) %>%
+              mutate(facet_var = "Stock: Actual - Expected")) %>%
+  mutate(hline = if_else(facet_var == "Stock: Actual - Expected", 0, NA_real_))
+
+graph_tbl %>% ggplot(aes(x = date)) + 
+  geom_vline(xintercept = start_event, linetype = 1, colour = "#808080") + geom_line(aes(y = hline)) +
+  geom_line(aes(y = fitted), linetype = "dashed") + geom_line(aes(y = actual), colour = "#e31a1c", size = 0.5) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = "#BFBFBF", alpha = 0.5) +
+  facet_grid(facet_var ~ ., scales = "free_y") + AonECM::ggThemeAon() + scale_color_tq() +
+  theme(panel.spacing = unit(1.0, "lines")) + ylab(NULL) + xlab(NULL) +
+  ggtitle(paste0(ticker, ": ", 'Actual vs. Estimated Stock Price'), subtitle = "Impact of Harvey and Irma")
+
+
+```
+
+This method also provides us a measure of the uncertainty of our estimates, shown by the gray ribbons in the graphs. In this example, the actual stock price falls outside of the gray ribbon, indicating greater likelihood that the impact we estimate is real and not just random noise.
+
+```{r causal-impact-example-ouput-2}
+
+create_summary_tbl <- function(ci_model, ticker_sym){
+  
+  summary_tbl <- ci_model$series %>% timetk::tk_tbl() %>% last() %>% 
+    dplyr::select(response, point.pred, point.pred.lower, point.pred.upper) %>%
+    mutate(pct_impact = response / point.pred - 1, pct_impact_lower = response / point.pred.upper - 1, 
+           pct_impact_upper = response / point.pred.lower - 1) %>% 
+    bind_cols(impact_of_event %>% filter_(~ symbol == ticker_sym)) %>%
+    mutate(market_cap_impact_point = pct_impact * market_cap, market_cap_impact_lower = pct_impact_lower * market_cap,
+           market_cap_impact_upper = pct_impact_upper * market_cap) %>%
+    dplyr::select(symbol, company, pct_impact, pct_impact_lower, pct_impact_upper, 
+                  market_cap_impact_point, market_cap_impact_lower, market_cap_impact_upper) 
+  summary_tbl
+}
+
+summary_tbl <- create_summary_tbl(impact_model, ticker) %>%
+    mutate_at(3:5, funs(scales::percent(round(., digits = 3)))) %>% 
+    mutate_at(6:8, funs(scales::comma(round(. / 1e6, digits = 1))))
+
+knitr::kable(summary_tbl, format = "html", col.names = c("Ticker", "Company", "Estimated", 
+                                                    "Lower bound", "Upper bound", "Estimated",
+                                                    "Lower bound", "Upper bound")) %>%
+  kable_styling(bootstrap_options = "striped") %>% 
+  add_header_above(c(" " = 1, " " = 1, "Stock price impact (%)" = 3, "Market cap impact ($m)" = 3))
+
+```
+
+The table above summarizes the results for TRV. It provides the estimated mean outcome (6.5%) as well as a 90% credible interval which reflects the uncertainty in our estimation. We can also see the impact to TRV's market capitalization.
+
+# Overall results
+
+Next we replicate the same analysis for every other U.S. P&C (re)insurer stock.
+
+The companies with the largest impacts are as expected. Companies such as BCRH, XL, AHL, and RE have meaninful catastrophe exposure. The Florida domestice insurers (FNHC, HCI, UVE) had sizeable negative impacts overall, but they traded higher after Irma was not as devastating as expected in Florida.
+
+```{r causal-impact-all, cache=TRUE}
+
+causal_models <- stock_prices %>% #filter(symbol %in% stock_tickers$symbol[1:5]) %>%
+  group_by(symbol, company, sector, industry, market_cap) %>% nest() %>%
+  mutate(model = map(data, ~ run_causal_impact(.x, 0.05, 17, FALSE))) %>% dplyr::select(-data)
+
+
+```
+
+```{r causal-impact-all-2}
+
+causal_models <- causal_models %>% 
+  mutate(model_summary = map2(model, symbol, ~ create_summary_tbl(.x, .y))) %>% 
+  unnest(model_summary)
+
+```
+
+
+```{r causal-impact-all-dt}
+
+summary_tbl_all <- causal_models %>% 
+  dplyr::select(c(1:2, 9:14)) %>% mutate_at(6:8, funs(. / 1e6)) %>%
+  left_join(impact_of_event %>% dplyr::select(symbol, cum_return), by = 'symbol') %>%
+  mutate(expected = cum_return - pct_impact) %>%
+  dplyr::select(c(1:2), cum_return, expected, c(3:8)) %>%
+  arrange(pct_impact)
+  
+dt_impact_of_event <- summary_tbl_all %>%
+  DT::datatable(  
+  options = list(
+     columnDefs = list(list(className = 'dt-left')),
+     pageLength = 15, lengthMenu = c(10, 15, 20, 25)),
+  fillContainer = TRUE, rownames = FALSE,
+  caption = htmltools::tags$caption(
+    style = 'caption-side: top; text-align: left;', htmltools::em('from August 23, 2017 to September 15, 2017')),
+  colnames = c("Ticker", "Company", "Actual return", "Expected return", "Event impact", "Lower", "Upper", 
+               "Market cap change ($m)", "Lower", "Upper")) %>%
+  formatCurrency(c(8:10), '', digits = 1) %>% formatPercentage(3:7, digits = 1)
+
+frameWidget(dt_impact_of_event, width = '100%')
+
+```
+
+<br>
+
+```{r causal-impact-all-graph}
+
+summary_tbl_all %>% mutate(symbol = factor(symbol, levels = rev(summary_tbl_all$symbol))) %>%
+  filter(symbol != 'AFSI') %>%
+  slice(1:20) %>%
+  ggplot(aes(y = pct_impact, x = symbol)) +
+  geom_hline(yintercept = 0, colour = "#808080") +
+  geom_pointrange(aes(ymin = pct_impact_lower, ymax = pct_impact_upper), colour = "#0083A9") +
+  geom_point(aes(y = pct_impact), colour = "#0083A9") +
+  coord_flip() + AonECM::ggThemeAon() + theme(panel.grid.major.x = element_line(color="#F2F2F2", linetype = 1),
+                                              panel.grid.minor.x = element_line(color="#F2F2F2"),
+                                              panel.grid.major.y = element_blank()) +
+  scale_y_continuous(labels = scales::percent_format()) + xlab(NULL) + ylab("% impact on stock price") +
+  ggtitle("Largest estimated event impact on stock price", subtitle = "With 90% credible interval of impact") +
+  labs(caption = "*from August 23, 2017 to September 15, 2017")
+
+```
+
+```{r total-value-lost}
+
+total_value_lost <- -sum(summary_tbl_all$market_cap_impact_point[summary_tbl_all$market_cap_impact_point<0])
+total_value_lost <- paste0(scales::dollar(total_value_lost/1000), "B")
+
+```
+
+This analysis highlights the impact that catastrophe losses - in this case still perceived losses - can have on P&C (re)insurer stock prices. The estimated total market value lost is `r total_value_lost`. Granted this is likely a short term reaction that will reverse itself in the future, but it is still a big number. 
+
