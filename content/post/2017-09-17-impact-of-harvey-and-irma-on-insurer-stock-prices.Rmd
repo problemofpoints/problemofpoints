@@ -7,7 +7,7 @@ categories: []
 tags:
   - stocks
 subtitle: ''
-draft: true
+draft: false
 ---
 
 ```{r setup, include=FALSE}
