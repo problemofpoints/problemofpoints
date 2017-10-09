@@ -3,7 +3,7 @@ title: Underwriter of the Future
 subtitle: “Part actuary, part data scientist, still ultimate risk taker”
 date: “2017-10-09”
 slug: underwriter-of-the-future
-tags: [“insurance”]
+tags: [insurance]
 draft: false
 ---
 
