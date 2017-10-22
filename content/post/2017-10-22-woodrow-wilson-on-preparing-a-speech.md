@@ -1,6 +1,6 @@
 ---
 title: Woodrow Wilson on preparing a speech
-subtitle: “”
+subtitle:
 date: 2017-10-22
 slug: woodrow-wilson-on-preparing-a-speech
 tags:
