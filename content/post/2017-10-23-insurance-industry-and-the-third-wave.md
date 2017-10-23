@@ -1,0 +1,53 @@
+---
+title: Insurance Companies and The Third Wave
+subtitle: Partnerships, not disruption, with startups
+date: 2017-10-23
+slug: insurance-industry-and-the-third-wave
+tags:
+    - insurance
+    - insurtech
+draft: false
+---
+
+In a [prior post]({{< relref "2017-09-24-book-review-the-third-wave.md" >}}), we reviewed Steve Case’s book, [*The Third Wave: An Entrepreneur's Vision of the Future*](https://www.amazon.com/dp/B010MH1ENW/ref=dp-kindle-redirect?_encoding=UTF8&btkr=1), in which he outlines what he calls the Third Wave of the internet.                                                                                              
+
+Characteristics of the Third Wave (from the [prior post]({{< relref "2017-09-24-book-review-the-third-wave.md" >}})):
+
+> Similarities to the First Wave (page 46):
+
+> - Entrepreneurs will spend a great deal of time on things other than tech
+- Need a strategy to work with skeptical industries with powerful gatekeepers
+- Partnerships between startups and incumbents will be essential
+- Government will play an important role
+
+> Differences from the Second Wave (page 9):
+
+> - Less likely to be dorm-inspired apps that go viral
+- Partnerships across sectors will be essential
+- Need to navigate complicated policy landscape
+- Higher barriers to entry - even for a worthy idea
+
+> Defining characteristics:
+
+> - Will be defined by the Internet of Everything (page 47)
+- Will be fully integrated into every part of our lives
+- The government's role will be critical as both a regulator and customer (page 164)
+
+The insurance industry has many of these characteristics. Insurance companies, and Insurtech startups, would do well to have a Third Wave mindset in their innovation agendas. 
+
+# Insurers and the Third Wave
+
+Aon, in their [2017 Global Insurance Market Opportunities Report](http://thoughtleadership.aonbenfield.com/Documents/20170910-ab-analytics-gimo-2017.pdf), also advocates for insurers to adopt a Third Wave mindset. They identify several ways for insurers to do this:
+
+- Partnerships - the “we do everything inside” attitude will not work for insurers or startups
+- Leaving it to “the tech experts” or your existing analytics teams is a mistake
+- The C-suite must be involved from the start; they cannot outsource the innovation 
+
+Aon notes that the threat of "disruption" is overblown and that the theme in Third Wave industries is more likely to be “technology + incumbents” than “technology vs incumbents."
+
+# Open architecture innovation
+
+To help promote collaboration, Aon recommends companies practice *open architecture innovation* - “a system that sets operating standards while at the same time allowing for a great deal of flexibility and permutation." This type of collaboration seeks to balance the stability provided by  gatekeepers - key players in Third Wave industries - with the innovation provided by startups. 
+
+Historically, insurers have collaborated well with one another when needed and initial signs are the same for insurers working with startups. But having good intentions isn’t enough, the insurers need the capabilities and available resources to successfully work with startups. Otherwise, they will frustrate startups, and their employees, and not benefit from innovation. Inevitably, some insurers will succeed at collaboration and others will fail. Regardless, it will be interesting to see how the insurance industry changes as we move into the Third Wave. 
+
