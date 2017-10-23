@@ -27,7 +27,7 @@ Goal of this book:
 
 Case believes that the Third Wave of the internet will be more similar to the First Wave than the Second Wave. It will be about partnerships with incumbents and working with governments to build a successful company.
 
-Similarities to the First Wage (page 46):
+Similarities to the First Wave (page 46):
 
 - Entrepreneurs will spend great deal of time on things other than tech
 - Need a strategy to work with skeptical industries with powerful gatekeepers
