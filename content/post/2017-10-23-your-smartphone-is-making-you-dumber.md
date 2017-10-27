@@ -1,7 +1,7 @@
 ---
 title: Your smartphone is making you dumber
 subtitle: ...and do you even care?
-date: 2017-10-23
+date: 2017-10-27
 slug: your-smartphone-is-making-you-dumber
 tags:
     - technology
