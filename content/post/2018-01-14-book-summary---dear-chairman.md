@@ -10,7 +10,7 @@ draft: false
 
 # Purpose 
 
-(Dear Chairman: Boardroom Battles and the Rise of Shareholder Activism)[https://www.amazon.com/Dear-Chairman-Boardroom-Shareholder-Activism/dp/0062369830] by Jeff Gramm
+[Dear Chairman: Boardroom Battles and the Rise of Shareholder Activism](https://www.amazon.com/Dear-Chairman-Boardroom-Shareholder-Activism/dp/0062369830) by Jeff Gramm
 
 > By studying shareholder activism through history, we’ll see the tremendous influence investors now have over public companies, and what issues this raises for the future. We’ll also learn about how boards of directors work, what drives management teams (location 104)
 
@@ -75,4 +75,3 @@ A shareholder activist sought to fix what it believed was poor expense managemen
 > The truth is, a board of directors on its own is rarely capable of successfully managing a company for the long term. This is why our fixation on making corporate boards infallible misses the point. Good governance doesn’t only require an able board of directors; it also demands the right shareholders and managers. For a public company to run well despite the inherent schism between managers and investors, it needs a fanatical CEO, a long-term-oriented, but attentive, shareholder base, and a vigilant board of directors. (145)
 
 > The publicly owned corporation has been a remarkable engine for progress and economic growth because it can place large amounts of capital in the hands of the right people with the right ideas. Without proper oversight, however, public companies can squander unimaginable amounts of money and inflict great harm on everything around them. (200)
-
