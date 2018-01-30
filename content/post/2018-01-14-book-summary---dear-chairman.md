@@ -38,7 +38,7 @@ The Great Salad Oil Swindle was an audacious fraud that nearly toppled American 
 
 ### 4: Carl Icahn versus Phillips Petroleum: The Rise and Fall of the Corporate Raiders
 
-Carl Icahn launched a hostile tender offer for Phillips in 1985. He used loosely committed by Drexel Burnham Lambert, which would be raised by issuing junk bonds and preferred stock. Ichahn was one of several corporate raiders funded by junk bond debt explosion of the 1980s. Phillips used a "poison pill” provision to attempt to thwart Ichan’s efforts.
+Carl Icahn launched a hostile tender offer for Phillips in 1985. He used loosely committed capital from Drexel Burnham Lambert, which would be raised by issuing junk bonds and preferred stock. Ichahn was one of several corporate raiders funded by the junk bond debt explosion of the 1980s. Phillips used a "poison pill” provision to attempt to thwart Ichan’s efforts.
 
 ### 5: Ross Perot versus General Motors: The Unmaking of the Modern Corporation
 
@@ -66,7 +66,7 @@ Daniel Loeb is archetypal of hedge fund activists who write snarky letters to co
 
 ### 8: BKF Capital: The Corrosion of Conformity
 
-A shareholder activist sought to fix what it believed was poor expense management by BKF Capital (an investment vehicle). For example, they believed BKF was paying their employees too much. The activist succeeded in "fixing" these issues, but the changes caused key BFK employees to leave and let to the collapse of BFK Capital. Failed shareholder activism.
+A shareholder activist sought to fix what it believed was poor expense management by BKF Capital (an investment vehicle). For example, they believed BKF was paying their employees too much. The activist succeeded in "fixing" these issues, but the changes caused key BFK employees to leave and led to the collapse of BFK Capital. Failed shareholder activism.
 
 > But the rise of the shareholder also promotes a bias to conformity among industry peers. Icahn’s quote about getting your stock price up before someone does it for you could be rewritten for today’s market as “Get your operating margin up to the industry norm or someone will try to do it for you.” Many of today’s shareholder activists focus their efforts on maximizing operating margins.
 
