@@ -28,6 +28,6 @@ In the US, cyber incidents was ranked as the largest risk.
 
 # Methodology
 
-This the the seventh edition of the Allianz Risk Barometer. The survey included 1,911 respondents from 80 countries. The annual corporate risk survey was conducted among Allianz customers (global businesses) and brokers. It also surveyed risk consultants, underwriters, senior managers and claims experts in the corporate insurance segment of both Allianz Global Corporate & Specialty and other Allianz entities.
+This is the seventh edition of the Allianz Risk Barometer. The survey included 1,911 respondents from 80 countries. The annual corporate risk survey was conducted among Allianz customers (global businesses) and brokers. It also surveyed risk consultants, underwriters, senior managers and claims experts in the corporate insurance segment of both Allianz Global Corporate & Specialty and other Allianz entities.
 
 

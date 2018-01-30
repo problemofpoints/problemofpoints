@@ -1,6 +1,6 @@
 ---
 title: Do less to succeed in business
-subtitle: Most top performers in business have one thing in common: They accept fewer tasks and then obsess over getting them right.
+subtitle: "Most top performers in business have one thing in common: They accept fewer tasks and then obsess over getting them right."
 date: 2018-01-30
 slug: do-less-to-succeed-in-business
 tags:
