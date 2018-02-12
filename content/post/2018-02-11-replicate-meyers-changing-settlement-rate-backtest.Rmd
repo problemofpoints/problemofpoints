@@ -191,7 +191,7 @@ se_line <- se_line %>% mutate(se_all = 1.36 / sqrt(nrow(csr_output)))
 
 Same goes for the pp-plot and histogram with all the triangles included.
 
-```{r pp-plot-all}
+```{r pp-plot-all, fig.height=3.2, fig.width=7}
 
 gg_pp_all <- (ggplot(data = csr_output) +
  geom_abline(colour=aon.colors$darkgray, size=0.65)
