@@ -1,0 +1,297 @@
+---
+title: "Impact of Earnings Volatility on Insurer Valuations"
+date: 2018-02-11
+slug: impact-of-earnings-volatility-on-insurer-valuations
+tags:
+    - insurance
+    - stocks
+draft: true
+---
+
+```{r setup}
+
+library(tidyverse)
+library(readxl)
+library(AonInternal)
+library(lme4)
+library(rstanarm)
+library(flextable)
+library(AonECM)
+library(officer)
+library(rvg)
+
+SetTheme()
+AonECM::ggSetTheme()
+
+knitr::opts_chunk$set(
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE,
+	echo = FALSE
+)
+
+```
+
+# Goal
+
+**Question:** Does earnings volatility, as measured by earnings per share (EPS) coefficient of variation (CV), have a significant impact on (re)insurer stock valuations?
+
+To test this, we will estimate the impact of EPS CV on the standard price-to-book (P:B) vs. return on equity (ROE) valuation method. If volatility does have an impact, we would expect a statistically significant difference between the implied valuation of companies deemed "high" volatility compared to those with more stable earnings. 
+
+# Data
+
+The table below summarizes the data required for this analysis. This table shows the data for the "P&C Commercial" lines sector, but global data across 10 P&C sectors are used in the analysis.
+
+```{r import-data}
+
+data <- readxl::read_xlsx("data/ABS_Weekly_data.xlsx", sheet = "ABS_weekly", range = "H3:AG157") %>%
+  select(-c(8:11)) %>%
+  mutate_at(-c(1:2), as.double)
+
+data <- data %>%
+  filter(!(sector %in% c("FMG","Health","LargeCap", "Title"))) %>%
+  filter(include == 1) %>%
+  mutate(spread = roae_2018 - cost_of_equity) %>%
+  drop_na(p_to_b, roae_2018, eps_vol_5)
+
+sector_summary <- data %>% 
+  group_by(sector) %>% 
+  summarise(n_comps = n(), avg_pb = mean(p_to_b, na.rm = TRUE), median_pb = median(p_to_b, na.rm = TRUE),
+            avg_roae = mean(roae_2018, na.rm = TRUE), median_roae = median(roae_2018, na.rm = TRUE),
+            mean_eps_vol = mean(eps_vol_5, na.rm = TRUE), median_eps_vol = median(eps_vol_5, na.rm = TRUE), 
+            pctl_eps_vol = quantile(eps_vol_5, 0.75, na.rm = TRUE))
+
+data <- data %>% 
+  left_join(sector_summary, by = "sector") %>%
+  mutate(high_vol1 = if_else(eps_vol_5 > pctl_eps_vol, 1, 0),
+         high_vol2 = if_else(eps_vol_5 > median_eps_vol, 1, 0))
+
+```
+
+
+```{r pb-vs-roe-table}
+
+data_ft <- data %>%
+  # filter(sector %in% c("APAC") & p_to_b < 6) %>%
+  drop_na(roae_2018, eps_vol_5) %>%
+  arrange(sector, desc(market_cap)) %>%
+  transmute(Sector = sector, Company = company, 
+         `Market Cap ($b)` = formattable::comma(market_cap/1000,1), 
+         `P:B Ratio` = paste0(p_to_b, "x"), 
+         `2018 ROAE` = formattable::percent(roae_2018/100, 1),
+         `20 qrt EPS CV` = formattable::percent(eps_vol_5/100, 1))
+
+ft_pb_vs_roae1 <- data_ft %>% 
+  filter(Sector == "P&C_Comm") %>%
+  flextable::regulartable() %>%
+  AonECM::ft_theme_aon() %>%
+  flextable::align(j = 1:2, part = "all")
+
+ft_pb_vs_roae1
+
+
+```
+
+The data elements include: current P:B ratio, 2018 prospective ROE, and historical EPS CV over the past 20 quarters. The data used in this analysis is as of December 15, 2017.
+
+# Price-to-book vs. ROE
+
+Using the relationship between P:B ratio and ROE as a relative valuation metric is common for (re)insurance stocks. The graph below shows the relationship between these two variables by sector for our dataset. The relationship is clearer for some sectors (Western European Mid) than others (P&C Reinsurance), but it is still a useful way to value insurance stocks. A future post will explore why this method is appropriate for insurance stocks.
+
+```{r pb-vs-roe-graph}
+
+p_to_b_format <- function() {
+    function(x) {
+        if (length(x) == 0) 
+            return(character())
+        x <- round(x, 2)
+        paste0(x, "x")
+    }
+}
+
+gg_pb_vs_roae1 <- data %>% 
+  mutate(roae_2018 = roae_2018 / 100) %>%
+  ggplot(aes(y = p_to_b, x = roae_2018)) +
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE, colour = aon.colors$lightgray) +
+  facet_wrap(~ sector, scales = "fixed") +
+  scale_x_continuous(labels = scales::percent_format(), limits = c(0.05,0.2)) + 
+  scale_y_continuous(labels = p_to_b_format(), limits = c(0,4)) + 
+  xlab("2018 Prospective Return on Average Equity") + ylab("Price to Book Ratio") +
+  ggtitle("P:B Ratio vs. Prospective ROE")
+
+gg_pb_vs_roae1
+
+```
+
+# Methodology - baseline model
+
+To answer our question, we need to first estimate regression parameters for a baseline model that predicts a company's current P:B ratio based on its prospective ROE. Then we can add another variable that reflects earnings volatility and test whether adding that variable improves our model fit.
+
+We will use a [Bayesian hierarchical linear regression](https://en.wikipedia.org/wiki/Bayesian_hierarchical_modeling) framework to fit our model. This is a fancy linear regression that has many technical and practical benefits.
+
+```{r eps-vol-by-sector}
+
+sector_summary_ft <- sector_summary %>%
+  transmute(Sector = sector, 
+            `# of companies` = n_comps, 
+            `Median P:B Ratio` = paste0(round(median_pb,1), "x"), 
+            `Median 2018 ROAE` = formattable::percent(median_roae/100, 1),
+            `Median EPS CV` = formattable::percent(median_eps_vol/100, 1))
+
+ft_sector_summary <- sector_summary_ft %>% 
+  flextable::regulartable() %>%
+  AonECM::ft_theme_aon() %>%
+  flextable::align(j = 1, part = "all") %>%
+  AonECM::add_title_header("Summary of input data by sector")
+
+# ft_sector_summary
+
+```
+
+
+```{r fit-stan-pb-baseline}
+
+seed <- 12
+
+fit_pb_roae <- stan_glmer(p_to_b ~ 1 + (1 + roae_2018 | sector),
+                          prior = student_t(),
+                          adapt_delta = 0.99,
+                          data = data, 
+                          seed = seed)
+
+
+```
+
+```{r fit-stan-pb-eps}
+
+fit_pb_roae_eps <- stan_glmer(p_to_b ~ 1 + (1 + roae_2018 + roae_2018:high_vol2 | sector),
+                          prior = student_t(),
+                          adapt_delta = 0.999999,
+                          data = data,
+                          seed = seed)
+
+```
+
+```{r bayes-r2}
+
+pb_roae_r2 <- fit_pb_roae %>% bayes_R2()
+pb_roae_eps_r2 <- fit_pb_roae_eps %>% bayes_R2()
+
+median(pb_roae_r2)
+median(pb_roae_eps_r2)
+
+```
+
+```{r create-ppd-fn, include=FALSE}
+
+create_ppd_sims <- function(stan_model, draws = 10, variable, actual){
+  
+  data <- stan_model$data
+  
+  ppd_sims <- stan_model %>% posterior_predict(draws = draws) %>% as_tibble() %>%
+  rowid_to_column(var = "trial") %>%
+  gather(company_id, fitted, -trial, convert = TRUE)
+  
+  ppd_sims$company <- data$company[ppd_sims$company_id]
+  ppd_sims$sector <- data$sector[ppd_sims$company_id]
+  ppd_sims <- ppd_sims %>%
+    left_join(data %>% select_("sector", "company", variable = variable, actual = actual, "high_vol2"), 
+              by = c("company", "sector"))
+
+  ppd_summary <- ppd_sims %>% 
+    group_by(company_id, variable) %>% 
+    summarise(company = company[1], sector = sector[1], actual = actual[1],
+              high_vol = as.factor(high_vol2[1]),
+              mean_fitted = mean(fitted), 
+              pctl_25 = quantile(fitted, 0.25), pctl_75 = quantile(fitted, 0.75))
+  
+  list(ppd_sims = ppd_sims,
+       ppd_summary = ppd_summary)
+  
+}
+
+summarize_ppd_sims <- function(ppd, variable_label, actual_label, y_lim = c(0, NA), x_lim = c(0,NA)){
+  
+  ppd_sims <- ppd$ppd_sims #%>% unnest()
+  ppd_summary <- ppd$ppd_summary
+  
+  gg_ppd_sims <- ppd_summary %>%
+    ggplot(aes(y = mean_fitted, x = variable/100)) +
+    geom_point(aes(y = actual, x = variable/100, group = high_vol, colour = high_vol)) +
+    # geom_errorbar(aes(ymin = pctl_25, ymax = pctl_75, x = variable), colour = aon.colors$lightgray) +
+    geom_smooth(aes(y = fitted, x = variable/100), 
+                method = "lm", se = FALSE, colour = aon.colors$lightgray, 
+                data = ppd_sims[ppd_sims$high_vol2 == 0,]) +
+    geom_smooth(aes(y = fitted, x = variable/100), 
+            method = "lm", se = FALSE, colour = aon.colors$teal, 
+            data = ppd_sims[ppd_sims$high_vol2 == 1,]) +
+    facet_wrap(~ sector, scales = "fixed") +
+    scale_color_manual(values = c(aon.colors$lightgray, aon.colors$teal)) +
+    xlab(variable_label) + ylab(actual_label) +
+    ylim(y_lim) +
+    scale_x_continuous(labels = scales::percent_format(), limits = c(x_lim))
+  
+  gg_ppd_sims
+  
+}
+
+```
+
+```{r examine-stan-pb}
+
+ppd_pb_roae <- create_ppd_sims(fit_pb_roae, 10, "roae_2018","p_to_b") %>%
+  summarize_ppd_sims("roae_2018","p_to_b", x_lim = c(0, 35))
+
+ppd_pb_roae_eps <- create_ppd_sims(fit_pb_roae_eps, 4000, "roae_2018","p_to_b")
+
+gg_ppd <- ppd_pb_roae_eps %>% 
+  summarize_ppd_sims("roae_2018","p_to_b", x_lim = c(0.03, 0.15), y_lim = c(0.5, 2.0))
+
+ppd_pb_roae$gg
+gg_ppd + 
+  xlab("Prospective Return on Avg Equity (%)") + ylab("Price to Book Multiple") +
+  ggtitle("P:B vs. ROE Regression - Impact of EPS Volatility by Sector") + facet_wrap(~ sector, scales = "free")
+
+
+gg_ppd_all <- ppd_pb_roae_eps$ppd_summary %>%
+  filter(actual < 5 & !(sector %in% c("WEur_Mid", "WEur_Large"))) %>%
+  ggplot(aes(y = mean_fitted, x = variable/100)) +
+  geom_point(aes(y = actual, x = variable/100, group = high_vol, colour = high_vol)) +
+  geom_smooth(aes(y = fitted, x = variable/100), 
+              method = "lm", se = FALSE, colour = aon.colors$lightgray, 
+              data = ppd_pb_roae_eps$ppd_sims[ppd_pb_roae_eps$ppd_sims$high_vol2 == 0,]) +
+  geom_smooth(aes(y = fitted, x = variable/100), 
+              method = "lm", se = FALSE, colour = aon.colors$teal, 
+              data = ppd_pb_roae_eps$ppd_sims[ppd_pb_roae_eps$ppd_sims$high_vol2 == 1,]) +
+# facet_wrap(~ sector, scales = "free") +
+  scale_color_manual(values = c(aon.colors$lightgray, aon.colors$teal)) +
+  scale_y_continuous(breaks = c(0, 1.0, 1.5, 2.0, 2.5, 3, 3.5, 4)) +
+  scale_x_continuous(labels = scales::percent_format(), 
+                    breaks = c(0.05, 0.1, 0.15, 0.2, 0.25, 0.3), limits = c(0.03, 0.3)) +
+  xlab("Prospective Return on Avg Equity (%)") + ylab("Price to Book Multiple") +
+  ggtitle("P:B vs. ROE Regression - Impact of EPS Volatility")
+
+gg_ppd_all
+
+
+```
+
+```{r compare-pb-models}
+
+loo_fit_pb_roae <- loo(fit_pb_roae, k_threshold = 0.7)
+loo_fit_pb_roae_eps <- loo(fit_pb_roae_eps, k_threshold = 0.7)
+
+plot(loo_fit_pb_roae, label_points = TRUE)
+
+compare_models(loo_fit_pb_roae, loo_fit_pb_roae_eps)
+
+
+```
+
+
+```{r fitted-coef}
+
+coef(fit_pb_roae_eps)
+
+```
