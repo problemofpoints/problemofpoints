@@ -19,6 +19,8 @@ library(flextable)
 library(AonECM)
 library(officer)
 library(rvg)
+library(broom)
+library(stringr)
 
 SetTheme()
 AonECM::ggSetTheme()
@@ -94,6 +96,27 @@ ft_pb_vs_roae1
 
 The data elements include: current P:B ratio, 2018 prospective ROE, and historical EPS CV over the past 20 quarters. The data used in this analysis is as of December 15, 2017.
 
+The table below summarizes the input data by sector. This summary data by sector is used below to identify which companies are "high" or "low" volatility companies.
+
+```{r eps-vol-by-sector}
+
+sector_summary_ft <- sector_summary %>%
+  transmute(Sector = sector, 
+            `# of companies` = n_comps, 
+            `Median P:B Ratio` = paste0(round(median_pb,1), "x"), 
+            `Median 2018 ROAE` = formattable::percent(median_roae/100, 1),
+            `Median EPS CV` = formattable::percent(median_eps_vol/100, 1))
+
+ft_sector_summary <- sector_summary_ft %>% 
+  flextable::regulartable() %>%
+  AonECM::ft_theme_aon() %>%
+  flextable::align(j = 1, part = "all") %>%
+  AonECM::add_title_header("Summary of input data by sector")
+
+ft_sector_summary
+
+```
+
 # Price-to-book vs. ROE
 
 Using the relationship between P:B ratio and ROE as a relative valuation metric is common for (re)insurance stocks. The graph below shows the relationship between these two variables by sector for our dataset. The relationship is clearer for some sectors (Western European Mid) than others (P&C Reinsurance), but it is still a useful way to value insurance stocks. A future post will explore why this method is appropriate for insurance stocks.
@@ -118,68 +141,100 @@ gg_pb_vs_roae1 <- data %>%
   scale_x_continuous(labels = scales::percent_format(), limits = c(0.05,0.2)) + 
   scale_y_continuous(labels = p_to_b_format(), limits = c(0,4)) + 
   xlab("2018 Prospective Return on Average Equity") + ylab("Price to Book Ratio") +
-  ggtitle("P:B Ratio vs. Prospective ROE")
+  ggtitle("Relationship between P:B Ratio and Prospective ROE by Sector")
 
 gg_pb_vs_roae1
 
 ```
 
-# Methodology - baseline model
+# Baseline model
 
 To answer our question, we need to first estimate regression parameters for a baseline model that predicts a company's current P:B ratio based on its prospective ROE. Then we can add another variable that reflects earnings volatility and test whether adding that variable improves our model fit.
 
-We will use a [Bayesian hierarchical linear regression](https://en.wikipedia.org/wiki/Bayesian_hierarchical_modeling) framework to fit our model. This is a fancy linear regression that has many technical and practical benefits.
-
-```{r eps-vol-by-sector}
-
-sector_summary_ft <- sector_summary %>%
-  transmute(Sector = sector, 
-            `# of companies` = n_comps, 
-            `Median P:B Ratio` = paste0(round(median_pb,1), "x"), 
-            `Median 2018 ROAE` = formattable::percent(median_roae/100, 1),
-            `Median EPS CV` = formattable::percent(median_eps_vol/100, 1))
-
-ft_sector_summary <- sector_summary_ft %>% 
-  flextable::regulartable() %>%
-  AonECM::ft_theme_aon() %>%
-  flextable::align(j = 1, part = "all") %>%
-  AonECM::add_title_header("Summary of input data by sector")
-
-# ft_sector_summary
-
-```
-
+We will use a [Bayesian hierarchical linear regression](https://en.wikipedia.org/wiki/Bayesian_hierarchical_modeling) framework to fit our model. This is a fancy linear regression that has both technical and practical benefits.
 
 ```{r fit-stan-pb-baseline}
 
 seed <- 12
 
 fit_pb_roae <- stan_glmer(p_to_b ~ 1 + (1 + roae_2018 | sector),
-                          prior = student_t(),
+                           family = Gamma(link = "identity"),
+                          prior = student_t(df = 3, location = 0, scale = 2.5),
+                          prior_intercept = student_t(df = 3, location = 0, scale = 2.5),
                           adapt_delta = 0.99,
                           data = data, 
                           seed = seed)
-
 
 ```
 
 ```{r fit-stan-pb-eps}
 
 fit_pb_roae_eps <- stan_glmer(p_to_b ~ 1 + (1 + roae_2018 + roae_2018:high_vol2 | sector),
-                          prior = student_t(),
+                          family = Gamma(link = "identity"),
+                          prior = student_t(df = 3, location = 0, scale = 2.5),
+                          prior_intercept = student_t(df = 3, location = 0, scale = 2.5),
                           adapt_delta = 0.999999,
                           data = data,
                           seed = seed)
 
 ```
 
-```{r bayes-r2}
+```{r create-param-summaries}
 
-pb_roae_r2 <- fit_pb_roae %>% bayes_R2()
-pb_roae_eps_r2 <- fit_pb_roae_eps %>% bayes_R2()
+add_bayes_R2 <- function(sector, stan_model){
+  
+  data <- stan_model$data
+  vars <- all.vars(terms(stan_model$formula))
+  new_data <- data[data$sector == sector, vars]
+  
+  stan_model %>% 
+    bayes_R2(newdata = new_data) %>%
+    median(.)
+  
+}
 
-median(pb_roae_r2)
-median(pb_roae_eps_r2)
+pb_roae_params <- coef(fit_pb_roae)$sector %>% 
+  as_tibble() %>% 
+  rownames_to_column(var = "sector") %>%
+  rename(intercept = `(Intercept)`) %>%
+  mutate(bayes_R2 = map_dbl(sector, add_bayes_R2, fit_pb_roae))
+
+pb_roae_eps_params <- coef(fit_pb_roae_eps)$sector %>% 
+  as_tibble() %>% 
+  rownames_to_column(var = "sector") %>%
+  rename(intercept = `(Intercept)`, roae_high_vol = `roae_2018:high_vol2`) %>%
+  mutate(bayes_R2 = map_dbl(sector, add_bayes_R2, fit_pb_roae_eps))
+
+add_sector_ppd_sims <- function(sector, stan_model, draws = 10){
+  
+  vars <- all.vars(terms(stan_model$formula))
+  new_roae <- seq(from = 1, to = 30, by = 2.5)
+  new_data <- tibble(sector = sector, roae_2018 = new_roae)
+  
+  if(length(vars) > 3){
+    new_data <- new_data %>% mutate(high_vol2 = 0)
+    new_data2 <- new_data %>% mutate(high_vol2 = 1)
+    new_data <- new_data %>% bind_rows(new_data2)
+  }
+  
+  stan_model %>% 
+    posterior_predict(newdata = new_data, draws = draws) %>%
+    as_tibble() %>%
+    rowid_to_column(var = "trial") %>%
+    gather(id, fitted, -trial, convert = TRUE) %>%
+    left_join(new_data %>% mutate(id = 1:nrow(.)), by = "id") %>%
+    drop_na(fitted)
+  
+}
+
+pb_roae_params <- pb_roae_params %>% 
+  mutate(ppd_sims = map(sector, add_sector_ppd_sims, fit_pb_roae, draws = 1000)) %>%
+  mutate(ppd_summary = map(ppd_sims, ~ .x %>% group_by(id) %>% 
+                             summarise(n_points = n(),
+                                       median = median(fitted),
+                                       lower = quantile(fitted, 0.1),
+                                       upper = quantile(fitted, 0.9))))
+
 
 ```
 
@@ -203,11 +258,11 @@ create_ppd_sims <- function(stan_model, draws = 10, variable, actual){
     group_by(company_id, variable) %>% 
     summarise(company = company[1], sector = sector[1], actual = actual[1],
               high_vol = as.factor(high_vol2[1]),
-              mean_fitted = mean(fitted), 
-              pctl_25 = quantile(fitted, 0.25), pctl_75 = quantile(fitted, 0.75))
+              median_fitted = median(fitted), 
+              pctl_25 = quantile(fitted, 0.1), pctl_75 = quantile(fitted, 0.9))
   
   list(ppd_sims = ppd_sims,
-       ppd_summary = ppd_summary)
+       ppd_summary = ppd_summary %>% ungroup())
   
 }
 
@@ -217,7 +272,7 @@ summarize_ppd_sims <- function(ppd, variable_label, actual_label, y_lim = c(0, N
   ppd_summary <- ppd$ppd_summary
   
   gg_ppd_sims <- ppd_summary %>%
-    ggplot(aes(y = mean_fitted, x = variable/100)) +
+    ggplot(aes(y = median_fitted, x = variable/100)) +
     geom_point(aes(y = actual, x = variable/100, group = high_vol, colour = high_vol)) +
     # geom_errorbar(aes(ymin = pctl_25, ymax = pctl_75, x = variable), colour = aon.colors$lightgray) +
     geom_smooth(aes(y = fitted, x = variable/100), 
@@ -240,23 +295,17 @@ summarize_ppd_sims <- function(ppd, variable_label, actual_label, y_lim = c(0, N
 
 ```{r examine-stan-pb}
 
-ppd_pb_roae <- create_ppd_sims(fit_pb_roae, 10, "roae_2018","p_to_b") %>%
-  summarize_ppd_sims("roae_2018","p_to_b", x_lim = c(0, 35))
+ppd_pb_roae <- create_ppd_sims(fit_pb_roae, 4000, "roae_2018","p_to_b") #%>%
+  #summarize_ppd_sims("roae_2018","p_to_b", x_lim = c(0, 0.35))
 
 ppd_pb_roae_eps <- create_ppd_sims(fit_pb_roae_eps, 4000, "roae_2018","p_to_b")
 
 gg_ppd <- ppd_pb_roae_eps %>% 
-  summarize_ppd_sims("roae_2018","p_to_b", x_lim = c(0.03, 0.15), y_lim = c(0.5, 2.0))
-
-ppd_pb_roae$gg
-gg_ppd + 
-  xlab("Prospective Return on Avg Equity (%)") + ylab("Price to Book Multiple") +
-  ggtitle("P:B vs. ROE Regression - Impact of EPS Volatility by Sector") + facet_wrap(~ sector, scales = "free")
-
+  summarize_ppd_sims("roae_2018","p_to_b", x_lim = c(0.03, 0.15), y_lim = c(0.0, 3.0))
 
 gg_ppd_all <- ppd_pb_roae_eps$ppd_summary %>%
-  filter(actual < 5 & !(sector %in% c("WEur_Mid", "WEur_Large"))) %>%
-  ggplot(aes(y = mean_fitted, x = variable/100)) +
+  filter(actual < 5) %>% # & !(sector %in% c("WEur_Mid", "WEur_Large"))) %>%
+  ggplot(aes(y = median_fitted, x = variable/100)) +
   geom_point(aes(y = actual, x = variable/100, group = high_vol, colour = high_vol)) +
   geom_smooth(aes(y = fitted, x = variable/100), 
               method = "lm", se = FALSE, colour = aon.colors$lightgray, 
@@ -266,7 +315,7 @@ gg_ppd_all <- ppd_pb_roae_eps$ppd_summary %>%
               data = ppd_pb_roae_eps$ppd_sims[ppd_pb_roae_eps$ppd_sims$high_vol2 == 1,]) +
 # facet_wrap(~ sector, scales = "free") +
   scale_color_manual(values = c(aon.colors$lightgray, aon.colors$teal)) +
-  scale_y_continuous(breaks = c(0, 1.0, 1.5, 2.0, 2.5, 3, 3.5, 4)) +
+  scale_y_continuous(breaks = c(0, 1.0, 1.5, 2.0, 2.5, 3, 3.5, 4, 5)) +
   scale_x_continuous(labels = scales::percent_format(), 
                     breaks = c(0.05, 0.1, 0.15, 0.2, 0.25, 0.3), limits = c(0.03, 0.3)) +
   xlab("Prospective Return on Avg Equity (%)") + ylab("Price to Book Multiple") +
@@ -274,24 +323,25 @@ gg_ppd_all <- ppd_pb_roae_eps$ppd_summary %>%
 
 gg_ppd_all
 
+ppd_pb_roae$ppd_summary %>% 
+  ggplot(aes(y = actual, x = variable / 100)) + 
+  geom_linerange(aes(ymin = pctl_25, ymax = pctl_75, x = variable / 100), colour = aon.colors$lightgray) + 
+  geom_point() + 
+  geom_point(aes(y = median_fitted, x = variable/100), colour = aon.colors$lightgray) + 
+  geom_abline(aes(intercept = intercept, slope = roae_2018*100), 
+              colour = aon.colors$lightgray, data = pb_roae_params) + 
+  facet_wrap(~ sector)
 
 ```
 
 ```{r compare-pb-models}
 
-loo_fit_pb_roae <- loo(fit_pb_roae, k_threshold = 0.7)
-loo_fit_pb_roae_eps <- loo(fit_pb_roae_eps, k_threshold = 0.7)
-
-plot(loo_fit_pb_roae, label_points = TRUE)
-
-compare_models(loo_fit_pb_roae, loo_fit_pb_roae_eps)
+loo_fit_pb_roae <- loo(fit_pb_roae)
+loo_fit_pb_roae_eps <- loo(fit_pb_roae_eps)
+loo_fit_pb_roae2 <- loo(fit_pb_roae2)
+compare_models(loo_fit_pb_roae, loo_fit_pb_roae2, loo_fit_pb_roae_eps)
 
 
 ```
 
 
-```{r fitted-coef}
-
-coef(fit_pb_roae_eps)
-
-```
