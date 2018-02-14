@@ -42,17 +42,22 @@ ignoreFiles = ["\\.Rmd$", "_files$", "_cache$"]
 #  twitter = "username"
 
 [[menu.main]]
-    name = "Blog"
-#    url = ""
-    weight = 1
-
-[[menu.main]]
     name = "About"
     url = "page/about/"
+    weight = 1
+    
+[[menu.main]]
+    name = "Blog"
+#    url = ""
     weight = 2
 
 [[menu.main]]
+    name = "Disclaimer"
+    url = "page/disclaimer/"
+    weight = 3
+    
+[[menu.main]]
     name = "Tags"
     url = "tags"
-    weight = 3
+    weight = 4
 
