@@ -5,7 +5,7 @@ slug: impact-of-earnings-volatility-on-insurer-valuations
 tags:
     - insurance
     - stocks
-draft: true
+draft: false
 ---
 
 ```{r setup, warning=FALSE,message=FALSE,include=FALSE}
@@ -449,7 +449,7 @@ ft_pb_roae_eps_params %>% flextable::tabwid()
 ```
 <br>
 
-The estimated parameters shown below highlight the negative impact of high earnings volatility. For every sector, being categorized as "high" reduces the benefit of improving prospective ROE by 0.01 to 0.08. The final three columns provide the impact on the fitted P:B ratio (again assuming a 10% ROE). The "low" volatility companies have fitted P:B ratios from `r formattable::percent(min(pb_roae_eps_params_ft[,8]),0)` to `r formattable::percent(max(pb_roae_eps_params_ft[,8]),0)` higher than the "high" volatility companies.
+The estimated parameters shown above highlight the negative impact of high earnings volatility. For every sector, being categorized as "high" reduces the benefit of improving prospective ROE by `r formattable::percent(-max(pb_roae_eps_params_ft[,4]),0)` to `r formattable::percent(-min(pb_roae_eps_params_ft[,4]),0)`. The final three columns provide the impact on the fitted P:B ratio (again assuming a 10% ROE). The "low" volatility companies have fitted P:B ratios from `r formattable::percent(min(pb_roae_eps_params_ft[,8]),0)` to `r formattable::percent(max(pb_roae_eps_params_ft[,8]),0)` higher than the "high" volatility companies.
 
 The improved Bayesian R2 values for each sector indicate that the model with EPS volatility parameter fits the data better. In addition, more advanced model comparison methods (such as [loo](http://mc-stan.org/loo/)) confirm that the second model performs better.
 
