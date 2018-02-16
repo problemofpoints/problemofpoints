@@ -1,14 +1,14 @@
 ---
 title: "Impact of Earnings Volatility on Insurer Valuations"
-date: 2018-02-11
+date: 2018-02-13
 slug: impact-of-earnings-volatility-on-insurer-valuations
 tags:
     - insurance
     - stocks
-draft: true
+draft: false
 ---
 
-```{r setup}
+```{r setup, warning=FALSE,message=FALSE,include=FALSE}
 
 library(tidyverse)
 library(readxl)
@@ -17,10 +17,11 @@ library(lme4)
 library(rstanarm)
 library(flextable)
 library(AonECM)
-library(officer)
-library(rvg)
+# library(officer)
+# library(rvg)
 library(broom)
 library(stringr)
+library(formattable)
 
 SetTheme()
 AonECM::ggSetTheme()
@@ -87,12 +88,14 @@ ft_pb_vs_roae1 <- data_ft %>%
   filter(Sector == "P&C_Comm") %>%
   flextable::regulartable() %>%
   AonECM::ft_theme_aon() %>%
-  flextable::align(j = 1:2, part = "all")
+  flextable::align(j = 1:2, part = "all") %>%
+  AonECM::add_title_header("By company input data - P&C commercial lines")
 
-ft_pb_vs_roae1
+ft_pb_vs_roae1 %>% flextable::tabwid()
 
 
 ```
+<br>
 
 The data elements include: current P:B ratio, 2018 prospective ROE, and historical EPS CV over the past 20 quarters. The data used in this analysis is as of December 15, 2017.
 
@@ -113,13 +116,14 @@ ft_sector_summary <- sector_summary_ft %>%
   flextable::align(j = 1, part = "all") %>%
   AonECM::add_title_header("Summary of input data by sector")
 
-ft_sector_summary
+ft_sector_summary %>% flextable::tabwid()
 
 ```
+<br>
 
 # Price-to-book vs. ROE
 
-Using the relationship between P:B ratio and ROE as a relative valuation metric is common for (re)insurance stocks. The graph below shows the relationship between these two variables by sector for our dataset. The relationship is clearer for some sectors (Western European Mid) than others (P&C Reinsurance), but it is still a useful way to value insurance stocks. A future post will explore why this method is appropriate for insurance stocks.
+Using the relationship between P:B ratio and ROE as a relative valuation metric is common for (re)insurance stocks. The graph below shows the relationship between these two variables by sector for our data set. The relationship is clearer for some sectors (Western European Mid) than others (P&C Reinsurance), but it is still a useful way to value insurance stocks. A future post will explore why this method is appropriate for insurance stocks.
 
 ```{r pb-vs-roe-graph}
 
@@ -136,10 +140,10 @@ gg_pb_vs_roae1 <- data %>%
   mutate(roae_2018 = roae_2018 / 100) %>%
   ggplot(aes(y = p_to_b, x = roae_2018)) +
   geom_point() + 
-  geom_smooth(method = "lm", se = FALSE, colour = aon.colors$lightgray) +
+  geom_smooth(method = "lm", se = FALSE, colour = aon.colors$teal) +
   facet_wrap(~ sector, scales = "fixed") +
-  scale_x_continuous(labels = scales::percent_format(), limits = c(0.05,0.2)) + 
-  scale_y_continuous(labels = p_to_b_format(), limits = c(0,4)) + 
+  scale_x_continuous(labels = scales::percent_format(), limits = c(0.025,0.25)) + 
+  scale_y_continuous(labels = p_to_b_format(), limits = c(0,5)) + 
   xlab("2018 Prospective Return on Average Equity") + ylab("Price to Book Ratio") +
   ggtitle("Relationship between P:B Ratio and Prospective ROE by Sector")
 
@@ -153,7 +157,7 @@ To answer our question, we need to first estimate regression parameters for a ba
 
 We will use a [Bayesian hierarchical linear regression](https://en.wikipedia.org/wiki/Bayesian_hierarchical_modeling) framework to fit our model. This is a fancy linear regression that has both technical and practical benefits.
 
-```{r fit-stan-pb-baseline}
+```{r fit-stan-pb-baseline, include=FALSE}
 
 seed <- 12
 
@@ -167,7 +171,7 @@ fit_pb_roae <- stan_glmer(p_to_b ~ 1 + (1 + roae_2018 | sector),
 
 ```
 
-```{r fit-stan-pb-eps}
+```{r fit-stan-pb-eps, include=FALSE}
 
 fit_pb_roae_eps <- stan_glmer(p_to_b ~ 1 + (1 + roae_2018 + roae_2018:high_vol2 | sector),
                           family = Gamma(link = "identity"),
@@ -179,7 +183,7 @@ fit_pb_roae_eps <- stan_glmer(p_to_b ~ 1 + (1 + roae_2018 + roae_2018:high_vol2 
 
 ```
 
-```{r create-param-summaries}
+```{r param-summary-fns}
 
 add_bayes_R2 <- function(sector, stan_model){
   
@@ -193,22 +197,10 @@ add_bayes_R2 <- function(sector, stan_model){
   
 }
 
-pb_roae_params <- coef(fit_pb_roae)$sector %>% 
-  as_tibble() %>% 
-  rownames_to_column(var = "sector") %>%
-  rename(intercept = `(Intercept)`) %>%
-  mutate(bayes_R2 = map_dbl(sector, add_bayes_R2, fit_pb_roae))
-
-pb_roae_eps_params <- coef(fit_pb_roae_eps)$sector %>% 
-  as_tibble() %>% 
-  rownames_to_column(var = "sector") %>%
-  rename(intercept = `(Intercept)`, roae_high_vol = `roae_2018:high_vol2`) %>%
-  mutate(bayes_R2 = map_dbl(sector, add_bayes_R2, fit_pb_roae_eps))
-
 add_sector_ppd_sims <- function(sector, stan_model, draws = 10){
   
   vars <- all.vars(terms(stan_model$formula))
-  new_roae <- seq(from = 1, to = 30, by = 2.5)
+  new_roae <- seq(from = 2, to = 34, by = 2)
   new_data <- tibble(sector = sector, roae_2018 = new_roae)
   
   if(length(vars) > 3){
@@ -227,10 +219,33 @@ add_sector_ppd_sims <- function(sector, stan_model, draws = 10){
   
 }
 
-pb_roae_params <- pb_roae_params %>% 
+```
+
+```{r create-param-summaries}
+
+pb_roae_params <- coef(fit_pb_roae)$sector %>% 
+  as_tibble() %>% 
+  rownames_to_column(var = "sector") %>%
+  rename(intercept = `(Intercept)`) %>%
+  mutate(bayes_R2 = map_dbl(sector, add_bayes_R2, fit_pb_roae)) %>%
   mutate(ppd_sims = map(sector, add_sector_ppd_sims, fit_pb_roae, draws = 1000)) %>%
   mutate(ppd_summary = map(ppd_sims, ~ .x %>% group_by(id) %>% 
-                             summarise(n_points = n(),
+                             summarise(n_points = length(id),
+                                       roe = roae_2018[1],
+                                       median = median(fitted),
+                                       lower = quantile(fitted, 0.1),
+                                       upper = quantile(fitted, 0.9))))
+
+pb_roae_eps_params <- coef(fit_pb_roae_eps)$sector %>% 
+  as_tibble() %>% 
+  rownames_to_column(var = "sector") %>%
+  rename(intercept = `(Intercept)`, roae_high_vol = `roae_2018:high_vol2`) %>%
+  mutate(bayes_R2 = map_dbl(sector, add_bayes_R2, fit_pb_roae_eps)) %>%
+  mutate(ppd_sims = map(sector, add_sector_ppd_sims, fit_pb_roae_eps, draws = 1000)) %>%
+  mutate(ppd_summary = map(ppd_sims, ~ .x %>% group_by(id) %>% 
+                             summarise(n_points = length(id),
+                                       roe = roae_2018[1],
+                                       high_vol = high_vol2[1],
                                        median = median(fitted),
                                        lower = quantile(fitted, 0.1),
                                        upper = quantile(fitted, 0.9))))
@@ -295,53 +310,160 @@ summarize_ppd_sims <- function(ppd, variable_label, actual_label, y_lim = c(0, N
 
 ```{r examine-stan-pb}
 
-ppd_pb_roae <- create_ppd_sims(fit_pb_roae, 4000, "roae_2018","p_to_b") #%>%
-  #summarize_ppd_sims("roae_2018","p_to_b", x_lim = c(0, 0.35))
-
+ppd_pb_roae <- create_ppd_sims(fit_pb_roae, 4000, "roae_2018","p_to_b")
 ppd_pb_roae_eps <- create_ppd_sims(fit_pb_roae_eps, 4000, "roae_2018","p_to_b")
-
-gg_ppd <- ppd_pb_roae_eps %>% 
-  summarize_ppd_sims("roae_2018","p_to_b", x_lim = c(0.03, 0.15), y_lim = c(0.0, 3.0))
-
-gg_ppd_all <- ppd_pb_roae_eps$ppd_summary %>%
-  filter(actual < 5) %>% # & !(sector %in% c("WEur_Mid", "WEur_Large"))) %>%
-  ggplot(aes(y = median_fitted, x = variable/100)) +
-  geom_point(aes(y = actual, x = variable/100, group = high_vol, colour = high_vol)) +
-  geom_smooth(aes(y = fitted, x = variable/100), 
-              method = "lm", se = FALSE, colour = aon.colors$lightgray, 
-              data = ppd_pb_roae_eps$ppd_sims[ppd_pb_roae_eps$ppd_sims$high_vol2 == 0,]) +
-  geom_smooth(aes(y = fitted, x = variable/100), 
-              method = "lm", se = FALSE, colour = aon.colors$teal, 
-              data = ppd_pb_roae_eps$ppd_sims[ppd_pb_roae_eps$ppd_sims$high_vol2 == 1,]) +
-# facet_wrap(~ sector, scales = "free") +
-  scale_color_manual(values = c(aon.colors$lightgray, aon.colors$teal)) +
-  scale_y_continuous(breaks = c(0, 1.0, 1.5, 2.0, 2.5, 3, 3.5, 4, 5)) +
-  scale_x_continuous(labels = scales::percent_format(), 
-                    breaks = c(0.05, 0.1, 0.15, 0.2, 0.25, 0.3), limits = c(0.03, 0.3)) +
-  xlab("Prospective Return on Avg Equity (%)") + ylab("Price to Book Multiple") +
-  ggtitle("P:B vs. ROE Regression - Impact of EPS Volatility")
-
-gg_ppd_all
-
-ppd_pb_roae$ppd_summary %>% 
-  ggplot(aes(y = actual, x = variable / 100)) + 
-  geom_linerange(aes(ymin = pctl_25, ymax = pctl_75, x = variable / 100), colour = aon.colors$lightgray) + 
-  geom_point() + 
-  geom_point(aes(y = median_fitted, x = variable/100), colour = aon.colors$lightgray) + 
-  geom_abline(aes(intercept = intercept, slope = roae_2018*100), 
-              colour = aon.colors$lightgray, data = pb_roae_params) + 
-  facet_wrap(~ sector)
 
 ```
 
-```{r compare-pb-models}
+```{r gg-ppd-all, eval=FALSE, include=FALSE}
+
+# gg_ppd_all <- ppd_pb_roae_eps$ppd_summary %>%
+#   filter(actual < 5) %>% # & !(sector %in% c("WEur_Mid", "WEur_Large"))) %>%
+#   ggplot(aes(y = median_fitted, x = variable/100)) +
+#   geom_point(aes(y = actual, x = variable/100, group = high_vol, colour = high_vol)) +
+#   geom_smooth(aes(y = fitted, x = variable/100), 
+#               method = "lm", se = FALSE, colour = aon.colors$lightgray, 
+#               data = ppd_pb_roae_eps$ppd_sims[ppd_pb_roae_eps$ppd_sims$high_vol2 == 0,]) +
+#   geom_smooth(aes(y = fitted, x = variable/100), 
+#               method = "lm", se = FALSE, colour = aon.colors$teal, 
+#               data = ppd_pb_roae_eps$ppd_sims[ppd_pb_roae_eps$ppd_sims$high_vol2 == 1,]) +
+# # facet_wrap(~ sector, scales = "free") +
+#   scale_color_manual(values = c(aon.colors$lightgray, aon.colors$teal)) +
+#   scale_y_continuous(breaks = c(0, 1.0, 1.5, 2.0, 2.5, 3, 3.5, 4, 5)) +
+#   scale_x_continuous(labels = scales::percent_format(), 
+#                     breaks = c(0.05, 0.1, 0.15, 0.2, 0.25, 0.3), limits = c(0.03, 0.3)) +
+#   xlab("Prospective Return on Avg Equity (%)") + ylab("Price to Book Multiple") +
+#   ggtitle("P:B vs. ROE Regression - Impact of EPS Volatility")
+
+# gg_ppd_all
+
+```
+
+The graph below summarizes the model fitted results by sector. The line effectively represents the "best fit" line from our regression. The light gray ribbon around the line represents the uncertainty in our fitted results (an 80% credible interval). As you can see, this "uncertainty cone" captures nearly all of the actual data points, indicating our model captures the uncertainty in the data well.
+
+```{r gg-baseline}
+
+gg_ppc_roae <- ppd_pb_roae$ppd_summary %>% 
+  ggplot(aes(y = actual, x = variable / 100)) + 
+  geom_ribbon(aes(y = median, ymin = lower, ymax = upper, x = roe/100), 
+              fill = aon.colors$lightgray, alpha = 0.25, 
+              data = pb_roae_params %>% unnest(ppd_summary) %>% mutate(upper = pmin(upper, 5))) +
+  geom_abline(aes(intercept = intercept, slope = roae_2018*100),
+              colour = aon.colors$teal, data = pb_roae_params) +
+  geom_point() + 
+  facet_wrap(~ sector) +
+  scale_x_continuous(labels = scales::percent_format(), limits = c(0.025,0.25)) + 
+  scale_y_continuous(labels = p_to_b_format(), limits = c(0,5)) + 
+  xlab("2018 Prospective Return on Average Equity") + ylab("Price to Book Ratio") +
+  ggtitle("Fitted model: P:B Ratio and Prospective ROE by Sector")
+
+gg_ppc_roae
+
+```
+
+We can also look at the fitted parameters themselves, as shown in the table below.
+
+```{r baseline-table}
+
+pb_roae_params_ft <- pb_roae_params %>%
+  unnest(ppd_summary) %>% filter(roe == 10) %>%
+  transmute(Sector = sector, 
+         `Parameter: Intercept` = formattable::comma(intercept,2), 
+         `Parameter: Slope` = formattable::comma(roae_2018, 2),
+         `Bayesian R2` = formattable::percent(bayes_R2, 0),
+         `Fitted P:B at 10% ROE` = paste0(round(median,2), "x"))
+
+ft_pb_roae_params <- pb_roae_params_ft %>% 
+  flextable::regulartable() %>%
+  AonECM::ft_theme_aon() %>%
+  flextable::align(j = 1, part = "all") %>%
+  AonECM::add_title_header("Baseline model - Summary of results by sector")
+
+ft_pb_roae_params %>% flextable::tabwid()
+
+```
+<br>
+
+Here we can see that for a WEur_Mid company, each point of prospective ROE is worth an estimated `r formattable::comma(pb_roae_params$roae_2018[10], 2)` points on their P:B ratio. Whereas for a P&C_LargeSpec company, a ROE point is only worth `r formattable::comma(pb_roae_params$roae_2018[5], 2)` points on their P:B ratio. The quality of the model fit varies greatly by sector, as can be seen in the "Bayesian R2" column. In a perfect world, we want to see that number as close to 100% as possible for all sectors. 
+
+The final column in the table shows the median fitted P:B ratio for each sector assuming a 10% prospective ROE. This provides a view on the relative valuations across sectors given a common level of expected profitability (i.e. ROE). 
+
+# Model with EPS volatility parameter
+
+Now that we have a baseline model, we can include a parameter in our model representing EPS volatility and compare the results to our baseline model. 
+
+To reflect volatility in our model, we add a dummy variable for each company indicating whether their 20 quarter EPS volatility is greater than the median EPS CV for companies in their sector. For example, from the "Summary of input data" table above, we can see that the median 20 quarter EPS CV for APAC is `r data_ft[1,6]`. So any company in that sector with an EPS CV greater than that amount is deemed "high volatility", all other companies are "low volatility". 
+
+```{r gg-eps-vol, fig.height=5.03, fig.width=8.16}
+
+gg_ppc_roae_eps <- ppd_pb_roae_eps$ppd_summary %>% 
+  ggplot(aes(y = actual, x = variable / 100)) + 
+  # geom_ribbon(aes(y = median, ymin = lower, ymax = upper, x = roe/100, group = high_vol, fill = high_vol), 
+  #             alpha = 0.25,
+  #             data = pb_roae_eps_params %>% unnest(ppd_summary) %>% mutate(upper = pmin(upper, 5))) +
+  geom_abline(aes(intercept = intercept, slope = roae_2018*100),
+              data = pb_roae_eps_params, colour = aon.colors$teal) +
+  geom_abline(aes(intercept = intercept, slope = (roae_2018+roae_high_vol)*100),
+              data = pb_roae_eps_params, colour = aon.colors$lightgray) +
+  geom_point(aes(group = high_vol, colour = high_vol)) + 
+  facet_wrap(~ sector) +
+  scale_color_manual(name = NULL, 
+                     labels = c("Low volatility", "High volatility"),
+                     values = c(aon.colors$teal, aon.colors$lightgray)) +
+  scale_x_continuous(labels = scales::percent_format(), limits = c(0.025,0.25)) + 
+  scale_y_continuous(labels = p_to_b_format(), limits = c(0,5)) + 
+  xlab("2018 Prospective Return on Average Equity") + ylab("Price to Book Ratio") +
+  theme(plot.title = element_text(colour = aon.colors$teal), plot.subtitle = element_text(colour = aon.colors$teal)) +
+  labs(title = "Fitted model: P:B Ratio and Prospective ROE by Sector", 
+       subtitle = "With a variable for EPS volatility")
+
+gg_ppc_roae_eps
+
+```
+
+The graph above shows the fitted model when adding the EPS volatility parameter. Visually this supports our hypothesis that EPS volatility impacts P:B ratio as the gray line (high volatility companies) is lower than the teal line (low volatility companies) in every sector. The magnitude of the impact varies by sector - larger impact for P&C_SmallSpec and smaller for WEur_Large.
+
+```{r eps-table}
+
+pb_roae_eps_params_ft <- pb_roae_eps_params %>%
+  unnest(ppd_summary) %>% filter(roe == 10) %>%
+  select(-lower, -upper, -id) %>% 
+  spread(key = high_vol, value = median) %>%
+  transmute(Sector = sector, 
+         `Parameter: Intercept` = formattable::comma(intercept,2), 
+         `Parameter: Slope` = formattable::comma(roae_2018, 2),
+         `Parameter: High Vol` = formattable::comma(roae_high_vol, 2),
+         `Bayesian R2` = formattable::percent(bayes_R2, 0),
+         `Fitted P:B at 10% ROE: Low Vol` = paste0(round(`0`,2), "x"),
+         `Fitted P:B at 10% ROE: High Vol` = paste0(round(`1`,2), "x"),
+         `% Impact of Lower EPS Volatility on P:B` = formattable::percent(`0`/`1` - 1, 0))
+
+ft_pb_roae_eps_params <- pb_roae_eps_params_ft %>% 
+  flextable::regulartable() %>%
+  AonECM::ft_theme_aon() %>%
+  flextable::align(j = 1, part = "all") %>%
+  AonECM::add_title_header("Model with EPS Volatility Parameter - Summary of results by sector")
+
+ft_pb_roae_eps_params %>% flextable::tabwid()
+
+```
+<br>
+
+The estimated parameters shown above highlight the negative impact of high earnings volatility. For every sector, being categorized as "high" reduces the benefit of improving prospective ROE by `r formattable::percent(-max(pb_roae_eps_params_ft[,4]),0)` to `r formattable::percent(-min(pb_roae_eps_params_ft[,4]),0)`. The final three columns provide the impact on the fitted P:B ratio (again assuming a 10% ROE). The "low" volatility companies have fitted P:B ratios from `r formattable::percent(min(pb_roae_eps_params_ft[,8]),0)` to `r formattable::percent(max(pb_roae_eps_params_ft[,8]),0)` higher than the "high" volatility companies.
+
+The improved Bayesian R2 values for each sector indicate that the model with EPS volatility parameter fits the data better. In addition, more advanced model comparison methods (such as [loo](http://mc-stan.org/loo/)) confirm that the second model performs better.
+
+```{r compare-pb-models, eval=FALSE, include=FALSE}
 
 loo_fit_pb_roae <- loo(fit_pb_roae)
 loo_fit_pb_roae_eps <- loo(fit_pb_roae_eps)
-loo_fit_pb_roae2 <- loo(fit_pb_roae2)
-compare_models(loo_fit_pb_roae, loo_fit_pb_roae2, loo_fit_pb_roae_eps)
 
+compare_models(loo_fit_pb_roae, loo_fit_pb_roae_eps)
 
 ```
 
+# Conclusion
 
+Our analysis indicates that EPS volatility does have a meaningful impact on P&C (re)insurers P:B ratio across all sectors. Although the magnitude of the impact varies substantially by sector.
+
+This analysis provides a framework for quantifying the benefit of improving earnings stability. For example, by changing reinsurance purchasing strategies or changing line of business mix. The costs of these actions can be compared to the estimated benefit implied from the analysis presented here.
