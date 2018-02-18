@@ -1,11 +1,11 @@
 ---
 title: CSR - Posterior Distribution of Parameters
-date: '2018-02-16'
+date: '2018-02-17'
 slug: csr-posterior-distribution-of-parameters
 tags:
   - reserving
   - insurance
-draft: true
+draft: no
 ---
 
 ```{r setup, include=FALSE}
@@ -13,9 +13,6 @@ draft: true
 library(knitr)
 library(AonInternal)
 library(tidyverse)
-library(reservetestr)
-library(ChainLadder)
-library(patchwork)
 
 knitr::opts_chunk$set(
 	fig.align = "center",
@@ -33,7 +30,7 @@ aon_colors <- c("#0083A9", "#808080", "#BFBFBF", "#5EB6E4", "#F0AB00", "#7AB800"
 
 ```{r import-data}
 
-all_posterior_sims <- readRDS("//10.179.11.172/share/atroyer/param_posterior_sims.rds")
+all_posterior_sims <- readRDS("c:/users/atroyer/documents/projects/data/param_posterior_sims.rds")
 
 companies <- c(1767,3240,5185,1538,14176)
 
@@ -45,7 +42,7 @@ Following on from a [prior post](`r blogdown::shortcode_html("relref", "2018-02-
 
 # Plotting the posterior
 
-We will take a look at the `logelr`, `alpha`, `gamma`, and `beta` parameters from our model for five companies across our four lines of business. The results for these companies are representative of the rest of the data set.
+We will take a look at the `logelr`, `alpha`, `gamma`, `beta`, and `sigma` parameters from our model for five companies across our four lines of business. The results for these companies are representative of the rest of the data set.
 
 ## Expected loss ratio
 
@@ -53,7 +50,7 @@ The posterior distribution of the expected loss ratio looks as expected - mostly
 
 Since the alpha parameters account for accident year variations, this parameter represents something like an underwriting cycle adjusted volatility.
 
-```{r logelr, out.width="100%"}
+```{r logelr, fig.height=6.84, fig.width=9.13, out.width="100%"}
 
 all_posterior_sims %>%
   select(-mean, -sd, -outcome, -outcome_pctl) %>%
@@ -71,7 +68,7 @@ all_posterior_sims %>%
 
 ```
 
-## Accident year effects - "alpha"
+## Alpha - accident year effects
 
 Alpha provides the underwriting cycle effect. We can see the general downward trend for most of the lines as we move from the early accident years (late 1980s), which had poor experience, to the later years that were better. 
 
@@ -123,7 +120,7 @@ all_posterior_sims %>%
 
 ## Beta - development pattern
 
-We see pretty clean estimated development patterns in the graph below. A few of the company / line combinations have noticably more volatility in their patterns, but none appear unreasonable.
+We see pretty clean estimated development patterns in the graph below. A few of the company / line combinations have noticeably more volatility in their patterns, but none appear unreasonable.
 
 ```{r beta, out.width="100%"}
 
@@ -142,6 +139,27 @@ all_posterior_sims %>%
   
 ```
 
+## Sigma
+
+The sigma parameters control the volatility of each cell in our loss triangle, and they vary by development year. The posterior distributions look okay. The model structure imposes decreasing volatility as development period increases. 
+
+```{r sigma, out.width="100%"}
+
+all_posterior_sims %>%
+  select(-mean, -sd, -outcome, -outcome_pctl) %>%
+  filter(id %in% companies) %>%
+  unnest() %>%
+  filter(param == "sig") %>%
+  filter(iteration <= 1000) %>%
+  ggplot(aes(y = (value), x = year, group = iteration)) +
+  geom_line(colour = aon.colors$lightgray, alpha = 0.1) +
+  facet_grid(line ~ id) +
+  ylab("Sigma") + xlab("Development year") +
+  theme(plot.title = element_text(colour = aon.colors$teal), plot.subtitle = element_text(colour = aon.colors$teal)) +
+  ggtitle("Sigma by development period")
+  
+```
+
 # Conclusion
 
-None of the parameter posterior distributions raise any huge red flags. Maybe investigate a regularizing prior on gamma and alpha. Sigma (a_ig) is a mess...try something there...
+None of the parameter posterior distributions raise any huge red flags. Maybe investigate a regularizing prior on gamma and alpha.
