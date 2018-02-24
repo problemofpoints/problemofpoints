@@ -1,0 +1,60 @@
+---
+title: Insurer Stock Buyback ROI
+subtitle: ''
+date: '2018-02-24'
+slug: insurer-stock-buyback-roi
+tags:
+  - insurance
+  - stocks
+draft: yes
+---
+
+```{r setup, include=FALSE}
+
+library(knitr)
+library(AonInternal)
+library(tidyverse)
+library(readxl)
+library(tibbletime)
+library(lubridate)
+
+knitr::opts_chunk$set(
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE,
+	echo = FALSE
+)
+
+AonInternal::SetTheme()
+aon_colors <- c("#0083A9", "#808080", "#BFBFBF", "#5EB6E4", "#F0AB00", "#7AB800", 
+                "#6E267B", "#BC5FCD","#E9CAEE", "#D3CD8B", "#7E7830", "#3E5B00", "#E11B22")
+
+
+```
+
+# Goal
+
+Calculate historical return on share buybacks for P&C (re)insurance companies. 
+
+- Explain methodology by walking through data and calculations for a company
+- Apply methodology to all stocks and show results
+
+
+```{r import-data}
+
+data <- readxl::read_xlsx("data/insurer_buybacks.xlsx", sheet = "import") %>%
+  gather(key = "statistic", value = "value", -ticker, -company) %>%
+  separate(statistic, c("yr_qtr","metric"), sep = "_") %>%
+  separate(yr_qtr, c("year","qtr"), sep = 4, remove = FALSE) %>%
+  mutate(value = as.double(value), 
+         year = as.integer(year),
+         date = lubridate::yq(yr_qtr), 
+         qtr_ = lubridate::quarter(date)) %>%
+  replace_na(list(value = 0)) %>% 
+  spread(key = metric, value = value) %>%
+  mutate(dollarrepurchase = avgpricepershare * sharesrepurchased)
+data
+
+
+```
+
