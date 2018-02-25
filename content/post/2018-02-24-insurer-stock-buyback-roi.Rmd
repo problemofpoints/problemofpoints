@@ -9,7 +9,7 @@ tags:
 draft: yes
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
 
 library(knitr)
 library(AonInternal)
@@ -17,6 +17,7 @@ library(tidyverse)
 library(readxl)
 library(tibbletime)
 library(lubridate)
+library(tidyquant)
 
 knitr::opts_chunk$set(
 	fig.align = "center",
@@ -29,6 +30,7 @@ AonInternal::SetTheme()
 aon_colors <- c("#0083A9", "#808080", "#BFBFBF", "#5EB6E4", "#F0AB00", "#7AB800", 
                 "#6E267B", "#BC5FCD","#E9CAEE", "#D3CD8B", "#7E7830", "#3E5B00", "#E11B22")
 
+AonECM::ggSetTheme()
 
 ```
 
@@ -39,6 +41,9 @@ Calculate historical return on share buybacks for P&C (re)insurance companies.
 - Explain methodology by walking through data and calculations for a company
 - Apply methodology to all stocks and show results
 
+# Data used
+
+- Historical buybacks, common shares outstanding, common div, special dividends, share price
 
 ```{r import-data}
 
@@ -47,14 +52,113 @@ data <- readxl::read_xlsx("data/insurer_buybacks.xlsx", sheet = "import") %>%
   separate(statistic, c("yr_qtr","metric"), sep = "_") %>%
   separate(yr_qtr, c("year","qtr"), sep = 4, remove = FALSE) %>%
   mutate(value = as.double(value), 
-         year = as.integer(year),
+         year = as.double(year),
          date = lubridate::yq(yr_qtr), 
          qtr_ = lubridate::quarter(date)) %>%
   replace_na(list(value = 0)) %>% 
   spread(key = metric, value = value) %>%
   mutate(dollarrepurchase = avgpricepershare * sharesrepurchased)
-data
+
+```
+
+```{r import-stock-prices}
+
+# get a list of all the Property-Casualty Insurers from the major US stock exchanges
+stock_tickers <- list('AMEX','NASDAQ','NYSE') %>% map_df(tq_exchange) %>% 
+  filter((industry == 'Property-Casualty Insurers' | symbol %in% c("AGII", "ERIE", "AIZ")) & !is.na(market.cap)) %>%
+  mutate(market_cap = if_else(stringr::str_sub(market.cap,start = -1)=="M",1e6,1e9) *
+           as.numeric(stringr::str_sub(market.cap,start = 2, end = -2))) %>%
+  dplyr::select(symbol, company, sector, industry, market_cap) %>%
+  arrange(desc(market_cap))
+
+stock_tickers <- stock_tickers %>% 
+  inner_join(data %>% distinct(ticker), by = c("symbol"="ticker"))
+
+# now get the historical stock prices for all of the tickers; get quarter close stock prices
+stock_prices <- stock_tickers %>%
+  tq_get(get = "stock.prices", from = "2010-01-01", to = "2017-12-31") %>% 
+  filter(!is.na(adjusted)) %>% 
+  select(symbol, company, market_cap, date, close, adjusted) %>%
+  group_by(symbol) %>%
+  as_tbl_time(index = date) %>%
+  as_period("quarterly", side = "end") %>%
+  mutate(year = lubridate::year(date), qrt_ = lubridate::quarter(date))
+
+```
+
+```{r combine-date}
+
+data_to_use <- data %>% 
+  select(-date) %>% 
+  left_join(stock_prices %>% 
+              select(symbol, market_cap, year, date, qtr_, close, adjusted), 
+            by = c("ticker"="symbol", "year", "qtr_")) %>%
+  drop_na() %>%
+  group_by(ticker) %>%
+  as_tbl_time(index = date) %>%
+  filter_time('2012' ~ '2016')
+
+data_to_use <- data_to_use %>%
+  mutate(cum_shares_repurchased = cumsum(sharesrepurchased)) %>%
+  mutate(cash_flow = -dollarrepurchase + (commondivpershare + specdivpershare) * cum_shares_repurchased,
+         cash_flow_final = cash_flow + if_else(year == 2016 & qtr_ == 4, close * cum_shares_repurchased, 0),
+         cash_flow_final2 = cash_flow + if_else(year == 2016 & qtr_ == 4, adjusted * cum_shares_repurchased, 0))
+
+```
+
+# Methodology
+
+Walk through methodology using TRV as an example. Use graphs to show dollar repurchased, shares repurchased, net cash flows.
+
+Create for every company...
+
+```{r company-example}
+
+company_example <- data_to_use %>%
+  filter(ticker == "ACGL")
+
+company_example %>%
+  ggplot(aes(x = date, y = commonshares)) +
+  geom_col()
+
+company_example %>%
+  ggplot(aes(x = date, y = sharesrepurchased)) +
+  geom_col()
+
+company_example %>%
+  ggplot(aes(x = date, y = cum_shares_repurchased)) +
+  geom_col()
+
+company_example %>%
+  ggplot(aes(x = date, y = cash_flow_final)) +
+  geom_col()
+
+company_example %>%
+  ggplot(aes(x = date, y = cash_flow_final2)) +
+  geom_col()
 
 
 ```
+
+```{r calc-irr}
+
+data_to_use %>% 
+  summarise(irr = (1+FinCal::irr(cash_flow_final))^4-1,
+            irr2 = (1+FinCal::irr(cash_flow_final2))^4-1) %>%
+  arrange(desc(irr))
+
+
+```
+
+# Overall results
+
+A few graphs or tables (datatable?) summarizing results for each company. Add any interesting commments.
+
+
+
+
+
+
+
+
 
