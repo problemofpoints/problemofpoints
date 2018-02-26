@@ -82,7 +82,7 @@ stock_prices <- stock_tickers %>%
   group_by(symbol) %>%
   as_tbl_time(index = date) %>%
   as_period("quarterly", side = "end") %>%
-  mutate(year = lubridate::year(date), qrt_ = lubridate::quarter(date))
+  mutate(year = lubridate::year(date), qtr_ = lubridate::quarter(date))
 
 ```
 
@@ -110,7 +110,11 @@ data_to_use <- data_to_use %>%
 
 Walk through methodology using TRV as an example. Use graphs to show dollar repurchased, shares repurchased, net cash flows.
 
-Create for every company...
+Create for every company...nice single slide summary.
+
+Show graph of stock price with avg repurchase price as a line; number of shares repurchased below it. Ideally include pb ratio graph also...
+
+Bar graphs with quarterly cash flows - stacked to see impact of repurchase + dividends
 
 ```{r company-example}
 
@@ -140,20 +144,27 @@ company_example %>%
 
 ```
 
-```{r calc-irr}
-
-data_to_use %>% 
-  summarise(irr = (1+FinCal::irr(cash_flow_final))^4-1,
-            irr2 = (1+FinCal::irr(cash_flow_final2))^4-1) %>%
-  arrange(desc(irr))
-
-
-```
-
 # Overall results
 
 A few graphs or tables (datatable?) summarizing results for each company. Add any interesting commments.
 
+```{r summary-table}
+
+data_to_use %>% 
+  summarise(n_qtrs = n(),
+            market_cap = market_cap[1], init_shares = commonshares[1], 
+            shares_repurchased = dplyr::last(cum_shares_repurchased), 
+            dollar_repurchased = sum(dollarrepurchase), 
+            pct_init_shares = shares_repurchased / init_shares, 
+            pct_market_cap = sum(dollarrepurchase) / market_cap[1],
+            tsr = ((sum((commondivpershare + specdivpershare) * commonshares) / dplyr::last(commonshares) + 
+              dplyr::last(close)) / dplyr::first(close))^(1/(n_qtrs/4)) - 1,
+            irr = (1+FinCal::irr(cash_flow_final))^4 - 1,
+            buyback_effectiveness = (1+irr)/(1+tsr) - 1) %>%
+  filter(pct_market_cap > 0.01) %>%
+  arrange(desc(buyback_effectiveness))
+
+```
 
 
 
