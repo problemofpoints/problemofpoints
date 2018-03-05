@@ -1,7 +1,7 @@
 ---
 title: Insurer Stock Buyback ROI
 subtitle: ''
-date: '2018-02-24'
+date: '2018-03-07'
 slug: insurer-stock-buyback-roi
 tags:
   - insurance
