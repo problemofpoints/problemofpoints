@@ -1,0 +1,55 @@
+---
+title: Insurer Stock Buyback ROI
+subtitle: ''
+date: '2018-03-07'
+slug: insurer-stock-buyback-roi
+tags:
+  - insurance
+  - stocks
+draft: yes
+---
+
+
+
+<div id="goal" class="section level1">
+<h1>Goal</h1>
+<p>Calculate historical return on share buybacks for P&amp;C (re)insurance companies.</p>
+<ul>
+<li>Explain methodology by walking through data and calculations for a company</li>
+<li>Apply methodology to all stocks and show results</li>
+</ul>
+</div>
+<div id="data-used" class="section level1">
+<h1>Data used</h1>
+<ul>
+<li>Historical buybacks, common shares outstanding, common div, special dividends, share price</li>
+</ul>
+</div>
+<div id="methodology" class="section level1">
+<h1>Methodology</h1>
+<p>Walk through methodology using TRV as an example. Use graphs to show dollar repurchased, shares repurchased, net cash flows.</p>
+<p>Create for every company…nice single slide summary.</p>
+<p>Show graph of stock price with avg repurchase price as a line; number of shares repurchased below it. Ideally include pb ratio graph also…</p>
+<p>Bar graphs with quarterly cash flows - stacked to see impact of repurchase + dividends</p>
+<p><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/company-example-1.png" width="672" style="display: block; margin: auto;" /><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/company-example-2.png" width="672" style="display: block; margin: auto;" /><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/company-example-3.png" width="672" style="display: block; margin: auto;" /><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/company-example-4.png" width="672" style="display: block; margin: auto;" /><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/company-example-5.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="overall-results" class="section level1">
+<h1>Overall results</h1>
+<p>A few graphs or tables (datatable?) summarizing results for each company. Add any interesting commments.</p>
+<pre><code>## # A tibble: 38 x 11
+##    ticker n_qtrs  market_cap init_shares shares_repurcha~ dollar_repurcha~
+##    &lt;chr&gt;   &lt;int&gt;       &lt;dbl&gt;       &lt;dbl&gt;            &lt;dbl&gt;            &lt;dbl&gt;
+##  1 HRTG       11   427920000    29794960          1759330         25490289
+##  2 PIH        11    40400000     6358125          1709863         12814830
+##  3 UVE        20  1020000000    40117000         11650033         94515242
+##  4 PRA        20  2530000000    61299150          9315285        426497579
+##  5 PGR        20 33530000000   611155122         44108315       1120118087
+##  6 HMN        20  1700000000    39773363          2644902         68470939
+##  7 WRB        20  8290000000   138274272         20247925        895610752
+##  8 AFG        20  9790000000    97177820         19644115        943372529
+##  9 Y          20  9140000000    16928664          1561549        670768394
+## 10 MKL        20 15520000000     9651672           328880        172183743
+## # ... with 28 more rows, and 5 more variables: pct_init_shares &lt;dbl&gt;,
+## #   pct_market_cap &lt;dbl&gt;, tsr &lt;dbl&gt;, irr &lt;dbl&gt;,
+## #   buyback_effectiveness &lt;dbl&gt;</code></pre>
+</div>
