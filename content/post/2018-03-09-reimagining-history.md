@@ -41,17 +41,18 @@ There is an outcome bias in reviewing losses. We should be analyzing near miss l
 
 # Bias induced by historical calibration
 
-If everyone only uses the same historical data to calibrate models, then we will all be biased in the same direction. This could cause blind spots and delude us into thinking we know it all. For example, seismologists had enough information  prior to the Tohoku earthquake that a magnitude 9 quake could occur on that fault line, but they didn’t properly interpret the historical data. 
+If everyone only uses the same historical data to calibrate models, then we will all be biased in the same direction. This could cause blind spots and delude us into thinking we know it all. For example, seismologists had enough information  prior to the Tohoku earthquake to know that a magnitude 9 quake could occur on that fault line, but they didn’t properly interpret the historical data. 
 
 # Stochastic modelling of the past
 
-We can use stochastic modeling to estimate what could have happened if history had turned out differently. For example, repeatedly simulating 110 year histories of hurricane losses and calculated the average annual loss of each simulation, provides a view of the uncertainty due to small sample size of hurricane modeling. 
+We can use stochastic modeling to estimate what could have happened if history had turned out differently. For example, repeatedly simulating 110 year histories of hurricane losses and calculating the average annual loss of each simulation, provides a view of the uncertainty due to small sample size of hurricane modeling. 
 
 # Counterfactual disaster scenarios
 
 Counterfactual disaster scenarios (CDS) can be used alongside Lloyd’s Realistic Disaster Scenarios (RDS), especially for risks with little historical data. 
 
 Example CDSs:
+
 - New Zealand earthquake
 - UK flooding
 - Caribbean / US windstorm clash
