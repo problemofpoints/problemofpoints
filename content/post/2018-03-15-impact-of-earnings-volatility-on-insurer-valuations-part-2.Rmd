@@ -1,0 +1,403 @@
+---
+title: "Impact of Earnings Volatility on Insurer Valuations - Part 2"
+subtitle: "ROE vs. spread over cost of equity"
+date: 2018-03-15
+slug: impact-of-earnings-volatility-on-insurer-valuations-part-2
+tags:
+    - insurance
+    - stocks
+draft: true
+---
+
+```{r setup, warning=FALSE,message=FALSE,include=FALSE}
+
+library(tidyverse)
+library(readxl)
+library(AonInternal)
+library(lme4)
+library(rstanarm)
+library(flextable)
+library(AonECM)
+# library(officer)
+# library(rvg)
+library(broom)
+library(stringr)
+
+
+SetTheme()
+AonECM::ggSetTheme()
+
+knitr::opts_chunk$set(
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE,
+	echo = FALSE
+)
+
+```
+
+# Goal
+
+In a [prior post](`r blogdown::shortcode_html("relref", "2018-02-11-impact-of-earnings-volatility-on-insurer-valuations.html")`) we explored the impact of earnings volatlity on P&C (re)insurers stock valuation. The analysis concluded that earnings volatility - as measured by 20 quarter earnings coefficient of variation worse than sector median - is a significant driver of valuation when included in a price-to-book value versus prospective return on equity regression framework. 
+
+In this post, we will explore:
+
+- Is price-to-tangible book value a better metric to estimate than price-to-book value?
+- Is the spread of prospective ROE over a company's cost of equity capital a better variable to use than just ROE?
+
+# Data
+
+The table below summarizes the data required for this analysis, which is the same as used in the prior post. This table shows the data for the "P&C Commercial" lines sector, but global data across 10 P&C sectors are used in the analysis.
+
+```{r import-data}
+
+data <- readxl::read_xlsx("data/ABS_Weekly_data.xlsx", sheet = "ABS_weekly", range = "H3:AG157") %>%
+  select(-c(8:11)) %>%
+  mutate_at(-c(1:2), as.double)
+
+data <- data %>%
+  filter(!(sector %in% c("FMG","Health","LargeCap", "Title"))) %>%
+  filter(include == 1) %>%
+  mutate(spread = roae_2018 - cost_of_equity) %>%
+  drop_na(p_to_b, roae_2018, eps_vol_5, p_to_tbv)
+
+sector_summary <- data %>% 
+  group_by(sector) %>% 
+  summarise(n_comps = n(), median_pb = median(p_to_b, na.rm = TRUE), median_ptbv = median(p_to_tbv, na.rm = TRUE),
+            median_roae = median(roae_2018, na.rm = TRUE), median_cost_equity = median(cost_of_equity, na.rm = TRUE),
+            median_spread = median(spread, na.rm = TRUE),
+            mean_eps_vol = mean(eps_vol_5, na.rm = TRUE), median_eps_vol = median(eps_vol_5, na.rm = TRUE))
+
+data <- data %>% 
+  left_join(sector_summary, by = "sector") %>%
+  mutate(high_vol2 = if_else(eps_vol_5 > median_eps_vol, 1, 0))
+
+```
+
+
+```{r pb-vs-roe-table}
+
+data_ft <- data %>%
+  # filter(sector %in% c("APAC") & p_to_b < 6) %>%
+  drop_na(roae_2018, eps_vol_5) %>%
+  arrange(sector, desc(market_cap)) %>%
+  transmute(Sector = sector, Company = company, 
+         `Market Cap ($b)` = AonECM::number_format(market_cap/1000,1), 
+         `P:B Ratio` = paste0(p_to_b, "x"), 
+         `P:TBV Ratio` = paste0(p_to_tbv, "x"), 
+         `2018 ROAE` = AonECM::pct_format(roae_2018/100, 1),
+         `Cost of Equity` = AonECM::pct_format(cost_of_equity/100, 1),
+         `Spread` = AonECM::pct_format(spread/100, 1),
+         `20 qrt EPS CV` = AonECM::pct_format(eps_vol_5/100, 1))
+
+ft_pb_vs_roae1 <- data_ft %>% 
+  filter(Sector == "P&C_Comm") %>%
+  flextable::regulartable() %>%
+  AonECM::ft_theme_aon() %>%
+  flextable::align(j = 1:2, part = "all") %>%
+  AonECM::add_title_header("By company input data - P&C commercial lines")
+
+ft_pb_vs_roae1
+
+
+```
+<br>
+
+The data elements include: current P:B ratio, 2018 prospective ROE, and historical EPS CV over the past 20 quarters. The data used in this analysis is as of December 15, 2017.
+
+The table below summarizes the input data by sector. This summary data by sector is used below to identify which companies are "high" or "low" volatility companies.
+
+```{r eps-vol-by-sector}
+
+sector_summary_ft <- sector_summary %>%
+  transmute(Sector = sector, 
+            `# of companies` = n_comps, 
+            `Median P:B Ratio` = paste0(round(median_pb,1), "x"), 
+            `Median P:TBV Ratio` = paste0(round(median_ptbv,1), "x"),
+            `Median 2018 ROAE` = AonECM::pct_format(median_roae/100, 1),
+            `Median Cost of Equity` = AonECM::pct_format(median_cost_equity/100, 1),
+            `Median Spread` = AonECM::pct_format(median_spread/100, 1),
+            `Median EPS CV` = AonECM::pct_format(median_eps_vol/100, 1))
+
+ft_sector_summary <- sector_summary_ft %>% 
+  flextable::regulartable() %>%
+  AonECM::ft_theme_aon() %>%
+  flextable::align(j = 1, part = "all") %>%
+  AonECM::add_title_header("Summary of input data by sector")
+
+ft_sector_summary
+
+```
+<br>
+
+# Baseline model
+
+We will use the same baseline model as in the prior post - price-to-book value vs. prospective ROE. 
+
+```{r fit-stan-pb-baseline, include=FALSE}
+
+seed <- 12
+
+fit_pb_roae <- stan_glmer(p_to_b ~ 1 + (1 + roae_2018 | sector),
+                           family = Gamma(link = "identity"),
+                          prior = student_t(df = 3, location = 0, scale = 2.5),
+                          prior_intercept = student_t(df = 3, location = 0, scale = 2.5),
+                          adapt_delta = 0.99,
+                          data = data, 
+                          seed = seed)
+
+```
+
+```{r fit-stan-ptbv, include=FALSE}
+
+fit_pb_roae_tbv <- stan_glmer(p_to_tbv ~ 1 + (1 + roae_2018 | sector),
+                          family = Gamma(link = "identity"),
+                          prior = student_t(df = 3, location = 0, scale = 2.5),
+                          prior_intercept = student_t(df = 3, location = 0, scale = 2.5),
+                          adapt_delta = 0.99,
+                          data = data,
+                          seed = seed)
+
+```
+
+```{r fit-stan-spread, include=FALSE}
+
+fit_pb_spread_tbv <- stan_glmer(p_to_tbv ~ 1 + (1 + spread | sector),
+                          family = Gamma(link = "identity"),
+                          prior = student_t(df = 3, location = 0, scale = 2.5),
+                          prior_intercept = student_t(df = 3, location = 0, scale = 2.5),
+                          adapt_delta = 0.99,
+                          data = data,
+                          seed = seed)
+
+```
+
+```{r fit-stan-pb-eps, include=FALSE}
+
+fit_pb_roae_eps <- stan_glmer(p_to_tbv ~ 1 + (1 + spread + spread:high_vol2 | sector),
+                          family = Gamma(link = "identity"),
+                          prior = student_t(df = 3, location = 0, scale = 2.5),
+                          prior_intercept = student_t(df = 3, location = 0, scale = 2.5),
+                          adapt_delta = 0.999999,
+                          data = data,
+                          seed = seed)
+
+```
+
+```{r param-summary-fns}
+
+add_bayes_R2 <- function(sector, stan_model){
+  
+  data <- stan_model$data
+  vars <- all.vars(terms(stan_model$formula))
+  new_data <- data[data$sector == sector, vars]
+  
+  stan_model %>% 
+    bayes_R2(newdata = new_data) %>%
+    median(.)
+  
+}
+
+add_sector_ppd_sims <- function(sector, stan_model, draws = 10){
+  
+  vars <- all.vars(terms(stan_model$formula))
+  new_roae <- seq(from = 2, to = 34, by = 2)
+  new_data <- tibble(sector = sector, roae_2018 = new_roae)
+  
+  if(length(vars) > 3){
+    new_data <- new_data %>% mutate(high_vol2 = 0)
+    new_data2 <- new_data %>% mutate(high_vol2 = 1)
+    new_data <- new_data %>% bind_rows(new_data2)
+  }
+  
+  stan_model %>% 
+    posterior_predict(newdata = new_data, draws = draws) %>%
+    as_tibble() %>%
+    rowid_to_column(var = "trial") %>%
+    gather(id, fitted, -trial, convert = TRUE) %>%
+    left_join(new_data %>% mutate(id = 1:nrow(.)), by = "id") %>%
+    drop_na(fitted)
+  
+}
+
+add_sector_ppd_sims_spread <- function(sector, stan_model, draws = 10){
+  
+  vars <- all.vars(terms(stan_model$formula))
+  new_spread <- seq(from = -10, to = 20, by = 2)
+  new_data <- tibble(sector = sector, spread = new_spread)
+  
+  if(length(vars) > 3){
+    new_data <- new_data %>% mutate(high_vol2 = 0)
+    new_data2 <- new_data %>% mutate(high_vol2 = 1)
+    new_data <- new_data %>% bind_rows(new_data2)
+  }
+  
+  stan_model %>% 
+    posterior_predict(newdata = new_data, draws = draws) %>%
+    as_tibble() %>%
+    rowid_to_column(var = "trial") %>%
+    gather(id, fitted, -trial, convert = TRUE) %>%
+    left_join(new_data %>% mutate(id = 1:nrow(.)), by = "id") %>%
+    drop_na(fitted)
+  
+}
+
+```
+
+```{r create-param-summaries}
+
+pb_roae_params <- coef(fit_pb_roae)$sector %>% 
+  as_tibble() %>% 
+  rownames_to_column(var = "sector") %>%
+  rename(intercept = `(Intercept)`) %>%
+  mutate(bayes_R2 = map_dbl(sector, add_bayes_R2, fit_pb_roae)) %>%
+  mutate(ppd_sims = map(sector, add_sector_ppd_sims, fit_pb_roae, draws = 1000)) %>%
+  mutate(ppd_summary = map(ppd_sims, ~ .x %>% group_by(id) %>% 
+                             summarise(n_points = length(id),
+                                       roe = roae_2018[1],
+                                       median = median(fitted),
+                                       lower = quantile(fitted, 0.1),
+                                       upper = quantile(fitted, 0.9))))
+
+ptbv_roae_params <- coef(fit_pb_roae_tbv)$sector %>% 
+  as_tibble() %>% 
+  rownames_to_column(var = "sector") %>%
+  rename(intercept = `(Intercept)`) %>%
+  mutate(bayes_R2 = map_dbl(sector, add_bayes_R2, fit_pb_roae_tbv)) %>%
+  mutate(ppd_sims = map(sector, add_sector_ppd_sims, fit_pb_roae_tbv, draws = 1000)) %>%
+  mutate(ppd_summary = map(ppd_sims, ~ .x %>% group_by(id) %>% 
+                             summarise(n_points = length(id),
+                                       roe = roae_2018[1],
+                                       median = median(fitted),
+                                       lower = quantile(fitted, 0.1),
+                                       upper = quantile(fitted, 0.9))))
+
+ptbv_spread_params <- coef(fit_pb_spread_tbv)$sector %>% 
+  tibble::as_tibble() %>% 
+  rownames_to_column(var = "sector") %>%
+  rename(intercept = `(Intercept)`) %>%
+  mutate(bayes_R2 = map_dbl(sector, add_bayes_R2, fit_pb_spread_tbv)) %>%
+  mutate(ppd_sims = map(sector, add_sector_ppd_sims_spread, fit_pb_spread_tbv, draws = 1000)) %>%
+  mutate(ppd_summary = map(ppd_sims, ~ .x %>% group_by(id) %>% 
+                             summarise(n_points = length(id),
+                                       roe = spread[1],
+                                       median = median(fitted),
+                                       lower = quantile(fitted, 0.1),
+                                       upper = quantile(fitted, 0.9))))
+
+```
+
+
+```{r create-ppd-fn, include=FALSE}
+
+create_ppd_sims <- function(stan_model, draws = 10, variable, actual){
+  
+  data <- stan_model$data
+  
+  ppd_sims <- stan_model %>% posterior_predict(draws = draws) %>% as_tibble() %>%
+  rowid_to_column(var = "trial") %>%
+  gather(company_id, fitted, -trial, convert = TRUE)
+  
+  ppd_sims$company <- data$company[ppd_sims$company_id]
+  ppd_sims$sector <- data$sector[ppd_sims$company_id]
+  ppd_sims <- ppd_sims %>%
+    left_join(data %>% select_("sector", "company", variable = variable, actual = actual, "high_vol2"), 
+              by = c("company", "sector"))
+
+  ppd_summary <- ppd_sims %>% 
+    group_by(company_id, variable) %>% 
+    summarise(company = company[1], sector = sector[1], actual = actual[1],
+              high_vol = as.factor(high_vol2[1]),
+              median_fitted = median(fitted), 
+              pctl_25 = quantile(fitted, 0.1), pctl_75 = quantile(fitted, 0.9))
+  
+  list(ppd_sims = ppd_sims,
+       ppd_summary = ppd_summary %>% ungroup())
+  
+}
+
+summarize_ppd_sims <- function(ppd, variable_label, actual_label, y_lim = c(0, NA), x_lim = c(0,NA)){
+  
+  ppd_sims <- ppd$ppd_sims #%>% unnest()
+  ppd_summary <- ppd$ppd_summary
+  
+  gg_ppd_sims <- ppd_summary %>%
+    ggplot(aes(y = median_fitted, x = variable/100)) +
+    geom_point(aes(y = actual, x = variable/100, group = high_vol, colour = high_vol)) +
+    # geom_errorbar(aes(ymin = pctl_25, ymax = pctl_75, x = variable), colour = aon.colors$lightgray) +
+    geom_smooth(aes(y = fitted, x = variable/100), 
+                method = "lm", se = FALSE, colour = aon.colors$lightgray, 
+                data = ppd_sims[ppd_sims$high_vol2 == 0,]) +
+    geom_smooth(aes(y = fitted, x = variable/100), 
+            method = "lm", se = FALSE, colour = aon.colors$teal, 
+            data = ppd_sims[ppd_sims$high_vol2 == 1,]) +
+    facet_wrap(~ sector, scales = "fixed") +
+    scale_color_manual(values = c(aon.colors$lightgray, aon.colors$teal)) +
+    xlab(variable_label) + ylab(actual_label) +
+    ylim(y_lim) +
+    scale_x_continuous(labels = scales::percent_format(), limits = c(x_lim))
+  
+  gg_ppd_sims
+  
+}
+
+```
+
+```{r examine-stan-pb}
+
+ppd_pb_roae <- create_ppd_sims(fit_pb_roae, 4000, "roae_2018","p_to_b")
+ppd_pb_roae_tbv <- create_ppd_sims(fit_pb_roae_tbv, 4000, "roae_2018","p_to_tbv")
+ppd_pb_spread_tbv <- create_ppd_sims(fit_pb_spread_tbv, 4000, "spread","p_to_tbv")
+
+```
+
+```{r gg-baseline}
+
+gg_ppc_roae <- ppd_pb_roae$ppd_summary %>% 
+  ggplot(aes(y = actual, x = variable / 100)) + 
+  geom_ribbon(aes(y = median, ymin = lower, ymax = upper, x = roe/100), 
+              fill = aon.colors$lightgray, alpha = 0.25, 
+              data = pb_roae_params %>% unnest(ppd_summary) %>% mutate(upper = pmin(upper, 5))) +
+  geom_abline(aes(intercept = intercept, slope = roae_2018*100),
+              colour = aon.colors$teal, data = pb_roae_params) +
+  geom_point() + 
+  facet_wrap(~ sector) +
+  scale_x_continuous(labels = scales::percent_format(), limits = c(0.025,0.25)) + 
+  scale_y_continuous(limits = c(0,5)) + 
+  xlab("2018 Prospective Return on Average Equity") + ylab("Price to Book Ratio") +
+  ggtitle("Fitted model: P:B Ratio and Prospective ROE by Sector")
+
+gg_ppc_roae2 <- ppd_pb_roae_tbv$ppd_summary %>% 
+  ggplot(aes(y = actual, x = variable / 100)) + 
+  geom_ribbon(aes(y = median, ymin = lower, ymax = upper, x = roe/100), 
+              fill = aon.colors$lightgray, alpha = 0.25, 
+              data = ptbv_roae_params %>% unnest(ppd_summary) %>% mutate(upper = pmin(upper, 5))) +
+  geom_abline(aes(intercept = intercept, slope = roae_2018*100),
+              colour = aon.colors$teal, data = ptbv_roae_params) +
+  geom_point() + 
+  facet_wrap(~ sector) +
+  scale_x_continuous(labels = scales::percent_format(), limits = c(0.025,0.25)) + 
+  scale_y_continuous(limits = c(0,5)) + 
+  xlab("2018 Prospective Return on Average Equity") + ylab("Price to Book Ratio") +
+  ggtitle("Fitted model: P:B Ratio and Prospective ROE by Sector")
+
+gg_ppc_spread <- ppd_pb_spread_tbv$ppd_summary %>% 
+  ggplot(aes(y = actual, x = variable / 100)) + 
+  geom_ribbon(aes(y = median, ymin = lower, ymax = upper, x = roe/100), 
+              fill = aon.colors$lightgray, alpha = 0.25, 
+              data = ptbv_spread_params %>% unnest(ppd_summary) %>% mutate(upper = pmin(upper, 5))) +
+  geom_abline(aes(intercept = intercept, slope = spread*100),
+              colour = aon.colors$teal, data = ptbv_spread_params) +
+  geom_point() + 
+  facet_wrap(~ sector) +
+  scale_x_continuous(labels = scales::percent_format(), limits = c(-0.1,0.25)) + 
+  scale_y_continuous(limits = c(0,5)) + 
+  xlab("2018 Prospective Return on Average Equity") + ylab("Price to Book Ratio") +
+  ggtitle("Fitted model: P:B Ratio and Prospective ROE by Sector")
+
+
+gg_ppc_roae
+gg_ppc_roae2
+gg_ppc_spread
+
+```
