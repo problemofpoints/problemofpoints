@@ -1,12 +1,12 @@
 ---
 title: "Impact of Earnings Volatility on Insurer Valuations - Part 2"
-subtitle: "ROE vs. spread over cost of equity"
+subtitle: "BV vs. TBV and ROE vs. spread"
 date: 2018-03-15
 slug: impact-of-earnings-volatility-on-insurer-valuations-part-2
 tags:
     - insurance
     - stocks
-draft: true
+draft: false
 ---
 
 ```{r setup, warning=FALSE,message=FALSE,include=FALSE}
@@ -38,7 +38,7 @@ knitr::opts_chunk$set(
 
 # Goal
 
-In a [prior post](`r blogdown::shortcode_html("relref", "2018-02-11-impact-of-earnings-volatility-on-insurer-valuations.html")`) we explored the impact of earnings volatlity on P&C (re)insurers stock valuation. The analysis concluded that earnings volatility - as measured by 20 quarter earnings coefficient of variation worse than sector median - is a significant driver of valuation when included in a price-to-book value versus prospective return on equity regression framework. 
+In a [prior post](`r blogdown::shortcode_html("relref", "2018-02-11-impact-of-earnings-volatility-on-insurer-valuations.html")`) we explored the impact of earnings volatility on P&C (re)insurers stock valuation. The analysis concluded that earnings volatility - as measured by 20 quarter earnings coefficient of variation worse than sector median - is a significant driver of valuation when included in a price-to-book value versus prospective return on equity regression framework. 
 
 In this post, we will explore:
 
@@ -167,18 +167,6 @@ fit_pb_spread_tbv <- stan_glmer(p_to_tbv ~ 1 + (1 + spread | sector),
                           prior = student_t(df = 3, location = 0, scale = 2.5),
                           prior_intercept = student_t(df = 3, location = 0, scale = 2.5),
                           adapt_delta = 0.99,
-                          data = data,
-                          seed = seed)
-
-```
-
-```{r fit-stan-pb-eps, include=FALSE}
-
-fit_pb_roae_eps <- stan_glmer(p_to_tbv ~ 1 + (1 + spread + spread:high_vol2 | sector),
-                          family = Gamma(link = "identity"),
-                          prior = student_t(df = 3, location = 0, scale = 2.5),
-                          prior_intercept = student_t(df = 3, location = 0, scale = 2.5),
-                          adapt_delta = 0.999999,
                           data = data,
                           seed = seed)
 
@@ -378,8 +366,8 @@ gg_ppc_roae2 <- ppd_pb_roae_tbv$ppd_summary %>%
   facet_wrap(~ sector) +
   scale_x_continuous(labels = scales::percent_format(), limits = c(0.025,0.25)) + 
   scale_y_continuous(limits = c(0,5)) + 
-  xlab("2018 Prospective Return on Average Equity") + ylab("Price to Book Ratio") +
-  ggtitle("Fitted model: P:B Ratio and Prospective ROE by Sector")
+  xlab("2018 Prospective Return on Average Equity") + ylab("Price to Tangible Book Ratio") +
+  ggtitle("Fitted model: P:TBV Ratio and Prospective ROE by Sector")
 
 gg_ppc_spread <- ppd_pb_spread_tbv$ppd_summary %>% 
   ggplot(aes(y = actual, x = variable / 100)) + 
@@ -392,12 +380,39 @@ gg_ppc_spread <- ppd_pb_spread_tbv$ppd_summary %>%
   facet_wrap(~ sector) +
   scale_x_continuous(labels = scales::percent_format(), limits = c(-0.1,0.25)) + 
   scale_y_continuous(limits = c(0,5)) + 
-  xlab("2018 Prospective Return on Average Equity") + ylab("Price to Book Ratio") +
-  ggtitle("Fitted model: P:B Ratio and Prospective ROE by Sector")
-
+  xlab("2018 ROAE - Cost of Equity Capital") + ylab("Price to Tangible Book Ratio") +
+  ggtitle("Fitted model: P:TBV Ratio and Spread of Cost of Equity by Sector")
 
 gg_ppc_roae
-gg_ppc_roae2
-gg_ppc_spread
 
 ```
+
+# Alternative models
+
+The alternative models use price-to-tangible book ratio instead of price-to-book value. One model uses prospective ROE (same as baseline), while one uses spread of ROE over estimated cost of equity. The cost of equity is estimated using a CAPM-style methodology. The logic is that investors should more highly value companies that are able to earn their cost of equity, so explicitly incorporating cost of equity should improve our model. Of course estimating cost of equity is impossible and a CAPM-style model is hardly adequate...but that discussion is for another time.
+
+However, that is not the case when using this data set. Neither of the alternative models perform better than the baseline model. The table below shows the Bayesian r-squared values for each model. The baseline model has a higher r-squared in most sectors. The model that uses tangible book value and ROE produces similar results as the baseline model. The TBV and spread model does not perform as well as the other two models.
+
+```{r compare-bayes-r2}
+
+pb_roae_params %>%
+  left_join(ptbv_roae_params %>% select(sector, bayes_R2_2 = bayes_R2), by = "sector") %>%
+  left_join(ptbv_spread_params %>% select(sector, bayes_R2_3 = bayes_R2), by = "sector") %>%
+  transmute(Sector = sector,
+            `Baseline` = AonECM::pct_format(bayes_R2,0),
+            `P:TBV` = AonECM::pct_format(bayes_R2_2,0),
+            `P:TBV vs. Spread` = AonECM::pct_format(bayes_R2_3,0)) %>%
+  flextable::regulartable() %>%
+  AonECM::ft_theme_aon() %>%
+  flextable::align(j = 1, part = "all") %>%
+  AonECM::add_title_header("Comparison of Bayesian R2 by model")
+
+```
+<br>
+
+# Conclusion
+
+Using price-to-tangible book value produces similar results as using price-to-book value. It is worth further exploring how each model has performed over time.
+
+Based on this data, using spread over cost of equity instead of ROE does not improve model performance. Additionally, cost of equity is an another data element that would need to be collected in order to perform back-testing. 
+
