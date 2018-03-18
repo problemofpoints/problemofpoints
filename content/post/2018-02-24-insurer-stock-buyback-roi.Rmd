@@ -96,13 +96,13 @@ data_to_use <- data %>%
   drop_na() %>%
   group_by(ticker) %>%
   as_tbl_time(index = date) %>%
-  filter_time('2012' ~ '2016')
+  filter_time('2013' ~ '2017')
 
 data_to_use <- data_to_use %>%
   mutate(cum_shares_repurchased = cumsum(sharesrepurchased)) %>%
   mutate(cash_flow = -dollarrepurchase + (commondivpershare + specdivpershare) * cum_shares_repurchased,
-         cash_flow_final = cash_flow + if_else(year == 2016 & qtr_ == 4, close * cum_shares_repurchased, 0),
-         cash_flow_final2 = cash_flow + if_else(year == 2016 & qtr_ == 4, adjusted * cum_shares_repurchased, 0))
+         cash_flow_final = cash_flow + if_else(year == 2017 & qtr_ == 4, close * cum_shares_repurchased, 0),
+         cash_flow_final2 = cash_flow + if_else(year == 2017 & qtr_ == 4, adjusted * cum_shares_repurchased, 0))
 
 ```
 
