@@ -6,7 +6,7 @@ slug: impact-of-earnings-volatility-on-insurer-valuations-part-3
 tags:
     - insurance
     - stocks
-draft: false
+draft: yes
 ---
 
 ```{r setup, warning=FALSE,message=FALSE,include=FALSE}
@@ -384,17 +384,6 @@ Add table with impact on pb by sector at 10% ROE and the 4 earnings vol quartile
 State that loo indicates a better fitting model.
 
 ```{r compare-bayes-r2}
-
-pb_roae_params %>%
-  left_join(pb_roae_vol_params %>% select(sector, bayes_R2_2 = bayes_R2), by = "sector") %>%
-  transmute(Sector = sector,
-            `Baseline` = AonECM::pct_format(bayes_R2,0),
-            `P:TBV` = AonECM::pct_format(bayes_R2_2,0),
-            `P:TBV vs. Spread` = AonECM::pct_format(bayes_R2_3,0)) %>%
-  flextable::regulartable() %>%
-  AonECM::ft_theme_aon() %>%
-  flextable::align(j = 1, part = "all") %>%
-  AonECM::add_title_header("Comparison of Bayesian R2 by model")
 
 ```
 <br>
