@@ -1,7 +1,7 @@
 ---
-title: Insurer Stock Buyback ROI
+title: "P&C (Re)insurer Stock Buyback ROI"
 subtitle: ''
-date: '2018-03-07'
+date: '2018-03-21'
 slug: insurer-stock-buyback-roi
 tags:
   - insurance
@@ -18,6 +18,9 @@ library(readxl)
 library(tibbletime)
 library(lubridate)
 library(tidyquant)
+library(flextable)
+library(AonECM)
+library(officer)
 
 knitr::opts_chunk$set(
 	fig.align = "center",
@@ -36,14 +39,22 @@ AonECM::ggSetTheme()
 
 # Goal
 
-Calculate historical return on share buybacks for P&C (re)insurance companies. 
+The goal of this analysis is to calculate the historical return on investment (ROI) of share buybacks for P&C (re)insurance companies over the past 20 quarters (2013 - 2017). This is one way to measure whether companies have effectively allocated their capital to share buybacks. 
 
-- Explain methodology by walking through data and calculations for a company
-- Apply methodology to all stocks and show results
+We split the buyback ROI into two components - buyback strategy and buyback effectiveness - to understand how well a company has timed their share repurchases.
 
 # Data used
 
-- Historical buybacks, common shares outstanding, common div, special dividends, share price
+The data used for this analysis is from SEC Forms 10-Q and 10-K for each company over the time period of 2013 - 2017, per S&P Global Market Intelligence.
+
+- Number of shares repurchased in the quarter
+- Average price per share for shares repurchased
+- Common shares outstanding
+- Common dividend per share
+- Special dividend per share
+- Book value per share
+
+Additionally, historical share price data was downloaded from Yahoo Finance.
 
 ```{r import-data}
 
@@ -78,7 +89,9 @@ stock_tickers <- stock_tickers %>%
 stock_prices <- stock_tickers %>%
   tq_get(get = "stock.prices", from = "2010-01-01", to = "2017-12-31") %>% 
   filter(!is.na(adjusted)) %>% 
-  select(symbol, company, market_cap, date, close, adjusted) %>%
+  select(symbol, company, market_cap, date, close, adjusted) 
+
+stock_prices_qtr <- stock_prices %>%
   group_by(symbol) %>%
   as_tbl_time(index = date) %>%
   as_period("quarterly", side = "end") %>%
@@ -86,11 +99,11 @@ stock_prices <- stock_tickers %>%
 
 ```
 
-```{r combine-date}
+```{r combine-data}
 
 data_to_use <- data %>% 
   select(-date) %>% 
-  left_join(stock_prices %>% 
+  left_join(stock_prices_qtr %>% 
               select(symbol, market_cap, year, date, qtr_, close, adjusted), 
             by = c("ticker"="symbol", "year", "qtr_")) %>%
   drop_na() %>%
@@ -106,7 +119,32 @@ data_to_use <- data_to_use %>%
 
 ```
 
+```{r calc-roi}
+
+buyback_roi <- data_to_use %>% 
+  summarise(n_qtrs = n(),
+            market_cap = market_cap[1], init_shares = commonshares[1], 
+            shares_repurchased = dplyr::last(cum_shares_repurchased), 
+            dollar_repurchased = sum(dollarrepurchase), 
+            pct_init_shares = shares_repurchased / init_shares, 
+            pct_market_cap = sum(dollarrepurchase) / market_cap[1],
+            tsr = ((sum((commondivpershare + specdivpershare) * commonshares) / dplyr::last(commonshares) + 
+              dplyr::last(close)) / dplyr::first(close))^(1/(n_qtrs/4)) - 1,
+            irr = (1+FinCal::irr(cash_flow_final))^4 - 1,
+            buyback_effectiveness = (1+irr)/(1+tsr) - 1) %>%
+  filter(pct_market_cap > 0.01) %>%
+  arrange(desc(buyback_effectiveness))
+
+```
+
 # Methodology
+
+The buyback ROI is calculated based on three items:
+
+1. The cash outflows associated with share repurchases each quarter
+2. The implied cash inflows of dividends (common and special) "saved" for the shares repurchased
+3. A final cash inflow related to the total value of the cumulative shares repurchased
+
 
 Walk through methodology using TRV as an example. Use graphs to show dollar repurchased, shares repurchased, net cash flows.
 
@@ -119,7 +157,7 @@ Bar graphs with quarterly cash flows - stacked to see impact of repurchase + div
 ```{r company-example}
 
 company_example <- data_to_use %>%
-  filter(ticker == "ACGL")
+  filter(ticker == "TRV")
 
 company_example %>%
   ggplot(aes(x = date, y = commonshares)) +
@@ -137,32 +175,15 @@ company_example %>%
   ggplot(aes(x = date, y = cash_flow_final)) +
   geom_col()
 
-company_example %>%
-  ggplot(aes(x = date, y = cash_flow_final2)) +
-  geom_col()
-
-
 ```
 
 # Overall results
 
 A few graphs or tables (datatable?) summarizing results for each company. Add any interesting commments.
 
-```{r summary-table}
+```{r summary-roi}
 
-data_to_use %>% 
-  summarise(n_qtrs = n(),
-            market_cap = market_cap[1], init_shares = commonshares[1], 
-            shares_repurchased = dplyr::last(cum_shares_repurchased), 
-            dollar_repurchased = sum(dollarrepurchase), 
-            pct_init_shares = shares_repurchased / init_shares, 
-            pct_market_cap = sum(dollarrepurchase) / market_cap[1],
-            tsr = ((sum((commondivpershare + specdivpershare) * commonshares) / dplyr::last(commonshares) + 
-              dplyr::last(close)) / dplyr::first(close))^(1/(n_qtrs/4)) - 1,
-            irr = (1+FinCal::irr(cash_flow_final))^4 - 1,
-            buyback_effectiveness = (1+irr)/(1+tsr) - 1) %>%
-  filter(pct_market_cap > 0.01) %>%
-  arrange(desc(buyback_effectiveness))
+buyback_roi
 
 ```
 

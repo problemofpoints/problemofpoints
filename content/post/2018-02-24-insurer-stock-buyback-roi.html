@@ -1,7 +1,7 @@
 ---
-title: Insurer Stock Buyback ROI
+title: "P&C (Re)insurer Stock Buyback ROI"
 subtitle: ''
-date: '2018-03-07'
+date: '2018-03-21'
 slug: insurer-stock-buyback-roi
 tags:
   - insurance
@@ -13,25 +13,35 @@ draft: yes
 
 <div id="goal" class="section level1">
 <h1>Goal</h1>
-<p>Calculate historical return on share buybacks for P&amp;C (re)insurance companies.</p>
-<ul>
-<li>Explain methodology by walking through data and calculations for a company</li>
-<li>Apply methodology to all stocks and show results</li>
-</ul>
+<p>The goal of this analysis is to calculate the historical return on investment (ROI) of share buybacks for P&amp;C (re)insurance companies over the past 20 quarters (2013 - 2017). This is one way to measure whether companies have effectively allocated their capital to share buybacks.</p>
+<p>We split the buyback ROI into two components - buyback strategy and buyback effectiveness - to understand how well a company has timed their share repurchases.</p>
 </div>
 <div id="data-used" class="section level1">
 <h1>Data used</h1>
+<p>The data used for this analysis is from SEC Forms 10-Q and 10-K for each company over the time period of 2013 - 2017, per S&amp;P Global Market Intelligence.</p>
 <ul>
-<li>Historical buybacks, common shares outstanding, common div, special dividends, share price</li>
+<li>Number of shares repurchased in the quarter</li>
+<li>Average price per share for shares repurchased</li>
+<li>Common shares outstanding</li>
+<li>Common dividend per share</li>
+<li>Special dividend per share</li>
+<li>Book value per share</li>
 </ul>
+<p>Additionally, historical share price data was downloaded from Yahoo Finance.</p>
 </div>
 <div id="methodology" class="section level1">
 <h1>Methodology</h1>
+<p>The buyback ROI is calculated based on three items:</p>
+<ol style="list-style-type: decimal">
+<li>The cash outflows associated with share repurchases each quarter</li>
+<li>The implied cash inflows of dividends (common and special) “saved” for the shares repurchased</li>
+<li>A final cash inflow related to the total value of the cumulative shares repurchased</li>
+</ol>
 <p>Walk through methodology using TRV as an example. Use graphs to show dollar repurchased, shares repurchased, net cash flows.</p>
 <p>Create for every company…nice single slide summary.</p>
 <p>Show graph of stock price with avg repurchase price as a line; number of shares repurchased below it. Ideally include pb ratio graph also…</p>
 <p>Bar graphs with quarterly cash flows - stacked to see impact of repurchase + dividends</p>
-<p><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/company-example-1.png" width="672" style="display: block; margin: auto;" /><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/company-example-2.png" width="672" style="display: block; margin: auto;" /><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/company-example-3.png" width="672" style="display: block; margin: auto;" /><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/company-example-4.png" width="672" style="display: block; margin: auto;" /><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/company-example-5.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/company-example-1.png" width="672" style="display: block; margin: auto;" /><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/company-example-2.png" width="672" style="display: block; margin: auto;" /><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/company-example-3.png" width="672" style="display: block; margin: auto;" /><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/company-example-4.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 <div id="overall-results" class="section level1">
 <h1>Overall results</h1>
@@ -39,16 +49,16 @@ draft: yes
 <pre><code>## # A tibble: 40 x 11
 ##    ticker n_qtrs  market_cap init_shares shares_repurcha~ dollar_repurcha~
 ##    &lt;chr&gt;   &lt;int&gt;       &lt;dbl&gt;       &lt;dbl&gt;            &lt;dbl&gt;            &lt;dbl&gt;
-##  1 HRTG       15   448330000    29794960          7099597         87935639
-##  2 EIG        20  1330000000    30935238          1448762         42125251
+##  1 HRTG       15   455770000    29794960          7099597         87935639
+##  2 EIG        20  1320000000    30935238          1448762         42125251
 ##  3 TPRE       18  1530000000   103888916          3944920         48258988
 ##  4 PRA        20  2670000000    61816896          9315285        426497579
-##  5 PGR        20 36060000000   603170892         37012250       1008419781
-##  6 AFG        20 10000000000    89883222          8814625        534122410
-##  7 WRB        20  8670000000   136028287         17369743        809256309
-##  8 ALL        20 34570000000   468000000        157413573       9312739371
-##  9 KMPR       20  2930000000    58321766          7701840        269429116
-## 10 ACGL       20 11620000000   133063225         17899844       1051913910
+##  5 PGR        20 36030000000   603170892         37012250       1008419781
+##  6 AFG        20 10060000000    89883222          8814625        534122410
+##  7 WRB        20  8700000000   136028287         17369743        809256309
+##  8 ALL        20 34300000000   468000000        157413573       9312739371
+##  9 KMPR       20  2920000000    58321766          7701840        269429116
+## 10 ACGL       20 11670000000   133063225         17899844       1051913910
 ## # ... with 30 more rows, and 5 more variables: pct_init_shares &lt;dbl&gt;,
 ## #   pct_market_cap &lt;dbl&gt;, tsr &lt;dbl&gt;, irr &lt;dbl&gt;,
 ## #   buyback_effectiveness &lt;dbl&gt;</code></pre>
