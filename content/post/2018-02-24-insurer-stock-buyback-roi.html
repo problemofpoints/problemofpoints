@@ -34,14 +34,15 @@ draft: yes
 <p>The buyback ROI is calculated based on three items:</p>
 <ol style="list-style-type: decimal">
 <li>The cash outflows associated with share repurchases each quarter</li>
-<li>The implied cash inflows of dividends (common and special) “saved” for the shares repurchased</li>
+<li>The implied cash inflows of dividends (common and special) “avoided” by repurchasing shares</li>
 <li>A final cash inflow related to the total value of the cumulative shares repurchased</li>
 </ol>
-<p>Walk through methodology using TRV as an example. Use graphs to show dollar repurchased, shares repurchased, net cash flows.</p>
-<p>Create for every company…nice single slide summary.</p>
+<p>We will walk through the calculations using Travelers (TRV) as an example. The graph below shows the number of common shares repurchased by TRV since 2013.</p>
 <p>Show graph of stock price with avg repurchase price as a line; number of shares repurchased below it. Ideally include pb ratio graph also…</p>
 <p>Bar graphs with quarterly cash flows - stacked to see impact of repurchase + dividends</p>
-<p><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/company-example-1.png" width="672" style="display: block; margin: auto;" /><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/company-example-2.png" width="672" style="display: block; margin: auto;" /><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/company-example-3.png" width="672" style="display: block; margin: auto;" /><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/company-example-4.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/company-example-1.png" width="672" style="display: block; margin: auto;" /><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/company-example-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/example2-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="/post/2018-02-24-insurer-stock-buyback-roi_files/figure-html/example3-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 <div id="overall-results" class="section level1">
 <h1>Overall results</h1>
@@ -49,16 +50,16 @@ draft: yes
 <pre><code>## # A tibble: 40 x 11
 ##    ticker n_qtrs  market_cap init_shares shares_repurcha~ dollar_repurcha~
 ##    &lt;chr&gt;   &lt;int&gt;       &lt;dbl&gt;       &lt;dbl&gt;            &lt;dbl&gt;            &lt;dbl&gt;
-##  1 HRTG       15   455770000    29794960          7099597         87935639
-##  2 EIG        20  1320000000    30935238          1448762         42125251
-##  3 TPRE       18  1530000000   103888916          3944920         48258988
-##  4 PRA        20  2670000000    61816896          9315285        426497579
-##  5 PGR        20 36030000000   603170892         37012250       1008419781
-##  6 AFG        20 10060000000    89883222          8814625        534122410
-##  7 WRB        20  8700000000   136028287         17369743        809256309
-##  8 ALL        20 34300000000   468000000        157413573       9312739371
-##  9 KMPR       20  2920000000    58321766          7701840        269429116
-## 10 ACGL       20 11670000000   133063225         17899844       1051913910
+##  1 HRTG       15   443820000    29794960          7099597         87935639
+##  2 EIG        20  1330000000    30935238          1448762         42125251
+##  3 TPRE       18  1520000000   103888916          3944920         48258988
+##  4 PRA        20  2690000000    61816896          9315285        426497579
+##  5 PGR        20 36110000000   603170892         37012250       1008419781
+##  6 AFG        20 10200000000    89883222          8814625        534122410
+##  7 WRB        20  8680000000   136028287         17369743        809256309
+##  8 ALL        20 34330000000   468000000        157413573       9312739371
+##  9 KMPR       20  3000000000    58321766          7701840        269429116
+## 10 ACGL       20 11730000000   133063225         17899844       1051913910
 ## # ... with 30 more rows, and 5 more variables: pct_init_shares &lt;dbl&gt;,
 ## #   pct_market_cap &lt;dbl&gt;, tsr &lt;dbl&gt;, irr &lt;dbl&gt;,
 ## #   buyback_effectiveness &lt;dbl&gt;</code></pre>

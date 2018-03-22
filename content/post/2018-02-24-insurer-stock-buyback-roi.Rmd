@@ -142,13 +142,10 @@ buyback_roi <- data_to_use %>%
 The buyback ROI is calculated based on three items:
 
 1. The cash outflows associated with share repurchases each quarter
-2. The implied cash inflows of dividends (common and special) "saved" for the shares repurchased
+2. The implied cash inflows of dividends (common and special) "avoided" by repurchasing shares
 3. A final cash inflow related to the total value of the cumulative shares repurchased
 
-
-Walk through methodology using TRV as an example. Use graphs to show dollar repurchased, shares repurchased, net cash flows.
-
-Create for every company...nice single slide summary.
+We will walk through the calculations using Travelers (TRV) as an example. The graph below shows the number of common shares repurchased by TRV since 2013. 
 
 Show graph of stock price with avg repurchase price as a line; number of shares repurchased below it. Ideally include pb ratio graph also...
 
@@ -160,20 +157,70 @@ company_example <- data_to_use %>%
   filter(ticker == "TRV")
 
 company_example %>%
-  ggplot(aes(x = date, y = commonshares)) +
-  geom_col()
+  mutate(dec_date = seq(from = 2013.25, to = 2018, by = 0.25)) %>%
+  ggplot(aes(x = dec_date, y = sharesrepurchased/1e6)) +
+  geom_col() +
+  scale_x_continuous(breaks = seq(from = 2013.25, to = 2018, by = 0.5), 
+                     labels = company_example$yr_qtr[seq(from = 1, to = 20, by = 2)]) +
+  theme(axis.text.x = element_text(angle=315, vjust = 0.5)) +
+  ylab("Shares Repurchased (millions)") + xlab("Quarter") +
+  ggtitle("Travelers Common Shares Repurchased (2013 - 2017)")
 
 company_example %>%
-  ggplot(aes(x = date, y = sharesrepurchased)) +
-  geom_col()
+  mutate(dec_date = seq(from = 2013.25, to = 2018, by = 0.25)) %>%
+  ggplot(aes(x = dec_date, y = cum_shares_repurchased/1e6)) +
+  geom_line() + geom_point() +
+  scale_x_continuous(breaks = seq(from = 2013.25, to = 2018, by = 0.5), 
+                     labels = company_example$yr_qtr[seq(from = 1, to = 20, by = 2)]) +
+  theme(axis.text.x = element_text(angle=315, vjust = 0.5)) +
+  ylab("Cumulative Shares Repurchased (millions)") + xlab("Quarter") +
+  ggtitle("Travelers Cumulative Common Shares Repurchased (2013 - 2017)")
+
+
+```
+
+```{r example2}
 
 company_example %>%
-  ggplot(aes(x = date, y = cum_shares_repurchased)) +
-  geom_col()
+  ungroup(ticker) %>%
+  mutate(dec_date = seq(from = 2013.25, to = 2018, by = 0.25)) %>%
+  mutate(div_saved = ((commondivpershare + specdivpershare) * cum_shares_repurchased),
+         net_repurchase = dollarrepurchase - div_saved) %>%
+  select(dec_date, div_saved, net_repurchase) %>%
+  gather(key, value, -dec_date) %>%
+  ggplot(aes(x = dec_date)) +
+  geom_col(aes(y = value/1e6, fill = key)) + 
+  scale_fill_manual(name = NULL, 
+                    labels = c("Dividends avoided", "Net repurchases"),
+                    values = c(aon.colors$lightgray, aon.colors$teal)) +
+  scale_x_continuous(breaks = seq(from = 2013.25, to = 2018, by = 0.5), 
+                     labels = company_example$yr_qtr[seq(from = 1, to = 20, by = 2)]) +
+  theme(axis.text.x = element_text(angle=315, vjust = 0.5)) +
+  ylab("Dollar Amount of Net Share Repurchases (millions)") + xlab("Quarter") +
+  ggtitle("Dollar amount of net repurchases by quarter since 2013")
+
+```
+
+```{r example3}
 
 company_example %>%
-  ggplot(aes(x = date, y = cash_flow_final)) +
-  geom_col()
+  ungroup(ticker) %>%
+  mutate(dec_date = seq(from = 2013.25, to = 2018, by = 0.25)) %>%
+  mutate(div_saved = ((commondivpershare + specdivpershare) * cum_shares_repurchased),
+         net_repurchase = dollarrepurchase - div_saved,
+         final_cashflow = if_else(year == 2017 & qtr_ == 4, close * cum_shares_repurchased, 0)) %>%
+  select(dec_date, div_saved, net_repurchase, final_cashflow) %>%
+  gather(key, value, -dec_date) %>%
+  ggplot(aes(x = dec_date)) +
+  geom_col(aes(y = value/1e6, fill = key)) + 
+  scale_fill_manual(name = NULL, 
+                    labels = c("Dividends avoided", "Final", "Net repurchases"),
+                    values = c(aon.colors$lightgray, aon.colors$darkgray, aon.colors$teal)) +
+  scale_x_continuous(breaks = seq(from = 2013.25, to = 2018, by = 0.5), 
+                     labels = company_example$yr_qtr[seq(from = 1, to = 20, by = 2)]) +
+  theme(axis.text.x = element_text(angle=315, vjust = 0.5)) +
+  ylab("Dollar Amount of Net Share Repurchases (millions)") + xlab("Quarter") +
+  ggtitle("Dollar amount of net repurchases by quarter since 2013")
 
 ```
 
