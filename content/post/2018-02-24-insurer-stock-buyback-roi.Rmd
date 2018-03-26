@@ -1,12 +1,12 @@
 ---
 title: "P&C (Re)insurer Stock Buyback ROI"
 subtitle: ''
-date: '2018-03-21'
+date: '2018-03-26'
 slug: insurer-stock-buyback-roi
 tags:
   - insurance
   - stocks
-draft: yes
+draft: no
 ---
 
 ```{r setup, include=FALSE, warning=FALSE, message=FALSE}
@@ -21,6 +21,9 @@ library(tidyquant)
 library(flextable)
 library(AonECM)
 library(officer)
+library(DT)
+library(widgetframe)
+library(patchwork)
 
 knitr::opts_chunk$set(
 	fig.align = "center",
@@ -39,13 +42,13 @@ AonECM::ggSetTheme()
 
 # Goal
 
-The goal of this analysis is to calculate the historical return on investment (ROI) of share buybacks for P&C (re)insurance companies over the past 20 quarters (2013 - 2017). This is one way to measure whether companies have effectively allocated their capital to share buybacks. 
+The goal of this analysis is to calculate the historical return on investment (ROI) of share buybacks for P&C (re)insurance companies over the past 20 quarters (2013 - 2017). This is one way to measure whether companies have effectively allocated their capital to share buybacks. We split the buyback ROI into two components - buyback strategy and buyback effectiveness - to understand how well a company has timed their share repurchases.
 
-We split the buyback ROI into two components - buyback strategy and buyback effectiveness - to understand how well a company has timed their share repurchases.
+The methodology used is inherently backwards looking and answers the question: Based on what we know now (i.e. a company's stock price over the period), did the company achieve a reasonable return on their cash spent buying back shares? 
 
 # Data used
 
-The data used for this analysis is from SEC Forms 10-Q and 10-K for each company over the time period of 2013 - 2017, per S&P Global Market Intelligence.
+The data used for this analysis is from SEC Forms 10-Q and 10-K for each company over the time period of 2013 - 2017 on a quarterly basis, per S&P Global Market Intelligence.
 
 - Number of shares repurchased in the quarter
 - Average price per share for shares repurchased
@@ -139,49 +142,41 @@ buyback_roi <- data_to_use %>%
 
 # Methodology
 
-The buyback ROI is calculated based on three items:
-
-1. The cash outflows associated with share repurchases each quarter
-2. The implied cash inflows of dividends (common and special) "avoided" by repurchasing shares
-3. A final cash inflow related to the total value of the cumulative shares repurchased
-
-We will walk through the calculations using Travelers (TRV) as an example. The graph below shows the number of common shares repurchased by TRV since 2013. 
-
-Show graph of stock price with avg repurchase price as a line; number of shares repurchased below it. Ideally include pb ratio graph also...
-
-Bar graphs with quarterly cash flows - stacked to see impact of repurchase + dividends
-
 ```{r company-example}
 
+example_ticker <- "TRV"
+
 company_example <- data_to_use %>%
-  filter(ticker == "TRV")
-
-company_example %>%
-  mutate(dec_date = seq(from = 2013.25, to = 2018, by = 0.25)) %>%
-  ggplot(aes(x = dec_date, y = sharesrepurchased/1e6)) +
-  geom_col() +
-  scale_x_continuous(breaks = seq(from = 2013.25, to = 2018, by = 0.5), 
-                     labels = company_example$yr_qtr[seq(from = 1, to = 20, by = 2)]) +
-  theme(axis.text.x = element_text(angle=315, vjust = 0.5)) +
-  ylab("Shares Repurchased (millions)") + xlab("Quarter") +
-  ggtitle("Travelers Common Shares Repurchased (2013 - 2017)")
-
-company_example %>%
-  mutate(dec_date = seq(from = 2013.25, to = 2018, by = 0.25)) %>%
-  ggplot(aes(x = dec_date, y = cum_shares_repurchased/1e6)) +
-  geom_line() + geom_point() +
-  scale_x_continuous(breaks = seq(from = 2013.25, to = 2018, by = 0.5), 
-                     labels = company_example$yr_qtr[seq(from = 1, to = 20, by = 2)]) +
-  theme(axis.text.x = element_text(angle=315, vjust = 0.5)) +
-  ylab("Cumulative Shares Repurchased (millions)") + xlab("Quarter") +
-  ggtitle("Travelers Cumulative Common Shares Repurchased (2013 - 2017)")
-
+  filter(ticker == example_ticker)
 
 ```
 
 ```{r example2}
 
-company_example %>%
+# company_example %>%
+#   mutate(dec_date = seq(from = 2013.25, to = 2018, by = 0.25)) %>%
+#   ggplot(aes(x = dec_date, y = sharesrepurchased/1e6)) +
+#   geom_col() +
+#   scale_x_continuous(breaks = seq(from = 2013.25, to = 2018, by = 0.5), 
+#                      labels = company_example$yr_qtr[seq(from = 1, to = 20, by = 2)]) +
+#   theme(axis.text.x = element_text(angle=315, vjust = 0.5)) +
+#   ylab("Shares Repurchased (millions)") + xlab("Quarter") +
+#   ggtitle("Travelers Common Shares Repurchased (2013 - 2017)")
+
+
+gg_cum_shares <- company_example %>%
+  mutate(dec_date = seq(from = 2013.25, to = 2018, by = 0.25)) %>%
+  ggplot(aes(x = dec_date, y = cum_shares_repurchased/1e6)) +
+  geom_line() + geom_point() +
+  scale_x_continuous(breaks = seq(from = 2013.25, to = 2018, by = 0.5), 
+                     labels = company_example$yr_qtr[seq(from = 1, to = 20, by = 2)]) +
+  scale_y_continuous(breaks = c(0, 25, 50, 75, 100, 125)) +
+  theme(axis.text.x = element_text(angle=315, vjust = 0.5)) +
+  ylab("Cumulative shares repurchased (millions)") + xlab("Quarter") +
+  ggtitle("Cumulative number of common shares repurchased since 2013", 
+          subtitle = "Travelers Companies, Inc.")
+
+gg_cash_flows <- company_example %>%
   ungroup(ticker) %>%
   mutate(dec_date = seq(from = 2013.25, to = 2018, by = 0.25)) %>%
   mutate(div_saved = ((commondivpershare + specdivpershare) * cum_shares_repurchased),
@@ -189,50 +184,162 @@ company_example %>%
   select(dec_date, div_saved, net_repurchase) %>%
   gather(key, value, -dec_date) %>%
   ggplot(aes(x = dec_date)) +
-  geom_col(aes(y = value/1e6, fill = key)) + 
+  geom_col(aes(y = -value/1e6, fill = key)) + 
   scale_fill_manual(name = NULL, 
-                    labels = c("Dividends avoided", "Net repurchases"),
+                    labels = c("Dividends avoided","Net repurchases"),
                     values = c(aon.colors$lightgray, aon.colors$teal)) +
   scale_x_continuous(breaks = seq(from = 2013.25, to = 2018, by = 0.5), 
                      labels = company_example$yr_qtr[seq(from = 1, to = 20, by = 2)]) +
   theme(axis.text.x = element_text(angle=315, vjust = 0.5)) +
-  ylab("Dollar Amount of Net Share Repurchases (millions)") + xlab("Quarter") +
-  ggtitle("Dollar amount of net repurchases by quarter since 2013")
+  ylab("Dollar amount of net share repurchases (millions)") + xlab("Quarter") +
+  ggtitle("Dollar amount of net repurchases by quarter since 2013",
+          subtitle = "Travelers Companies, Inc.")
 
 ```
+
+The buyback ROI is calculated based on three items:
+
+1. The cash outflows associated with share repurchases each quarter
+2. The implied cash inflows of dividends (common and special) "avoided" by repurchasing shares
+3. A final cash inflow related to the total value of the cumulative shares repurchased
+
+We will walk through the calculations using Travelers (TRV) as an example. The graph below shows the cumulative number of common shares repurchased by TRV since 2013. They have repurchased just under 129 million shares, or about 34% of their total number of shares outstanding at the start of 2013.
+
+```{r gg-cum-shares}
+
+gg_cum_shares
+
+```
+
+The graph below shows the dollar amount of dollar amount of shares repurchased and dividends "avoided" each quarter. This corresponds to #1 and #2 in the list above. From this we can see that, for example, in the fourth quarters of 2013, 2014, and 2015, TRV repurchased around \$1b of shares. These amount is calculated using the number of shares repurchased each quarter times the average price paid for each share, both of which are disclosed in quarterly filings. 
+
+The dividends "avoided" (i.e. an implied cash inflow) are cumulative over time as they are the amount of dividends TRV does not have to pay to shareholders because they repurchased those shares. By the end of 2017, TRV was avoiding ~\$93m of dividend payments each quarter (= \$0.72 common div per share times 129 million shares repurchased).
+
+```{r gg-cash-flows}
+
+gg_cash_flows
+
+```
+
+The third cash flow (#3) is the final value of the cumulative shares repurchased, or the ending market value of the shares repurchased over the five year time period. This is calculated as the cumulative number of shares repurchased (129 million) times the ending share price on December 31, 2017 (\$135.64). 
 
 ```{r example3}
 
 company_example %>%
   ungroup(ticker) %>%
   mutate(dec_date = seq(from = 2013.25, to = 2018, by = 0.25)) %>%
-  mutate(div_saved = ((commondivpershare + specdivpershare) * cum_shares_repurchased),
-         net_repurchase = dollarrepurchase - div_saved,
+  mutate(div_saved = -((commondivpershare + specdivpershare) * cum_shares_repurchased),
+         net_repurchase = -(dollarrepurchase - div_saved),
          final_cashflow = if_else(year == 2017 & qtr_ == 4, close * cum_shares_repurchased, 0)) %>%
   select(dec_date, div_saved, net_repurchase, final_cashflow) %>%
   gather(key, value, -dec_date) %>%
+  mutate(key = factor(key, levels = c("div_saved","net_repurchase","final_cashflow"))) %>%
   ggplot(aes(x = dec_date)) +
   geom_col(aes(y = value/1e6, fill = key)) + 
   scale_fill_manual(name = NULL, 
-                    labels = c("Dividends avoided", "Final", "Net repurchases"),
-                    values = c(aon.colors$lightgray, aon.colors$darkgray, aon.colors$teal)) +
+                    labels = c("Dividends avoided", "Net repurchases", "Value of shares \n repurchased"),
+                    values = c(aon.colors$lightgray, aon.colors$teal, aon.colors$darkgray)) +
   scale_x_continuous(breaks = seq(from = 2013.25, to = 2018, by = 0.5), 
                      labels = company_example$yr_qtr[seq(from = 1, to = 20, by = 2)]) +
+  scale_y_continuous(labels = scales::comma_format()) +
   theme(axis.text.x = element_text(angle=315, vjust = 0.5)) +
   ylab("Dollar Amount of Net Share Repurchases (millions)") + xlab("Quarter") +
   ggtitle("Dollar amount of net repurchases by quarter since 2013")
 
 ```
 
-# Overall results
+```{r buyback-output}
 
-A few graphs or tables (datatable?) summarizing results for each company. Add any interesting commments.
-
-```{r summary-roi}
-
-buyback_roi
+buyback_roi_output <- buyback_roi %>%
+  transmute(Ticker = ticker,
+            `# of quarters` = n_qtrs,
+            `Current Mkt Cap ($m)` = number_format(market_cap / 1e6, 0),
+            `Initial Shares (mil)` = number_format(init_shares / 1e6, 1),
+            `Shares Repurchased (mil)` = number_format(shares_repurchased / 1e6,1),
+            `Dollar Repurchased ($m)` = number_format(dollar_repurchased / 1e6,0),
+            `Percent of Initial Shares Repurchased` = pct_format(pct_init_shares, 1),
+            `Percent of Mkt Cap Repurchased` = pct_format(pct_market_cap,1),
+            `Total Shareholder Return` = pct_format(tsr, 1),
+            `Buyback ROI` = pct_format(irr, 1),
+            `Buyback Effectiveness` = pct_format(buyback_effectiveness,1))
 
 ```
+
+Given this set of cash flows, we then calculate the annualized internal rate of return and that gives us the buyback ROI. TRV buyback ROI is 14.8%. 
+
+An additional metric to calculate is the "buyback effectiveness" return. This metric reflects isolates the impact of management timing in repurchasing shares by backing out the total shareholder return over the time period from the buyback ROI. So buyback effectiveness equals one plus buyback ROI divided one plus total shareholder return (minus one). This metric highlights companies that successfully buyback more shares right before their stock price increases and buy less before their stock decreases. TRV has a buyback effectiveness result of 2.3%, indicating that management timing slightly improved the total buyback ROI.
+
+```{r share-price}
+
+stock_prices %>%
+  filter(symbol == example_ticker) %>%
+  as_tbl_time(index = date) %>%
+  filter_time('2013' ~ '2017') %>%
+  mutate(yr_qtr = paste0(year(date), "Q", quarter(date))) %>%
+  left_join(data_to_use %>%
+              filter(ticker == example_ticker) %>% 
+              ungroup() %>% 
+              select(-market_cap, -close, - adjusted, - company, - ticker, -date), 
+            by = c("yr_qtr")) %>%
+  mutate(`Price to book` = adjusted / bvps) %>%
+  mutate(`Dollar Repurchase` = dollarrepurchase / 1e6) %>%
+  select(date, `Price to book`, adjusted, sharesrepurchased, `Dollar Repurchase`) %>%
+  gather(key = metric, value = value, -date) %>%
+  filter(metric %in% c("Price to book", "Dollar Repurchase")) %>%
+  ggplot(aes(x = date)) +
+  geom_line(aes(y = value)) +
+  facet_grid(metric ~ ., scales = "free_y") +
+  xlab("Date") + ylab(NULL) +
+  ggtitle("Price-to-book Ratio vs. Dollar Amount of Repurchases ($m)")
+    
+
+```
+
+The table below summarizes key buyback metrics for TRV.
+
+```{r example-table}
+
+buyback_roi_output %>%
+  filter(Ticker == "TRV") %>%
+  regulartable() %>%
+  ft_theme_aon() %>%
+  add_title_header("TRV buyback ROI summary")
+
+```
+
+# Overall results
+
+Now we can look at the results for all P&C (re)insurers. The table below highlights the top 10 companies sorted by buyback effectiveness. 
+
+```{r top-15}
+
+buyback_roi_output %>%
+  slice(1:10) %>%
+  regulartable() %>%
+  ft_theme_aon() %>%
+  add_title_header("Top 10 most effective share repurchasers")
+
+```
+<br>
+
+The table below provides the results for all companies sorted by buyback effectiveness.
+
+<br>
+```{r summary-roi}
+
+dt_buyback_roi <- buyback_roi_output %>% 
+  DT::datatable(options = list(
+     columnDefs = list(list(className = 'dt-left')),
+     pageLength = 45, lengthMenu = NULL),
+  fillContainer = TRUE, rownames = FALSE,
+  caption = htmltools::tags$caption(
+    style = 'caption-side: top; text-align: right;', htmltools::em('January 1, 2013 to December 31, 2017'))) %>%
+  formatStyle(c(3:11), textAlign = 'right')
+
+widgetframe::frameWidget(dt_buyback_roi, width = '100%')
+
+```
+
 
 
 
