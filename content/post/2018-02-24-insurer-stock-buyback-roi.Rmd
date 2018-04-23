@@ -211,7 +211,7 @@ gg_cum_shares
 
 ```
 
-The graph below shows the dollar amount of dollar amount of shares repurchased and dividends "avoided" each quarter. This corresponds to #1 and #2 in the list above. From this we can see that, for example, in the fourth quarters of 2013, 2014, and 2015, TRV repurchased around \$1b of shares. These amount is calculated using the number of shares repurchased each quarter times the average price paid for each share, both of which are disclosed in quarterly filings. 
+The graph below shows the dollar amount of dollar amount of shares repurchased and dividends "avoided" each quarter. This corresponds to #1 and #2 in the list above. From this we can see that, for example, in the fourth quarters of 2013, 2014, and 2015, TRV repurchased around \$1b of shares. This amount is calculated using the number of shares repurchased each quarter times the average price paid for each share, both of which are disclosed in quarterly filings. 
 
 The dividends "avoided" (i.e. an implied cash inflow) are cumulative over time as they are the amount of dividends TRV does not have to pay to shareholders because they repurchased those shares. By the end of 2017, TRV was avoiding ~\$93m of dividend payments each quarter (= \$0.72 common div per share times 129 million shares repurchased).
 
@@ -267,7 +267,7 @@ buyback_roi_output <- buyback_roi %>%
 
 Given this set of cash flows, we then calculate the annualized internal rate of return and that gives us the buyback ROI. TRV buyback ROI is 14.8%. 
 
-An additional metric to calculate is the "buyback effectiveness" return. This metric reflects isolates the impact of management timing in repurchasing shares by backing out the total shareholder return over the time period from the buyback ROI. So buyback effectiveness equals one plus buyback ROI divided one plus total shareholder return (minus one). This metric highlights companies that successfully buyback more shares right before their stock price increases and buy less before their stock decreases. TRV has a buyback effectiveness result of 2.3%, indicating that management timing slightly improved the total buyback ROI.
+An additional metric to calculate is the "buyback effectiveness" return. This metric isolates the impact of management timing in repurchasing shares by backing out the total shareholder return over the time period from the buyback ROI. So buyback effectiveness equals one plus buyback ROI divided one plus total shareholder return (minus one). This metric highlights companies that successfully buyback more shares right before their stock price increases and buy less before their stock decreases. TRV has a buyback effectiveness result of 2.3%, indicating that management timing slightly improved the total buyback ROI.
 
 ```{r share-price}
 
