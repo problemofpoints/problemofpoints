@@ -1,0 +1,43 @@
+---
+title: The State of Artificial Intelligence
+subtitle: Notes from Andrew Ng talk
+date: '2018-06-30'
+slug: the-state-of-artificial-intelligence
+tags:
+  - data science
+draft: false
+---
+
+```{r setup, warning=FALSE,message=FALSE,include=FALSE}
+
+library(knitr)
+library(magick)
+
+knitr::opts_chunk$set(
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE,
+	echo = FALSE
+)
+
+```
+
+Below are my notes from Andrew Ng's talk, "The State of Artificial Intelligence". See the [YouTube video](https://www.youtube.com/watch?v=NKpuX_yzdYs).
+
+```{r read-notes}
+
+notes <- magick::image_read_pdf("data/Andrew Ng State of Artificial Intelligence 2017 YouTube video.pdf", density = 100)
+
+```
+
+```{r write-notes1, out.width="100%"}
+notes[1]
+```
+
+```{r write-notes2, out.width="100%"}
+notes[2]
+```
+
+```{r write-notes3, out.width="100%"}
+notes[3]
+```
