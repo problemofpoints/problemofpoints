@@ -22,14 +22,13 @@ knitr::opts_chunk$set(
 
 ```
 
-Below are my notes from Andrew Ng's talk, "The State of Artificial Intelligence". See the [YouTube video](https://www.youtube.com/watch?v=NKpuX_yzdYs).
-
 ```{r read-notes}
-
 notes <- magick::image_read_pdf("data/Andrew Ng State of Artificial Intelligence 2017 YouTube video.pdf", density = 100)
-
 ```
 
+Below are my notes from Andrew Ng's talk, "The State of Artificial Intelligence". See the [YouTube video](https://www.youtube.com/watch?v=NKpuX_yzdYs).
+
+<!--more-->
 ```{r write-notes1, out.width="100%"}
 notes[1]
 ```
