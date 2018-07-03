@@ -17,7 +17,5 @@ Below are my notes from Chapter 1 - What is Deep Learning? - of *Deep Learning w
 
 <!--more-->
 <img src="/post/2018-06-30-what-is-deep-learning_files/figure-html/write-notes1-1.png" width="100%" style="display: block; margin: auto;" />
-
 <img src="/post/2018-06-30-what-is-deep-learning_files/figure-html/write-notes2-1.png" width="100%" style="display: block; margin: auto;" />
-
 <img src="/post/2018-06-30-what-is-deep-learning_files/figure-html/write-notes3-1.png" width="100%" style="display: block; margin: auto;" />
