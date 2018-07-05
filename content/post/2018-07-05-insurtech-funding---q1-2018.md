@@ -1,6 +1,6 @@
 ---
-title: Insurtech Financing (2013 to Q1 2018)
-subtitle: “”
+title: Insurtech Financing
+subtitle: 2013 to Q1 2018
 date: 2018-07-05
 slug: insurtech-funding---q1-2018
 tags:
