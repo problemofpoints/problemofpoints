@@ -35,11 +35,9 @@ Below are my notes from Chapter 1 - What is Deep Learning? - of *Deep Learning w
 ```{r write-notes1, out.width="100%"}
 notes[1]
 ```
-
 ```{r write-notes2, out.width="100%"}
 notes[2]
 ```
-
 ```{r write-notes3, out.width="100%"}
 notes[3]
 ```
