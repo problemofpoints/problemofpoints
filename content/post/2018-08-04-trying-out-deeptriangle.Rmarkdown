@@ -1,0 +1,146 @@
+---
+title: Trying out DeepTriangle
+date: '2018-08-04'
+slug: trying-out-deeptriangle
+categories: []
+tags:
+  - reserving
+subtitle: A Deep Learning Approach to Loss Reserving
+---
+
+```{r setup, warning=FALSE,message=FALSE,include=FALSE}
+
+library(knitr)
+
+knitr::opts_chunk$set(
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE,
+	#echo = FALSE,
+	collapse = TRUE,
+  comment = "#>",
+  out.width = "100%"
+)
+
+```
+
+# Goal
+
+Attempt to replicate the results found in the paper [DeepTriangle](https://arxiv.org/abs/1804.09253) (see also this [presentation](http://ibnr.netlify.com)) using the [R package](https://github.com/kevinykuo/deeptriangle) of the same name).
+
+This initial post will simply run the code from the package's `README.Rmd`.
+
+<!--more-->
+# Get the data
+
+```{r get-data}
+# devtools::install_github("kevinykuo/deeptriangle")
+# devtools::install_github("kevinykuo/insurance")
+
+library(deeptriangle)
+library(tidyverse)
+library(keras)
+
+data <- dt_data_prep(insurance::schedule_p, dt_group_codes)
+
+lobs <- c("workers_compensation", "commercial_auto",
+          "private_passenger_auto", "other_liability")
+
+data$workers_compensation %>% glimpse()
+
+```
+
+# Run the model
+
+```{r run-model}
+predictions <- lobs %>%
+  map(
+    function(x) {
+      # clear session and instantiate model
+      k_clear_session()
+      model <- dt_model()
+
+      c(training_data, validation_data, full_training_data) %<-%
+        dt_train_validation_split(data[[x]])
+
+      message("Training - ", x)
+
+      # determine number of epochs
+      epochs_to_train <- dt_optimize_epochs(
+        model, training_data, validation_data
+      )
+
+      # clear session and reinstantiate model
+      k_clear_session()
+      model <- dt_model()
+
+      # fit model to all training data
+      history <- model %>%
+        fit(x = full_training_data$x,
+            y = full_training_data$y,
+            batch_size = 128,
+            epochs = epochs_to_train,
+            verbose = 0)
+      dt_compute_predictions(model, data[[x]])
+    }) %>%
+  bind_rows()
+
+```
+
+# Check the model fit
+
+```{r model-fit}
+model_results <- dt_compute_metrics(predictions) %>%
+  bind_rows(stochastic_model_results) %>%
+  gather(metric, value, mape, rmspe)
+
+```
+
+```{r output1}
+dt_tabulate_metrics(model_results, metric = "mape") %>%
+  knitr::kable(booktabs = "T", digits = 3)
+
+```
+<br>
+```{r output2}
+dt_tabulate_metrics(model_results, metric = "rmspe") %>%
+  knitr::kable(booktabs = "T", digits = 3)
+
+```
+
+These results are very close to what we expected!
+
+# Create actual vs. prediction plots
+
+```{r plot1, fig.cap = "Company 7080, Workers' Compensation"}
+# devtools::install_github("thomasp85/patchwork")
+library(patchwork)
+
+paid_plot <- dt_plot_predictions(predictions, "7080", "workers_compensation", "paid_loss")
+case_plot <- dt_plot_predictions(predictions, "7080", "workers_compensation", "claims_outstanding")
+
+paid_plot + case_plot + plot_layout(ncol = 1)
+
+```
+
+
+```{r plot2, fig.cap = "Company 1767, Commercial Auto"}
+paid_plot2 <- dt_plot_predictions(predictions, "1767", "commercial_auto", "paid_loss")
+case_plot2 <- dt_plot_predictions(predictions, "1767", "commercial_auto", "claims_outstanding")
+
+paid_plot2 + case_plot2 + plot_layout(ncol = 1)
+
+```
+
+
+```{r plot3, fig.cap = "Company 337, Workers' Compensation"}
+paid_plot3 <- dt_plot_predictions(predictions, "337", "workers_compensation", "paid_loss")
+case_plot3 <- dt_plot_predictions(predictions, "337", "workers_compensation", "claims_outstanding")
+
+paid_plot3 + case_plot3 + plot_layout(ncol = 1)
+
+```
+
+# Next steps
+
+In this post, we successfully ran the code to apply the DeepTriangle method. Now we can dig into the method to better understand it and make adjustments and extensions.
