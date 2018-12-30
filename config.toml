@@ -1,4 +1,4 @@
-baseurl = "https://www.problemofpoints.com"
+baseurl = "https://www.problemofpoints.com/"
 theme = "cocoa-eh-hugo-theme"
 builddrafts = true
 canonifyurls = true

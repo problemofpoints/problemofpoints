@@ -1,0 +1,255 @@
+---
+title: Trying out DeepTriangle
+date: '2018-08-04'
+slug: trying-out-deeptriangle
+categories: []
+tags:
+  - reserving
+subtitle: A Deep Learning Approach to Loss Reserving
+---
+
+
+
+<div id="goal" class="section level1">
+<h1>Goal</h1>
+<p>Attempt to replicate the results found in the paper <a href="https://arxiv.org/abs/1804.09253">DeepTriangle</a> (see also this <a href="http://ibnr.netlify.com">presentation</a>) using the <a href="https://github.com/kevinykuo/deeptriangle">R package</a> of the same name).</p>
+<p>This initial post will simply run the code from the package’s <code>README.Rmd</code>.</p>
+<!--more-->
+</div>
+<div id="get-the-data" class="section level1">
+<h1>Get the data</h1>
+<pre class="r"><code># devtools::install_github(&quot;kevinykuo/deeptriangle&quot;)
+# devtools::install_github(&quot;kevinykuo/insurance&quot;)
+
+library(deeptriangle)
+library(tidyverse)
+library(keras)
+
+data &lt;- dt_data_prep(insurance::schedule_p, dt_group_codes)
+
+lobs &lt;- c(&quot;workers_compensation&quot;, &quot;commercial_auto&quot;,
+          &quot;private_passenger_auto&quot;, &quot;other_liability&quot;)
+
+data$workers_compensation %&gt;% glimpse()
+#&gt; Observations: 5,000
+#&gt; Variables: 23
+#&gt; $ lob                          &lt;chr&gt; &quot;workers_compensation&quot;, &quot;workers_...
+#&gt; $ group_code                   &lt;fct&gt; 10385, 10385, 10385, 10385, 10385...
+#&gt; $ group_name                   &lt;chr&gt; &quot;FFVA Mut Ins Co&quot;, &quot;FFVA Mut Ins ...
+#&gt; $ accident_year                &lt;int&gt; 1988, 1988, 1988, 1988, 1988, 198...
+#&gt; $ development_year             &lt;int&gt; 1988, 1989, 1990, 1991, 1992, 199...
+#&gt; $ development_lag              &lt;int&gt; 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1,...
+#&gt; $ incurred_loss                &lt;dbl&gt; 12956, 13852, 14002, 13600, 13537...
+#&gt; $ cumulative_paid_loss         &lt;dbl&gt; 4550, 9458, 11810, 12739, 12431, ...
+#&gt; $ bulk_loss                    &lt;dbl&gt; 2784, 994, -97, -283, 81, -215, -...
+#&gt; $ earned_premium_direct        &lt;dbl&gt; 17428, 17428, 17428, 17428, 17428...
+#&gt; $ earned_premium_ceded         &lt;dbl&gt; 865, 865, 865, 865, 865, 865, 865...
+#&gt; $ earned_premium_net           &lt;dbl&gt; 16563, 16563, 16563, 16563, 16563...
+#&gt; $ single                       &lt;int&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...
+#&gt; $ posted_reserve_97            &lt;dbl&gt; 49911, 49911, 49911, 49911, 49911...
+#&gt; $ calendar_year                &lt;dbl&gt; 1988, 1989, 1990, 1991, 1992, 199...
+#&gt; $ incremental_paid_loss        &lt;dbl&gt; 4550, 4908, 2352, 929, -308, 162,...
+#&gt; $ case_reserves                &lt;dbl&gt; 0.5075167542, 0.2652901044, 0.132...
+#&gt; $ incremental_paid_actual      &lt;dbl&gt; 0.274708688, 0.296323130, 0.14200...
+#&gt; $ incremental_paid             &lt;dbl&gt; 0.274708688, 0.296323130, 0.14200...
+#&gt; $ case_reserves_actual         &lt;dbl&gt; 0.5075167542, 0.2652901044, 0.132...
+#&gt; $ bucket                       &lt;chr&gt; NA, &quot;train&quot;, &quot;train&quot;, &quot;train&quot;, &quot;t...
+#&gt; $ prior_paid_along_ay          &lt;list&gt; [&lt;0, 0, 0, 0, 0, 0, 0, 0, 0&gt;, &lt;0...
+#&gt; $ prior_case_reserves_along_ay &lt;list&gt; [&lt;0, 0, 0, 0, 0, 0, 0, 0, 0&gt;, &lt;0...</code></pre>
+</div>
+<div id="run-the-model" class="section level1">
+<h1>Run the model</h1>
+<pre class="r"><code>predictions &lt;- lobs %&gt;%
+  map(
+    function(x) {
+      # clear session and instantiate model
+      k_clear_session()
+      model &lt;- dt_model()
+
+      c(training_data, validation_data, full_training_data) %&lt;-%
+        dt_train_validation_split(data[[x]])
+
+      message(&quot;Training - &quot;, x)
+
+      # determine number of epochs
+      epochs_to_train &lt;- dt_optimize_epochs(
+        model, training_data, validation_data
+      )
+
+      # clear session and reinstantiate model
+      k_clear_session()
+      model &lt;- dt_model()
+
+      # fit model to all training data
+      history &lt;- model %&gt;%
+        fit(x = full_training_data$x,
+            y = full_training_data$y,
+            batch_size = 128,
+            epochs = epochs_to_train,
+            verbose = 0)
+      dt_compute_predictions(model, data[[x]])
+    }) %&gt;%
+  bind_rows()</code></pre>
+</div>
+<div id="check-the-model-fit" class="section level1">
+<h1>Check the model fit</h1>
+<pre class="r"><code>model_results &lt;- dt_compute_metrics(predictions) %&gt;%
+  bind_rows(stochastic_model_results) %&gt;%
+  gather(metric, value, mape, rmspe)</code></pre>
+<pre class="r"><code>dt_tabulate_metrics(model_results, metric = &quot;mape&quot;) %&gt;%
+  knitr::kable(booktabs = &quot;T&quot;, digits = 3)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">lob</th>
+<th align="right">Mack</th>
+<th align="right">ODP</th>
+<th align="right">CIT</th>
+<th align="right">LIT</th>
+<th align="right">CSR</th>
+<th align="right">DeepTriangle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">commercial_auto</td>
+<td align="right">0.060</td>
+<td align="right">0.217</td>
+<td align="right">0.052</td>
+<td align="right">0.052</td>
+<td align="right">0.074</td>
+<td align="right">0.055</td>
+</tr>
+<tr class="even">
+<td align="left">other_liability</td>
+<td align="right">0.134</td>
+<td align="right">0.223</td>
+<td align="right">0.165</td>
+<td align="right">0.152</td>
+<td align="right">0.292</td>
+<td align="right">0.112</td>
+</tr>
+<tr class="odd">
+<td align="left">private_passenger_auto</td>
+<td align="right">0.038</td>
+<td align="right">0.039</td>
+<td align="right">0.038</td>
+<td align="right">0.040</td>
+<td align="right">0.037</td>
+<td align="right">0.025</td>
+</tr>
+<tr class="even">
+<td align="left">workers_compensation</td>
+<td align="right">0.053</td>
+<td align="right">0.105</td>
+<td align="right">0.054</td>
+<td align="right">0.054</td>
+<td align="right">0.075</td>
+<td align="right">0.040</td>
+</tr>
+<tr class="odd">
+<td align="left"><br></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>dt_tabulate_metrics(model_results, metric = &quot;rmspe&quot;) %&gt;%
+  knitr::kable(booktabs = &quot;T&quot;, digits = 3)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">lob</th>
+<th align="right">Mack</th>
+<th align="right">ODP</th>
+<th align="right">CIT</th>
+<th align="right">LIT</th>
+<th align="right">CSR</th>
+<th align="right">DeepTriangle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">commercial_auto</td>
+<td align="right">0.080</td>
+<td align="right">0.822</td>
+<td align="right">0.076</td>
+<td align="right">0.074</td>
+<td align="right">0.126</td>
+<td align="right">0.082</td>
+</tr>
+<tr class="even">
+<td align="left">other_liability</td>
+<td align="right">0.202</td>
+<td align="right">0.477</td>
+<td align="right">0.220</td>
+<td align="right">0.209</td>
+<td align="right">0.843</td>
+<td align="right">0.160</td>
+</tr>
+<tr class="odd">
+<td align="left">private_passenger_auto</td>
+<td align="right">0.061</td>
+<td align="right">0.063</td>
+<td align="right">0.057</td>
+<td align="right">0.060</td>
+<td align="right">0.055</td>
+<td align="right">0.035</td>
+</tr>
+<tr class="even">
+<td align="left">workers_compensation</td>
+<td align="right">0.079</td>
+<td align="right">0.368</td>
+<td align="right">0.080</td>
+<td align="right">0.080</td>
+<td align="right">0.159</td>
+<td align="right">0.068</td>
+</tr>
+</tbody>
+</table>
+<p>These results are very close to what we expected!</p>
+</div>
+<div id="create-actual-vs.prediction-plots" class="section level1">
+<h1>Create actual vs. prediction plots</h1>
+<pre class="r"><code># devtools::install_github(&quot;thomasp85/patchwork&quot;)
+library(patchwork)
+
+paid_plot &lt;- dt_plot_predictions(predictions, &quot;7080&quot;, &quot;workers_compensation&quot;, &quot;paid_loss&quot;)
+case_plot &lt;- dt_plot_predictions(predictions, &quot;7080&quot;, &quot;workers_compensation&quot;, &quot;claims_outstanding&quot;)
+
+paid_plot + case_plot + plot_layout(ncol = 1)</code></pre>
+<div class="figure" style="text-align: center"><span id="fig:plot1"></span>
+<img src="/blog/2018-08-04-trying-out-deeptriangle_files/figure-html/plot1-1.png" alt="Company 7080, Workers' Compensation" width="100%" />
+<p class="caption">
+Figure 1: Company 7080, Workers’ Compensation
+</p>
+</div>
+<pre class="r"><code>paid_plot2 &lt;- dt_plot_predictions(predictions, &quot;1767&quot;, &quot;commercial_auto&quot;, &quot;paid_loss&quot;)
+case_plot2 &lt;- dt_plot_predictions(predictions, &quot;1767&quot;, &quot;commercial_auto&quot;, &quot;claims_outstanding&quot;)
+
+paid_plot2 + case_plot2 + plot_layout(ncol = 1)</code></pre>
+<div class="figure" style="text-align: center"><span id="fig:plot2"></span>
+<img src="/blog/2018-08-04-trying-out-deeptriangle_files/figure-html/plot2-1.png" alt="Company 1767, Commercial Auto" width="100%" />
+<p class="caption">
+Figure 2: Company 1767, Commercial Auto
+</p>
+</div>
+<pre class="r"><code>paid_plot3 &lt;- dt_plot_predictions(predictions, &quot;337&quot;, &quot;workers_compensation&quot;, &quot;paid_loss&quot;)
+case_plot3 &lt;- dt_plot_predictions(predictions, &quot;337&quot;, &quot;workers_compensation&quot;, &quot;claims_outstanding&quot;)
+
+paid_plot3 + case_plot3 + plot_layout(ncol = 1)</code></pre>
+<div class="figure" style="text-align: center"><span id="fig:plot3"></span>
+<img src="/blog/2018-08-04-trying-out-deeptriangle_files/figure-html/plot3-1.png" alt="Company 337, Workers' Compensation" width="100%" />
+<p class="caption">
+Figure 3: Company 337, Workers’ Compensation
+</p>
+</div>
+</div>
+<div id="next-steps" class="section level1">
+<h1>Next steps</h1>
+<p>In this post, we successfully ran the code to apply the DeepTriangle method. Now we can dig into the method to better understand it and make adjustments and extensions.</p>
+</div>
