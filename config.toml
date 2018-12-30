@@ -14,7 +14,7 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 googleAnalytics = "UA-101215414-1"
 
 [permalinks]
-  blog = "blog/:year/:month/:day/:slug/"
+  blog = "/blog/:year/:month/:day/:slug/"
 
 
 [params]
