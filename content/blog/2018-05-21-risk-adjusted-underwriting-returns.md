@@ -17,11 +17,11 @@ In his book, *The Outsiders: Eight Unconventional CEOs and Their Radically Ratio
 
 In order to allocate capital effectively, we must have a yardstick to  measure against. This “hurdle rate” should be determined relative to the set of opportunities available to the company. Often the hurdle rate is set equal to the company’s weighted average cost of capital (WACC). Currently, the WACC for publicly traded P&C (re)insurers is around 8% using the Capital Asset Pricing Model (CAPM). For mutual insurers, the cost of capital is more difficult to estimate since they do not have to achieve a return that satisfies equity-holders’ expectations. Surplus notes do provide a reference point for the cost of debt capital which can be used alongside traditional metrics for publicly traded companies to estimate a mutual insurer cost of capital.
 
-{{< figure src="/post/risk-adjusted-coc.png" caption="source: Bloomberg" >}}
+{{< figure src="/blog/risk-adjusted-coc.png" caption="source: Bloomberg" >}}
 
 For publicly traded companies, the return implied from repurchasing their own stock is another useful benchmark. If operating returns do not exceed this implied return, then capital should be returned to shareholders - something the Outsider CEOs excelled at. In current market conditions, the implied return on share repurchases for publicly traded (re)insurers is in the range of 8-12%.
 
-{{< figure src="/post/risk-adjusted-buyback-return.png">}}
+{{< figure src="/blog/risk-adjusted-buyback-return.png">}}
 
 # Risk-adjusted returns
 
@@ -33,7 +33,7 @@ Once a hurdle rate is determined, we can estimate the risk-adjusted returns for 
 
 The numerator of the RORAC calculation is the total income generated from a given line of business. This includes the underwriting income plus investment income earned on both policyholder supplied funds and the capital supporting the line. Here we use a three year average of the median combined ratio by line of business from US Annual Statement data by company to develop the expected underwriting inputs. For simplicity, the investment return is assumed to be a constant 2%.
 
-{{< figure src="/post/risk-adjusted-inputs.png">}}
+{{< figure src="/blog/risk-adjusted-inputs.png">}}
 
 ## Capital
 
@@ -50,18 +50,18 @@ The capital required to support a line of business is a function of four interre
 
 For illustration purposes, we assume a lognormal distribution for loss ratios and use the 99.5% (200 year) value-at-risk (VaR) measure for required capital.
 
-{{< figure src="/post/risk-adjusted-capital1.png">}}
+{{< figure src="/blog/risk-adjusted-capital1.png">}}
 
 The volatility of the property lines show through indicated by their high capital charge per dollar of premium. They have the highest pricing risk of all the lines. The long tail nature of Other Liability Occurrence and Workers' Compensation are reflected in the larger amount of reserve risk. The private passenger auto lines have lower risk and thus the lowest capital requirements.
 
-{{< figure src="/post/risk-adjusted-capital2.png">}}
+{{< figure src="/blog/risk-adjusted-capital2.png">}}
 
 ## Return over capital
 
 Now we can combine the return and capital amounts to estimate return on risk-adjusted capital by line. For our illustrative insurer, Workers' Compensation, Special Property, and Other Liability Occurrence achieve a return greater than our estimated hurdle rate - lines to grow in. For the lines that do not meet our hurdle rate, we can take actions to improve the returns through pricing increases or reducing required capital, such as by purchasing additional reinsurance.
 
-{{< figure src="/post/risk-adjusted-answer1.png" caption="Assumptions: 2% investment yield; 35% tax rate on underwriting income, 15% tax rate on investment income">}}
+{{< figure src="/blog/risk-adjusted-answer1.png" caption="Assumptions: 2% investment yield; 35% tax rate on underwriting income, 15% tax rate on investment income">}}
 
-{{< figure src="/post/risk-adjusted-answer2.png">}}
+{{< figure src="/blog/risk-adjusted-answer2.png">}}
 
 (Re)insurers do not have an easy task in following the example of The Outsider CEOs. By its nature insurance underwriting returns are difficult to risk adjust - we don't know the true cost of goods at the time of purchase. However, the framework outlined in this article, along with the information in the Companion Volume, provide a foundation for helping all executives to be effective "capital surgeons."   

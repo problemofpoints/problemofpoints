@@ -1,63 +1,58 @@
 baseurl = "https://www.problemofpoints.com"
-DefaultContentLanguage = "en"
-
+theme = "cocoa-eh-hugo-theme"
+builddrafts = true
+canonifyurls = true
+contentdir = "content"
+languageCode = "en-US"
+layoutdir = "layouts"
+publishdir = "public"
+author = ""
 title = "Problem of Points"
-theme = "beautifulhugo"
-metaDataFormat = "yaml"
-pygmentsUseClasses = false
-pygmentCodeFences = false
-#disqusShortname = "problemofpoints"
+disqusshortname = ""
+pluralizelisttitles = false
+ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 googleAnalytics = "UA-101215414-1"
 
-relativeurls = true
-ignoreFiles = ["\\.Rmd$", "_files$", "_cache$"]
-
 [permalinks]
-    post = "/:year/:month/:day/:slug/"
+  blog = "blog/:year/:month/:day/:slug/"
 
-[Params]
-  subtitle = "Capital allocation in an uncertain world"
-#  logo = "img/avatar-icon.png"
-  favicon = "img/favicons-black-letter-P.ico"
-  dateFormat = "January 2, 2006"
-  commit = false
-  rss = true
-  comments = false
-#  gcse = "012345678901234567890:abcdefghijk" # Get your code from google.com/cse. Make sure to go to "Look and Feel" and change Layout to "Full Width" and Theme to "Classic"
 
-#[[Params.bigimg]]
-#  src = "img/triangle.jpg"
-#  desc = "Triangle"
-#[[Params.bigimg]]
-#  src = "img/sphere.jpg"
-#  desc = "Sphere"
-[[Params.bigimg]]
-  src = "img/hexagon.jpg"
-  desc = "Hexagon"
+[params]
+dateform = "Jan 2, 2006"
+dateformfull = "Mon Jan 2 2006 15:04:05 CST"
+description = "Capital allocation in an uncertain world"
+copyright = "Copyright © 2018 problemofpoints | Disclaimer"
+# copyrightUrl = "https://creativecommons.org/licenses/by-sa/4.0/"
+logofile = "img/favicons-black-letter-P.ico"
+faviconfile = "img/favicons-black-letter-P.ico"
+highlightjs = true
+# options for highlight.js (version, additional languages, and theme)
+highlightjsVersion = "9.11.0"
+highlightjsCDN = "https://cdn.bootcss.com"
+highlightjsLang = ["r", "yaml"]
+highlightjsTheme = "github"
+progressively = true
+share = false
+latestpostcount = 10
+usesmallsummarycard = true
+posts_navigation = true
+# githubRepo = "githubUsername/repositoryName/tree/master"
+small_banner_logo = true
+#large_banner_logo = true
+noreadingtime = true
+align_left = false
+uselatex = true
+#titlestyle = "capitalize"
 
-#[Author]
-#  name = "Some Person"
-#  email = "youremail@domain.com"
-#  github = "username"
-#  twitter = "username"
-
-[[menu.main]]
-    name = "About"
-    url = "page/about/"
-    weight = 1
-    
-[[menu.main]]
-    name = "Blog"
-#    url = ""
-    weight = 2
-
-[[menu.main]]
-    name = "Disclaimer"
-    url = "page/disclaimer/"
-    weight = 3
-    
-[[menu.main]]
-    name = "Tags"
-    url = "tags"
-    weight = 4
-
+#[params.colors]
+#identifier = "#527fc1f"
+#identifier_dark = "#1a3152"
+#trivial = "#6a7a8b"
+#foreground = "#181d2a"
+#background = "#f9f9f9"
+#background_dark = "#282a36"
+#code = "#87a5d2"
+#type = "#97d28b"
+#special = "#ffcb8d"
+#value = "#96c2d7"
+#statement = "#ff8e91"

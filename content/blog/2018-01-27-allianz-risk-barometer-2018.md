@@ -20,11 +20,11 @@ Top 3 global risks:
 
 **3. Natural catastrophes:** Approximately $335bn in overall losses from natural catastrophes in 2017. Around $135bn in insured losses. 
 
-{{< figure src="/post/Allianz-top-10.png" caption="source: 2018 Allianz Risk Barometer" >}}
+{{< figure src="/blog/Allianz-top-10.png" caption="source: 2018 Allianz Risk Barometer" >}}
 
 In the US, cyber incidents was ranked as the largest risk. 
 
-{{< figure src="/post/Allianz-top-risks.png" caption="source: 2018 Allianz Risk Barometer" >}}
+{{< figure src="/blog/Allianz-top-risks.png" caption="source: 2018 Allianz Risk Barometer" >}}
 
 # Methodology
 

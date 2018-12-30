@@ -153,7 +153,7 @@ paid_plot + case_plot + plot_layout(ncol = 1)
 ```
 
 <div class="figure" style="text-align: center">
-<img src="/post/2018-08-04-trying-out-deeptriangle_files/figure-html/plot1-1.png" alt="Company 7080, Workers' Compensation" width="100%" />
+<img src="/blog/2018-08-04-trying-out-deeptriangle_files/figure-html/plot1-1.png" alt="Company 7080, Workers' Compensation" width="100%" />
 <p class="caption">Figure 1 Company 7080, Workers' Compensation</p>
 </div>
 
@@ -167,7 +167,7 @@ paid_plot2 + case_plot2 + plot_layout(ncol = 1)
 ```
 
 <div class="figure" style="text-align: center">
-<img src="/post/2018-08-04-trying-out-deeptriangle_files/figure-html/plot2-1.png" alt="Company 1767, Commercial Auto" width="100%" />
+<img src="/blog/2018-08-04-trying-out-deeptriangle_files/figure-html/plot2-1.png" alt="Company 1767, Commercial Auto" width="100%" />
 <p class="caption">Figure 2 Company 1767, Commercial Auto</p>
 </div>
 
@@ -181,7 +181,7 @@ paid_plot3 + case_plot3 + plot_layout(ncol = 1)
 ```
 
 <div class="figure" style="text-align: center">
-<img src="/post/2018-08-04-trying-out-deeptriangle_files/figure-html/plot3-1.png" alt="Company 337, Workers' Compensation" width="100%" />
+<img src="/blog/2018-08-04-trying-out-deeptriangle_files/figure-html/plot3-1.png" alt="Company 337, Workers' Compensation" width="100%" />
 <p class="caption">Figure 3 Company 337, Workers' Compensation</p>
 </div>
 

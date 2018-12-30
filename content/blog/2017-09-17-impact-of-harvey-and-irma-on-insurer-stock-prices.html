@@ -20,12 +20,12 @@ draft: false
 <div id="estimating-what-could-have-been" class="section level1">
 <h1>Estimating what could have been</h1>
 <p>We will use TRV as an example to illustrate the methodology. The graph below shows the daily returns for TRV stock and the S&amp;P 500 (SPY) over the six weeks prior to September 15. We need to estimate what returns could have been for the seventeen days highlighted in gray using the actual returns from SPY over those days.</p>
-<p><img src="/post/2017-09-17-impact-of-harvey-and-irma-on-insurer-stock-prices_files/figure-html/sample-graph-1.png" width="672" /></p>
+<p><img src="/blog/2017-09-17-impact-of-harvey-and-irma-on-insurer-stock-prices_files/figure-html/sample-graph-1.png" width="672" /></p>
 <p>The graph below shows the data that we will use to estimate the returns. The cumulative index returns since January 2017 show that TRV stock does broadly move with the S&amp;P 500. The linear correlation coefficient between the TRV and S&amp;P 500 daily returns for this time period is around 30%.</p>
 <p>You can clearly see the divergence in the two time series in the gray box representing the Hurricanes Harvey and Irma time period.</p>
-<p><img src="/post/2017-09-17-impact-of-harvey-and-irma-on-insurer-stock-prices_files/figure-html/sample-graph-2-1.png" width="672" /></p>
+<p><img src="/blog/2017-09-17-impact-of-harvey-and-irma-on-insurer-stock-prices_files/figure-html/sample-graph-2-1.png" width="672" /></p>
 <p>Now we can apply the statistical method to the data and derive an estimate of the impact of Harvey and Irma. The graph below shows the fitted data versus the actual stock price. The fit is good enough for our purposes. The key piece of information is the actual versus fitted results after the vertical line on August 23. You can see that the fitted results as shown by the dotted line indicate a slight increase in stock price over the event time period. In reality, the stock price decreased throughout this period. The difference between actual and expected during the event period is the estimated impact of Harvey and Irma. The bottom graph shows this difference, which is just under $10 by September 15, or 6%.</p>
-<p><img src="/post/2017-09-17-impact-of-harvey-and-irma-on-insurer-stock-prices_files/figure-html/causal-impact-example-ouput-1-1.png" width="672" /></p>
+<p><img src="/blog/2017-09-17-impact-of-harvey-and-irma-on-insurer-stock-prices_files/figure-html/causal-impact-example-ouput-1-1.png" width="672" /></p>
 <p>This method also provides us a measure of the uncertainty of our estimates, shown by the gray ribbons in the graphs. In this example, the actual stock price falls outside of the gray ribbon, indicating greater likelihood that the impact we estimate is real and not just random noise.</p>
 <table class="table table-striped" style="margin-left: auto; margin-right: auto;">
 <thead>
@@ -108,8 +108,8 @@ The Travelers Companies, Inc.
 <p>Next we replicate the same analysis for every other U.S. P&amp;C (re)insurer stock.</p>
 <p>The companies with the largest impacts are as expected. Companies such as BCRH, XL, AHL, and RE have meaninful catastrophe exposure. The Florida domestice insurers (FNHC, HCI, UVE) had sizeable negative impacts overall, but they traded higher after Irma was not as devastating as expected in Florida.</p>
 <div id="htmlwidget-1" style="width:100%;height:480px;" class="widgetframe html-widget"></div>
-<script type="application/json" data-for="htmlwidget-1">{"x":{"url":"/post/2017-09-17-impact-of-harvey-and-irma-on-insurer-stock-prices_files/figure-html//widgets/widget_causal-impact-all-dt.html","options":{"xdomain":"*","allowfullscreen":false,"lazyload":false}},"evals":[],"jsHooks":[]}</script>
+<script type="application/json" data-for="htmlwidget-1">{"x":{"url":"/blog/2017-09-17-impact-of-harvey-and-irma-on-insurer-stock-prices_files/figure-html//widgets/widget_causal-impact-all-dt.html","options":{"xdomain":"*","allowfullscreen":false,"lazyload":false}},"evals":[],"jsHooks":[]}</script>
 <p><br></p>
-<p><img src="/post/2017-09-17-impact-of-harvey-and-irma-on-insurer-stock-prices_files/figure-html/causal-impact-all-graph-1.png" width="672" /></p>
+<p><img src="/blog/2017-09-17-impact-of-harvey-and-irma-on-insurer-stock-prices_files/figure-html/causal-impact-all-graph-1.png" width="672" /></p>
 <p>This analysis highlights the impact that catastrophe losses - in this case still perceived losses - can have on P&amp;C (re)insurer stock prices. The estimated total market value lost is $23.20B. Granted this is likely a short term reaction that will reverse itself in the future, but it is still a big number.</p>
 </div>

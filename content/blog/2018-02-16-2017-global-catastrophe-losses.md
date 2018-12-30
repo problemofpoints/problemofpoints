@@ -8,7 +8,7 @@ tags:
 draft: false
 ---
 
-{{< figure src="/post/2017-IF-infographic.png" caption="source: Impact Forecasting: Weather, Climate & Catastrophe Insight - 2017 Annual Report" >}}
+{{< figure src="/blog/2017-IF-infographic.png" caption="source: Impact Forecasting: Weather, Climate & Catastrophe Insight - 2017 Annual Report" >}}
 
 [Impact Forecasting: Weather, Climate & Catastrophe Insight - 2017 Annual Report](http://thoughtleadership.aonbenfield.com/Documents/20180124-ab-if-annual-report-weather-climate-2017.pdf)
 

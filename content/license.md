@@ -1,7 +1,5 @@
 ---
 title: Disclaimer
-subtitle: false
-comments: false
 ---
 
 # Disclaimer / Terms and Conditions
