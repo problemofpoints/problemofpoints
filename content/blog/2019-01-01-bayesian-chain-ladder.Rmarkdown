@@ -1,0 +1,227 @@
+---
+title: Bayesian Chain Ladder
+author: ''
+date: '2019-01-01'
+slug: bayesian-chain-ladder
+tags:
+  - reserving
+description: Desc
+draft: true
+---
+
+```{r setup, warning=FALSE,message=FALSE,include=FALSE}
+
+library(knitr)
+
+knitr::opts_chunk$set(
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE,
+	#echo = FALSE,
+	collapse = TRUE,
+  comment = "#>",
+  out.width = "120%"
+)
+
+popformatting::gg_set_theme()
+
+```
+
+# Goal
+
+The goal of this post is to use the [`rstanarm`](http://mc-stan.org/rstanarm) package to run a Bayesian Chain Ladder reserving method on the CAS Loss Reserve Database. The cross classified generalized linear model (GLM) formulation of the Chain Ladder will be used. 
+
+See [STOCHASTIC LOSS RESERVING USING GENERALIZED LINEAR MODELS](https://www.casact.org/pubs/monographs/papers/03-Taylor.pdf) for a description of the cross classified GLM formulation. The same example triangle used in the monograph is also used in this post.
+
+In future posts, various prior distributions on the parameters will be tested to understand if the predictive accuracy of the model can be improved. The use of informative prior distributions produces results closer to the Bornhuetter Ferguson or Cape Cod methods.
+
+# Data
+
+```{r data, warning=FALSE,message=FALSE}
+
+# devtools::install_github("problemofpoints/reservetestr")
+library(tidyverse)
+library(ChainLadder)
+library(reservetestr)
+library(broom)
+library(rstanarm)
+library(bayesplot)
+library(popformatting)
+
+# pull in the subset of the CAS loss reserve database used by Meyers
+cas_triangle_db_meyers <- reservetestr::cas_loss_reserve_db %>%
+  reservetestr::get_meyers_subset()
+
+# extract sample paid loss triangle to use
+sample_company <-  cas_triangle_db_meyers %>%
+  dplyr::filter(group_id == 7080 & line == "wkcomp")
+
+paid_triangle <- sample_company %>%
+  pull(train_tri_set) %>% 
+  .[[1]] %>% 
+  .$paid
+
+paid_triangle_no_exposure <- paid_triangle
+attr(paid_triangle_no_exposure, "exposure") <- NULL
+
+paid_triangle
+
+```
+
+# Standard chain ladder estimate
+
+We can use the `glmReserve` function from the `ChainLadder` package to produce the standard Chain Ladder reserve estimate. This method provides both a point estimate and a distribution of estimates, using a bootstrapping approach. This function uses the cross classified over-dispersed Poisson GLM formulation applied to an incremental paid losses, which exactly re-produces the traditional Chain Ladder reserve estimate. For convenience of producing the Bayesian equivalent, we are going to use the Negative Binomial distribution instead of the over-dispersed Poisson. This is done by setting the `nb` parameter to `TRUE` in `glmReserve`. We still achieve mean results essentially equivalent to the traditional chain ladder estimate.  
+
+```{r standard-cl}
+est_chainladder_nb <- glmReserve(paid_triangle_no_exposure, 
+                                 var.power = 1, link.power = 0, cum = TRUE, 
+                                 mse.method = "bootstrap", 
+                                 nb = TRUE)
+
+est_chainladder_nb$summary %>%
+  rownames_to_column("Acc Yr") %>% 
+  mutate_at(c(2,4:6), popformatting::number_format) %>% 
+  flextable::regulartable() %>% 
+  popformatting::ft_theme(add_w = 0.0, add_h = 0.00, add_h_header = 0.00) %>%
+  flextable::bg(i = nrow(est_chainladder_nb$summary), bg = "#F2F2F2", part = "body") %>% 
+  popformatting::add_title_header("Chain Ladder Reserve Estimate", font_size = 18) %>% 
+  flextable::fontsize(size = 16, part = "all")
+```
+
+The total Chain Ladder reserve estimate for this triangle is `r popformatting::number_format(est_chainladder_nb$summary$IBNR[10])` with an overall coefficient of variation (CV) of `r popformatting::pct_format(est_chainladder_nb$summary$CV[10])`. 
+
+We can also output the underlying GLM formula and fitted parameters. 
+
+```{r standard-cl2}
+summary(est_chainladder_nb, type = "model")
+```
+
+The `factor(origin)` parameters, often also known as `alpha` parameters, represent the accident year level of loss. The `factor(dev)` parameters (or `beta` parameters) represent the development year direction. We can re-arrange the fitted development year parameters to re-create the standard chain ladder link ratios, as shown in the table below.
+
+```{r extract-links}
+model_params <- broom::tidy(est_chainladder_nb$model) %>%
+  separate(term, into = c("factor","variable","value"), "\\(|\\)") %>%
+  mutate(value = as.numeric(value)) %>%
+  mutate(value = case_when(variable == "Intercept" ~ 1,
+                          variable == "origin" ~  value - 1988 + 1, 
+                          variable == "dev" ~ value)) %>%
+  mutate(variable = case_when(variable == "Intercept" ~ "origin",
+                              TRUE ~ variable)) %>%
+  select(-factor) %>%
+  bind_rows(tibble(variable = "dev",value=1,estimate=0,std.error=0,statistic=0,p.value=0)) %>% 
+  mutate(estimate2 = case_when(variable == "origin" & value == 1 ~ estimate[1],
+                               variable == "origin" & value != 1 ~ estimate[1]+estimate,
+                               variable == "dev" ~ estimate)) %>%
+  mutate(estimate3 = case_when(variable == "origin" ~ exp(estimate2),
+                               variable == "dev" ~ exp(estimate))) %>% 
+  mutate(estimate_normalized = case_when(variable == "origin" ~ exp(estimate2) * sum(.$estimate3[.$variable=="dev"]),
+                               variable == "dev" ~ estimate3 / sum(.$estimate3[.$variable=="dev"]))) %>% 
+  arrange(variable, value)
+
+model_params_link <- model_params %>%
+  filter(variable == "dev") %>% 
+  mutate(link = lead(cumsum(estimate3) / lag(cumsum(estimate3))))
+
+model_params %>%
+  spread(variable, estimate)
+```
+
+# Residual diagnostics of standard chain ladder
+
+Given we've used the GLM formulation to produce the Chain Ladder estimate, we can look at residual plots to understand the goodness-of-fit of our model.
+
+```{r diagnostics-chain-ladder}
+
+```
+
+Add a comment on residual plots. 
+
+# Bayesian chain ladder using `rstanarm`
+
+Now we can take the same GLM formulation, but use Bayesian methods for the estimation. The `rstanarm` package makes it very straightforward to do this.
+
+First we convert our `triangle` object to "long" form. 
+
+```{r long-tri}
+long_paid_tri <- cum2incr(paid_triangle) %>%
+  as.data.frame(paid_triangle) %>% 
+  filter(!is.na(value))
+head(long_paid_tri)
+```
+
+Then we can call the `stan_glm` function to fit our model. 
+
+```{r fit-stan, results = "hide"}
+nb_theta <- est_chainladder_nb$model$theta
+
+est_cl_bayesian_nb <- stan_glm(value ~ factor(acc_yr) + factor(dev_lag),
+                            family = neg_binomial_2(link = "log"), 
+                            prior_aux = normal(0, nb_theta * 2),
+                            data = long_paid_tri)
+```
+
+```{r stan-summary}
+broom::tidy(est_cl_bayesian_nb, intervals = TRUE, prob = 0.95) %>% 
+  mutate_at(2:5, popformatting::number_format, digits = 3) %>% 
+  flextable::regulartable() %>% 
+  popformatting::ft_theme() %>% 
+  flextable::align(j=1, align="left", part = "all") %>% 
+  popformatting::add_title_header("Bayesian Chain Ladder Parameter Summary", font_size = 18) %>% 
+  flextable::fontsize(size = 16, part = "all")
+```
+
+We can compare the parameter estimates from our two methods and see that they are in close agreement. 
+
+```{r compare-parameters}
+
+```
+
+We can also confirm that the reserve estimates produced by both methods are the same. 
+
+```{r future-triangle}
+future_tri <- cum2incr(paid_triangle) %>%
+  as.data.frame(paid_triangle) %>% 
+  filter(is.na(value)) %>%
+  mutate(acc_yr = factor(acc_yr), dev_lag = factor(dev_lag)) %>% 
+  select(-value)
+```
+
+```{r predict-bayesian}
+post_predict_draws <- future_tri %>% 
+  tidybayes::add_predicted_draws(est_cl_bayesian_nb) %>%
+  mutate_at(7, as.double)
+
+post_predict_draws %>%
+  group_by(acc_yr, .draw) %>% 
+  summarise(.prediction = sum(.prediction)) %>% 
+  summarise(mean_est = mean(.prediction), sd_est = sd(.prediction), 
+            cv = sd(.prediction) / mean(.prediction))
+
+sim_total <- post_predict_draws %>%
+  group_by(.draw) %>% 
+  summarise(.prediction = sum(.prediction))
+
+mean(sim_total$.prediction)
+sd(sim_total$.prediction)
+sd(sim_total$.prediction)/mean(sim_total$.prediction)
+```
+
+# Bayesian posterior predictive checks
+
+Using a Bayesian framework allows us to more fully interrogate our model and the assumptions underlying it. We can look at the distribution of parameters and predictions, making valid probabilistic statements about our results. 
+
+```{r bayesian-ppc}
+
+```
+
+# Further enhancements
+
+Now that we have successfully replicated the standard chain ladder method using Bayesian methods, we can move forward taking advantage of the flexibility that the Bayesian framework provides.
+
+For example, we can:
+
+- Add informative prior distributions on the parameters
+- Back-test reserve estimates to determine accuracy in forecasting reserves
+- Test other distribution families (e.g. Gamma, Skew Normal, etc.)
+- Add additional variables, such as a calendar year effect
+
