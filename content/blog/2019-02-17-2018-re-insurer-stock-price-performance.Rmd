@@ -36,7 +36,7 @@ In this post, we review the 2018 stock price returns for US property and casualt
 ```{r import-stock-prices, message=FALSE, warning=FALSE, cache=TRUE}
 
 start_stock <- as_date("2018-01-01")
-end_stock <- as_date("2018-12-31")
+end_stock <- as_date("2019-01-01")
 
 # get a list of all the Property-Casualty Insurers from the major US stock exchanges
 stock_tickers <- list('AMEX','NASDAQ','NYSE') %>% map_df(tq_exchange) %>% 
