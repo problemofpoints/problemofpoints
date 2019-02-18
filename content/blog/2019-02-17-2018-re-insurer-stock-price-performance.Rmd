@@ -7,7 +7,7 @@ categories: []
 tags:
   - insurance
   - stocks
-draft: true
+draft: false
 ---
 
 ```{r setup, warning=FALSE,message=FALSE,include=FALSE}
@@ -27,9 +27,9 @@ knitr::opts_chunk$set(
 library(tidyverse)
 library(tidyquant)
 library(popformatting)
+library(highcharter)
+library(flextable)
 ```
-
-# Goal
 
 In this post, we review the 2018 stock price returns for US property and casualty (re)insurers. 
 
@@ -45,6 +45,12 @@ stock_tickers <- list('AMEX','NASDAQ','NYSE') %>% map_df(tq_exchange) %>%
            as.numeric(stringr::str_sub(market.cap,start = 2, end = -2))) %>%
   dplyr::select(symbol, company, sector, industry, market_cap) %>%
   arrange(desc(market_cap))
+
+# list of mortgage / bond insurers to exclude
+excluded_insurers <- c("MBI", "AGO", "AMBC", "RDN", "ESNT", "MTG")
+
+stock_tickers <- stock_tickers %>% 
+  filter(!(symbol %in% excluded_insurers))
 
 # now get the historical stock prices for all of the tickers; calculate daily returns
 stock_prices <- stock_tickers %>% 
@@ -69,33 +75,22 @@ stock_prices <- stock_prices %>%
 ```
 
 ```{r cum-change}
-annual_returns <- stock_prices %>% 
+annual_returns <- stock_prices %>%
+  group_by(symbol, company) %>% 
   summarise(market_cap = market_cap[1], 
-            return = dplyr::last(cum_return), min_return = min(cum_return), max_return = max(cum_return),
+            boy_price = dplyr::first(close), eoy_price = dplyr::last(close),
+            return = dplyr::last(cum_return), price_return = dplyr::last(close) / dplyr::first(close) - 1,
+            div_return = (1 + return) / (1 + price_return) - 1,
+            min_return = min(cum_return), max_return = max(cum_return),
             min_price = min(adjusted), max_price = max(adjusted), 
             avg_return = mean(daily_returns), sd_returns = sd(daily_returns),
-            up_days = sum(daily_returns>0), down_days = sum(daily_returns<0)) %>% 
+            up_days = sum(daily_returns>0)/n(), down_days = sum(daily_returns<0)/n()) %>% 
   arrange(desc(return))
-
-annual_returns
 ```
 
-```{r graph-stock-price}
-stock_prices %>% 
-  ungroup() %>% 
-  filter(symbol %in% annual_returns$symbol[1:6]) %>%
-  mutate(symbol = factor(symbol, levels = annual_returns$symbol[1:6])) %>%
-  ggplot(aes(x = date, y = close, group = symbol)) +
-  geom_candlestick(aes(open = open, high = high, low = low, close = close)) +
-  labs(title = "2018 P&C Insurers Stock Price", 
-       y = "Closing Price", x = "") + 
-  facet_wrap(~ symbol, ncol = 2, scale = "free_y") + 
-  popformatting::gg_pop_theme()
-```
+The top 5 performing stocks are shown in the graph below. This group includes two Florida specialists (HCI, UVE), two heavy E&S carriers (ARGO, KINSL), and one stock impacted by M&A (NAVG). All of the companies are on the smaller side with market capitalizations under $2.5b. 
 
-```{r highchart}
-library(highcharter)
-
+```{r highchart-top}
 hc_data <- stock_prices %>% 
   filter(symbol %in% annual_returns$symbol[1:6]) %>%
   ungroup() %>% 
@@ -105,19 +100,66 @@ hc_data <- stock_prices %>%
   timetk::tk_xts()
 
 hc <- highchart(type = "stock") %>% 
-  hc_title(text = "Top P&C Stocks in 2018") %>% 
-  hc_subtitle(text = "Insert comment here") %>% 
+  hc_title(text = "Top 5 Performing P&C Stocks in 2018 - Annual Total Return") %>% 
+  hc_subtitle(text = "HCI, NAVG, UVE, UFCS, ARGO, KINSL") %>% 
   hc_add_series(hc_data[,1], name = names(hc_data[,1])) %>% 
   hc_add_series(hc_data[,2], name = names(hc_data[,2])) %>%
   hc_add_series(hc_data[,3], name = names(hc_data[,3])) %>%
   hc_add_series(hc_data[,4], name = names(hc_data[,4])) %>%
   hc_add_series(hc_data[,5], name = names(hc_data[,5])) %>%
-  hc_add_series(hc_data[,6], name = names(hc_data[,6])) %>%
   hc_tooltip(pointFormat = "<span style=\"color:{series.color}\">{series.name}</span>:<b>{point.y:.3f}</b><br/>",
              shared = TRUE) %>% 
   hc_legend(enabled = TRUE) %>% 
   hc_add_theme(hc_theme_smpl())
 
 hc
+```
+
+If we focus on the largest five P&C stocks (by market cap), we can see that all of them except for PGR were down for the year. CB and TRV were down roughly in line with the S&P 500, which was down around 6% for 2018 (including dividends). ALL was down slightly more than the S&P 500, whereas AIG was down considerably more. 
+
+```{r highcharter-largest}
+hc_data2 <- stock_prices %>% 
+  filter(symbol %in% head(annual_returns %>% arrange(desc(market_cap)) %>% pull(symbol),5)) %>%
+  ungroup() %>% 
+  mutate(cum_return = cum_return) %>% 
+  select(date, symbol, cum_return) %>% 
+  spread(key = symbol, value = cum_return) %>% 
+  timetk::tk_xts()
+
+hc2 <- highchart(type = "stock") %>% 
+  hc_title(text = "2018 Stock Performance of 5 Largest P&C Stocks - Annual Total Return") %>% 
+  hc_subtitle(text = "PGR, TRV, CB, ALL, AIG") %>% 
+  hc_add_series(hc_data2[,1], name = names(hc_data2[,1])) %>% 
+  hc_add_series(hc_data2[,2], name = names(hc_data2[,2])) %>%
+  hc_add_series(hc_data2[,3], name = names(hc_data2[,3])) %>%
+  hc_add_series(hc_data2[,4], name = names(hc_data2[,4])) %>%
+  hc_add_series(hc_data2[,5], name = names(hc_data2[,5])) %>%
+  hc_tooltip(pointFormat = "<span style=\"color:{series.color}\">{series.name}</span>:<b>{point.y:.3f}</b><br/>",
+             shared = TRUE) %>% 
+  hc_legend(enabled = TRUE) %>% 
+  hc_add_theme(hc_theme_smpl())
+
+hc2
+```
+
+The table below summarizes the 2018 performance for all US listed P&C (re)insurer stocks. 
+
+```{r summary-table}
+annual_returns %>%
+  ungroup() %>% 
+  transmute(ticker = symbol, Company = company, 
+            `Total return` = popformatting::pct_format(return, 1),
+            `Market cap ($m)` = popformatting::number_format(market_cap / 1e6, 0),
+            `BOY price` = popformatting::number_format(boy_price, 2),
+            `EOY price` = popformatting::number_format(eoy_price, 2),
+            `Price return` = popformatting::pct_format(price_return, 1),
+            `Div yield` = popformatting::pct_format(div_return, 1),
+            `% up days` = popformatting::pct_format(up_days, 0),
+            `% down days` = popformatting::pct_format(down_days, 0)
+            ) %>% 
+  flextable::regulartable() %>% 
+  popformatting::ft_theme() %>% 
+  align(j = 1:2, align = "left", part = "all") %>% 
+  popformatting::add_title_header("Summary of 2018 P&C (Re)Insurer Stock Performance")
 ```
 
