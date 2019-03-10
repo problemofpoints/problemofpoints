@@ -95,6 +95,6 @@ by_line_cv %>%
 
 There is no clear pattern in the estimated CVs across the quartiles. For many of the lines, the volatility bounces around as you move from quartile 1 to quartile 4. There are sufficient data points within each bucket, so the estimates are credible.
 
-Based on this, there is no clear indication that loss ratio volatility is higher for higher growth companies. The way premium growth is calculate is a limitation of this analysis. If we were truly able to isolate new vs. renewal business, we may get a different answer. But this is the best we can do with the data available. 
+Based on this, there is no clear indication that loss ratio volatility is higher for higher growth companies. The way premium growth is calculated is a limitation of this analysis. If we were truly able to isolate new vs. renewal business, we may get a different answer. But this is the best we can do with the data available. 
 
 
