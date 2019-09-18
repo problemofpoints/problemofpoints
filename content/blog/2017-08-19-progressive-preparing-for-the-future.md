@@ -13,7 +13,7 @@ draft: false
 
 Following on from the [prior post]({{< relref "2017-08-19-progressive-on-the-future-of-auto-insurance.md" >}}), Progressive also briefly discussed strategy during their [Q2 2017 earnings call](http://investors.progressive.com/phoenix.zhtml?c=81824&p=irol-EventDetails&EventId=5260543). 
 
-{{< figure src="/post/PGR-mkt.png" caption="source: PGR Q2 2017 earnings call" >}}
+{{< figure src="/blog/PGR-mkt.png" caption="source: PGR Q2 2017 earnings call" >}}
 
 Progressive sees a large addressable market available to them. Both in personal lines - growing market share in auto and homeowners - as well as commercial lines. The opportunity for them is clearly largest in the Other Commercial Lines where they currently have a neglible market share. They could make a significant impact on the fragmented small commercial insurance segment (~ $100 billion of premium), which is most similar to personal lines.  
 
@@ -21,7 +21,7 @@ Progressive sees a large addressable market available to them. Both in personal 
 
 In very McKinsey-style fashion, Progressive outlined three "horizons" of their growth portfolio. Each horizon adds additional revenue, but will take longer for the revenue to emerge and contribute to Progressive's bottom line. 
 
-{{< figure src="/post/PGR-growth-port.png" caption="source: PGR Q2 2017 earnings call" >}}
+{{< figure src="/blog/PGR-growth-port.png" caption="source: PGR Q2 2017 earnings call" >}}
 
 Horizon 1 is continuing to execute on their core business. They outlined several initiaties that are underway to pursue their goal of becoming consumers number one choice for auto and other insurance. Their biggest opportunity here is the continued expansion into the $91 billion homeowners market. The acquisition of ASI and the rollout of the new [HomeQuote Explorer](https://www.progressive.com/newsroom/article/2017/july/pgr-launches-homequote-explorer/) are two examples of recent investments in this segment.
 
