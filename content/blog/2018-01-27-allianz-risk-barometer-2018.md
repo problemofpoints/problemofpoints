@@ -18,7 +18,7 @@ Top 3 global risks:
 
 **2. Cyber incidents:** 54% of respondents think cyber incidents are currently the most underestimated risk
 
-**3. Natural catastrophes:** Approximately $335bn in overall losses from natural catastrophes in 2017. Around $135bn in insured losses. 
+**3. Natural catastrophes:** Approximately \$335bn in overall losses from natural catastrophes in 2017. Around \$135bn in insured losses. 
 
 {{< figure src="/blog/Allianz-top-10.png" caption="source: 2018 Allianz Risk Barometer" >}}
 
