@@ -1,0 +1,168 @@
+---
+title: 2019 (Re)Insurer Stock Price Performance
+author: ''
+date: '2020-01-25'
+slug: 2019-re-insurer-stock-price-performance
+categories: []
+tags:
+  - insurance
+  - stocks
+draft: false
+---
+
+```{r setup, warning=FALSE,message=FALSE,include=FALSE}
+
+library(knitr)
+
+knitr::opts_chunk$set(
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE,
+	echo = FALSE,
+	collapse = TRUE,
+  comment = "#>",
+  out.width = "120%"
+)
+
+library(tidyverse)
+library(tidyquant)
+library(popformatting)
+library(highcharter)
+library(flextable)
+```
+
+In this post, we review the 2019 stock price returns for US property and casualty (re)insurers. 
+
+```{r import-stock-prices, message=FALSE, warning=FALSE, cache=TRUE}
+
+start_stock <- as_date("2019-01-01")
+end_stock <- as_date("2020-01-01")
+
+# get a list of all the Property-Casualty Insurers from the major US stock exchanges
+stock_tickers <- list('AMEX','NASDAQ','NYSE') %>% map_df(tq_exchange) %>% 
+  filter((industry == 'Property-Casualty Insurers' | symbol %in% c("ARGO", "ERIE", "AIZ")) & !is.na(market.cap)) %>%
+  mutate(market_cap = if_else(stringr::str_sub(market.cap,start = -1)=="M",1e6,1e9) *
+           as.numeric(stringr::str_sub(market.cap,start = 2, end = -2))) %>%
+  dplyr::select(symbol, company, sector, industry, market_cap) %>%
+  arrange(desc(market_cap))
+
+# list of mortgage / bond insurers to exclude
+excluded_insurers <- c("MBI", "AGO", "AMBC", "RDN", "ESNT", "MTG", "NMIH","PIHPP")
+
+stock_tickers <- stock_tickers %>% 
+  filter(!(symbol %in% excluded_insurers))
+
+# now get the historical stock prices for all of the tickers; calculate daily returns
+stock_prices <- stock_tickers %>% 
+  tq_get(get = "stock.prices", from = start_stock, to = end_stock) %>% 
+  filter(!is.na(adjusted)) %>% 
+  dplyr::group_by(symbol) %>%
+  tq_mutate(select = adjusted, mutate_fun = periodReturn, period = "daily", type = "arithmetic", 
+            col_rename = "daily_returns") %>% 
+  mutate(cum_return = adjusted / dplyr::first(adjusted) - 1)
+
+# get S&P 500 historical prices; use for comparison
+sp500_price <- tibble(symbol = "SPY") %>% tq_get(get = "stock.prices", 
+                                                 from = start_stock, to = end_stock) %>%
+  tq_mutate(select = adjusted, mutate_fun = periodReturn, period = "daily", type = "arithmetic", 
+            col_rename = "daily_returns") %>% 
+  mutate(cum_return = adjusted / dplyr::first(adjusted) - 1)
+
+
+sp500_price <- sp500_price %>% mutate(sp500 = adjusted, sp500_returns = daily_returns)
+stock_prices <- stock_prices %>% 
+  left_join(sp500_price %>% dplyr::select(date, sp500, sp500_returns), by = "date")
+```
+
+```{r cum-change}
+annual_returns <- stock_prices %>%
+  group_by(symbol, company) %>% 
+  summarise(market_cap = market_cap[1], 
+            boy_price = dplyr::first(close), eoy_price = dplyr::last(close),
+            return = dplyr::last(cum_return), price_return = dplyr::last(close) / dplyr::first(close) - 1,
+            div_return = (1 + return) / (1 + price_return) - 1,
+            min_return = min(cum_return), max_return = max(cum_return),
+            min_price = min(adjusted), max_price = max(adjusted), 
+            avg_return = mean(daily_returns), sd_returns = sd(daily_returns),
+            up_days = sum(daily_returns>0)/n(), down_days = sum(daily_returns<0)/n()) %>% 
+  arrange(desc(return))
+```
+
+The top 5 performing stocks are shown in the graph below. Three of the five are small E&S carriers (PLMR, KNSL, HALL). 
+
+```{r highchart-top}
+hc_data <- stock_prices %>% 
+  filter(symbol %in% annual_returns$symbol[1:5]) %>%
+  ungroup() %>% 
+  mutate(cum_return = cum_return) %>% 
+  select(date, symbol, cum_return) %>% 
+  spread(key = symbol, value = cum_return) %>% 
+  timetk::tk_xts()
+
+hc <- highchart(type = "stock") %>% 
+  hc_title(text = "Top 5 Performing P&C Stocks in 2019 - Annual Total Return") %>% 
+  hc_subtitle(text = "PLMR, KNSL, HALL, ACGL, RNR") %>% 
+  hc_add_series(hc_data[,1], name = names(hc_data[,1])) %>% 
+  hc_add_series(hc_data[,2], name = names(hc_data[,2])) %>%
+  hc_add_series(hc_data[,3], name = names(hc_data[,3])) %>%
+  hc_add_series(hc_data[,4], name = names(hc_data[,4])) %>%
+  hc_add_series(hc_data[,5], name = names(hc_data[,5])) %>%
+  hc_tooltip(pointFormat = "<span style=\"color:{series.color}\">{series.name}</span>:<b>{point.y:.3f}</b><br/>",
+             shared = TRUE) %>% 
+  hc_legend(enabled = TRUE) %>% 
+  hc_add_theme(hc_theme_smpl())
+
+hc
+```
+
+If we focus on the largest five P&C stocks (by market cap), we can see that all of them were up considerably over the year. ALL and AIG outperformed the S&P500's return of 30%. 
+
+```{r highcharter-largest}
+stock_prices$market_cap[stock_prices$symbol %in% c("ESGRO","ESGRP")] <- c(NA_real_, NA_real_)
+annual_returns$market_cap[annual_returns$symbol %in% c("ESGRO","ESGRP")] <- c(NA_real_, NA_real_)
+
+hc_data2 <- stock_prices %>% 
+  filter(symbol %in% head(annual_returns %>% arrange(desc(market_cap)) %>% pull(symbol),5)) %>%
+  ungroup() %>% 
+  mutate(cum_return = cum_return) %>% 
+  select(date, symbol, cum_return) %>% 
+  spread(key = symbol, value = cum_return) %>% 
+  timetk::tk_xts()
+
+hc2 <- highchart(type = "stock") %>% 
+  hc_title(text = "2019 Stock Performance of 5 Largest P&C Stocks - Annual Total Return") %>% 
+  hc_subtitle(text = "PGR, TRV, CB, ALL, AIG") %>% 
+  hc_add_series(hc_data2[,1], name = names(hc_data2[,1])) %>% 
+  hc_add_series(hc_data2[,2], name = names(hc_data2[,2])) %>%
+  hc_add_series(hc_data2[,3], name = names(hc_data2[,3])) %>%
+  hc_add_series(hc_data2[,4], name = names(hc_data2[,4])) %>%
+  hc_add_series(hc_data2[,5], name = names(hc_data2[,5])) %>%
+  hc_tooltip(pointFormat = "<span style=\"color:{series.color}\">{series.name}</span>:<b>{point.y:.3f}</b><br/>",
+             shared = TRUE) %>% 
+  hc_legend(enabled = TRUE) %>% 
+  hc_add_theme(hc_theme_smpl())
+
+hc2
+```
+
+The table below summarizes the 2019 performance for all US listed P&C (re)insurer stocks. 
+
+```{r summary-table}
+annual_returns %>%
+  ungroup() %>% 
+  transmute(ticker = symbol, Company = company, 
+            `Total return` = popformatting::pct_format(return, 1),
+            `Market cap ($m)` = popformatting::number_format(market_cap / 1e6, 0),
+            `BOY price` = popformatting::number_format(boy_price, 2),
+            `EOY price` = popformatting::number_format(eoy_price, 2),
+            `Price return` = popformatting::pct_format(price_return, 1),
+            `Div yield` = popformatting::pct_format(div_return, 1),
+            `% up days` = popformatting::pct_format(up_days, 0),
+            `% down days` = popformatting::pct_format(down_days, 0)
+            ) %>% 
+  flextable::regulartable() %>% 
+  popformatting::ft_theme() %>% 
+  align(j = 1:2, align = "left", part = "all") %>% 
+  popformatting::add_title_header("Summary of 2019 P&C (Re)Insurer Stock Performance")
+```
+
