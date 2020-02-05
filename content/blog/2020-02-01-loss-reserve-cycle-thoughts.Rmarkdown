@@ -1,0 +1,122 @@
+---
+title: Loss reserve cycle thoughts
+author: ''
+date: '2020-02-01'
+slug: loss-reserve-cycle-thoughts
+categories: []
+tags:
+  - insurance
+  - reserving
+draft: true
+---
+
+```{r setup, warning=FALSE,message=FALSE,include=FALSE}
+
+library(knitr)
+
+knitr::opts_chunk$set(
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE,
+	echo = FALSE,
+	collapse = TRUE,
+  comment = "#>",
+  out.width = "120%"
+)
+
+library(tidyverse)
+library(popformatting)
+library(flextable)
+library(ggrepel)
+library(gganimate)
+
+gg_set_theme()
+```
+
+```{r import-data}
+data_cydev <- readRDS("C:/Users/Adam T/Lockton/Lockton Global Re - Documents/General/S&P MI/Schedule P/data/schp_cydev_2018.rds")
+data_tri <- readRDS("C:/Users/Adam T/Lockton/Lockton Global Re - Documents/General/S&P MI/Schedule P/data/schp_triangles_2018.rds")
+industry_cydev <- data_cydev %>% 
+  filter(snl_code == "I1") %>% 
+  rename("snlid" = snl_code, "cal_yr" = cal_year)
+industry_tri <- data_tri %>% 
+  filter(snlid == "I1")  %>% 
+  mutate(cal_yr = acc_yr + dev_yr - 1) %>% 
+  left_join(industry_cydev %>% select(-as_yr), by = c("cal_yr", "lob", "snlid")) %>% 
+  mutate(booked_lr = booked_ult / premium,
+         cy_dev_lr = cy_dev / premium)
+
+lobs_liab <- c("CAL","WC","OLO")
+```
+
+```{r graph-data}
+industry_data_graph <- industry_tri %>% 
+  filter(lob %in% lobs_liab) %>% 
+  left_join(industry_tri %>% 
+        filter(lob %in% lobs_liab) %>% 
+        mutate("dev_yr" = .data$dev_yr + 1) %>% 
+        select(.data$acc_yr, .data$lob, .data$snlid, .data$dev_yr, "booked_lr_prior" = .data$booked_lr),
+      by = c("lob","snlid","acc_yr", "dev_yr")) %>% 
+  left_join(industry_tri %>% 
+      filter(lob %in% lobs_liab) %>% 
+      filter(.data$as_yr == .data$cal_yr) %>%
+      select(.data$acc_yr, .data$lob, .data$snlid, "booked_lr_current" = .data$booked_lr),
+    by = c("lob","snlid","acc_yr")) %>% 
+  replace_na(list("booked_lr_prior" = 0, "booked_lr_current" = 0))
+
+industry_cydev_last10 <- industry_data_graph %>% 
+  mutate(booked_lr_prior = if_else(dev_yr == 1, booked_lr, booked_lr_prior)) %>% 
+  group_by(snlid, lob, cal_yr) %>% 
+  summarise(cy_dev_last10 = sum((booked_lr - booked_lr_prior) * premium)) %>% 
+  ungroup()
+
+industry_data_graph <- industry_data_graph %>% 
+  left_join(industry_cydev_last10, by = c("snlid","lob","cal_yr")) %>% 
+  mutate(cy_dev_last10_lr = cy_dev_last10 / premium)
+```
+
+```{r graph1}
+gg_graph <- industry_data_graph %>% 
+  filter(lob == "CAL") %>% 
+  filter(cal_yr >= 1996, acc_yr >= 1996) %>% 
+  # filter(dev_yr == 1) %>%
+  mutate(dev_yr = as.factor(dev_yr)) %>% 
+  arrange(acc_yr) %>% 
+  ggplot(aes(y = cy_dev_last10_lr, x = booked_lr)) +
+  geom_point(aes(group = seq_along(cal_yr))) +
+  geom_path(colour = pop_colors$blue) +
+  geom_text(aes(label = as.character(round(acc_yr))), 
+                   size = 3, nudge_x = 0.0075, nudge_y = 0.005) +
+  geom_hline(yintercept = 0, size = 0.25) +
+  facet_wrap(~ acc_yr) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) + 
+  scale_x_continuous(labels = scales::percent_format(accuracy = 1)) +
+  labs(y = "Calendar year development (% of Premium)", x = "Accident Year Booked Ult. Loss Ratio",
+       title = "The Reserving Cycle", subtitle = 'Year: {round(frame_along)}') +
+  transition_reveal(cal_yr, keep_last = TRUE) +
+  ease_aes()
+
+animate(gg_graph, duration = 30)
+```
+```{r graph2}
+gg_graph2 <- industry_data_graph %>% 
+  filter(lob == "CAL") %>% 
+  filter(cal_yr >= 1996, acc_yr >= 1996) %>% 
+  # filter(dev_yr == 1) %>%
+  mutate(dev_yr = as.factor(dev_yr)) %>% 
+  arrange(acc_yr) %>% 
+  ggplot(aes(y = booked_lr, x = acc_yr)) +
+  geom_point(aes(group = seq_along(cal_yr))) +
+  geom_path(colour = pop_colors$blue) +
+
+  facet_wrap(~ acc_yr) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) + 
+  scale_x_continuous(labels = scales::percent_format(accuracy = 1)) +
+  labs(y = "Calendar year development (% of Premium)", x = "Accident Year Booked Ult. Loss Ratio",
+       title = "The Reserving Cycle", subtitle = 'Year: {round(frame_along)}') +
+  transition_reveal(cal_yr, keep_last = TRUE) +
+  ease_aes()
+
+animate(gg_graph2, duration = 30)
+```
+
