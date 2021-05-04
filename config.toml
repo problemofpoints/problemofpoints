@@ -10,7 +10,7 @@ author = ""
 title = "Problem of Points"
 disqusshortname = ""
 pluralizelisttitles = false
-ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
+ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_cache$", "\\.knit\\.md$", "\\.utf8\\.md$"]
 googleAnalytics = "UA-101215414-1"
 
 [permalinks]
@@ -46,6 +46,10 @@ align_left = false
 uselatex = true
 #titlestyle = "capitalize"
 
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
 #[params.colors]
 #identifier = "#527fc1f"
 #identifier_dark = "#1a3152"

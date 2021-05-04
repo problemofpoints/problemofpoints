@@ -34,8 +34,8 @@ gg_set_theme()
 ```
 
 ```{r import-data}
-data_cydev <- readRDS("C:/Users/Adam T/Lockton/Lockton Global Re - Documents/General/S&P MI/Schedule P/data/schp_cydev_2018.rds")
-data_tri <- readRDS("C:/Users/Adam T/Lockton/Lockton Global Re - Documents/General/S&P MI/Schedule P/data/schp_triangles_2018.rds")
+data_cydev <- readRDS("E:/Projects/schp_cydev_2018.rds")
+data_tri <- readRDS("E:/Projects/schp_triangles_2018.rds")
 industry_cydev <- data_cydev %>% 
   filter(snl_code == "I1") %>% 
   rename("snlid" = snl_code, "cal_yr" = cal_year)
