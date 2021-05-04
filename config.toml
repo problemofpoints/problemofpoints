@@ -44,6 +44,7 @@ small_banner_logo = true
 noreadingtime = true
 align_left = false
 uselatex = true
+enlarged = true
 #titlestyle = "capitalize"
 
 [markup]

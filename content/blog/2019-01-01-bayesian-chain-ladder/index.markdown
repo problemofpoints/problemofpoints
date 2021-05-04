@@ -243,7 +243,7 @@ gg_origin + gg_dev +
   plot_layout(ncol = 2)
 ```
 
-<img src="/blog/2019-01-01-bayesian-chain-ladder_files/figure-html/diagnostics-chain-ladder-1.png" width="120%" style="display: block; margin: auto;" />
+<img src="/blog/diagnostics-chain-ladder-1.png" width="120%" style="display: block; margin: auto;" />
 
 These plots show the standardized residuals versus accident (origin) year, development period, calendar year, and fitted values. All of the plots look reasonable with the residuals randomly centered around zero and only a few outliers in each.   
 
@@ -376,7 +376,7 @@ pp_check(est_cl_bayesian_nb, "ecdf_overlay") +
   plot_layout(ncol = 2)
 ```
 
-<img src="/blog/2019-01-01-bayesian-chain-ladder_files/figure-html/bayesian-ppc-1.png" width="120%" style="display: block; margin: auto;" />
+<img src="/blog/bayesian-ppc-1.png" width="120%" style="display: block; margin: auto;" />
 
 Below is a histogram of the total estimated reserves.
 
@@ -389,7 +389,7 @@ sim_total %>%
   ggtitle("Distribution of total reserve estimate")
 ```
 
-<img src="/blog/2019-01-01-bayesian-chain-ladder_files/figure-html/reserve-histogram-1.png" width="120%" style="display: block; margin: auto;" />
+<img src="/blog/reserve-histogram-1.png" width="120%" style="display: block; margin: auto;" />
 
 # Further enhancements
 
