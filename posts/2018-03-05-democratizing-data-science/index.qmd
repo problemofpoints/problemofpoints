@@ -1,0 +1,47 @@
+---
+title: Democratizing Data Science
+date: '2018-03-05'
+slug: democratizing-data-science
+categories:
+  - data science
+subtitle: ''
+draft: false
+---
+
+# Analytics talent supply and demand
+
+In a recent survey of insurance company executives conducted by the Ward Group, 25% of respondents strongly disagreed or disagreed that they have the analytics and big data capabilities and skills required to meet future business priorities[^1]. Additionally, 70% of companies identified "Human Capital / Talent Management" as one of their top five business priorities over the next three years. It is not only insurance companies that are struggling with hiring analytics talent. Website CareerCast.com ranked Data Scientist as the toughest job to fill in 2017[^2].
+
+[^1]: http://www.aon.com/attachments/reinsurance/brochures/mutual-pg-talent-solutions-webinar-slides.pdf
+
+[^2]: http://www.careercast.com/jobs-rated/toughest-jobs-fill-2017
+
+Set against this increasing demand for analytics talent, not just in insurance, but in every industry, is a supply of qualified workers that is unable to keep pace. A recent study by IBM and Burning Glass Technologies estimates that "Data Scientist and Advanced Analytics" job postings remain open for 46 days - six days longer than the market average[^3]. Additionally the study projected a 28% growth in the number of job postings over the next five years. In part, the talent shortage is due to the heightened education requirements for data science positions, which often require advanced degrees, and the lack of an experienced workforce given the newness of the career. Both of these exacerbate the supply and demand imbalance by lengthening the training period for new workers to develop the desired expertise.
+
+[^3]: http://burning-glass.com/wp-content/uploads/The_Quant_Crunch.pdf
+
+# Closing the talent gap
+
+One way for companies to close the supply and demand gap within their own organizations is to utilize software to automate the data science workflow. Called "automated machine learning", the goal is to maximize the efficiency and productivity of the existing analytics staff by using software to automate repetitive tasks. The goal is not to replace the data scientist, but to "democratize" data science by empowering traditional analytics workers with less advanced training to complete tasks they are currently unable to do. Research firm Gartner estimates that more than 40% of data science tasks will be automated by 2020[^4], highlighting the magnitude of the opportunity for companies to reduce the advanced analytics supply and demand gap.
+
+[^4]: http://www.gartner.com/newsroom/id/3570917
+
+Common repetitive tasks in the data science workflow that can at least be partially automated include[^5]:
+
+[^5]: https://medium.com/airbnb-engineering/automated-machine-learning-a-paradigm-shift-that-accelerates-data-scientist-productivity-airbnb-f1f8a10d61f8
+
+-   **Exploratory data analysis:** Visualizing your data before beginning model building is an essential step in the machine learning process. Automated machine learning tools allow the user to easily graph each variable against the target variable - a task that is common across all projects.
+-   **Feature transformations:** This step involves applying transformations to input variables (features) as well as creating new features from the given input data. The goal is to create a set of features that accurately predicts the target variable. There are many standard feature transformations that can be applied to most problems, allowing for easy automation.
+-   **Model fitting:** The number of machine learning algorithms available continues to increase at a rapid pace. Automated machine learning platforms help the model builder determine the appropriate model fitting algorithm in an efficient manner. This includes optimizing the input variables for each method, ensuring that the model fit is as accurate as possible.
+-   **Model diagnostics:** A similar set of outputs are used to evaluate the fit of most models to the target data. Automatically generating these standard outputs is straightforward and saves the analyst time.
+-   **Model deployment:** Automated machine learning platforms make it easier for data scientists to put their models into production by providing one-click deployment via application programming interfaces (APIs).
+
+# The way of the future
+
+The benefits of automated machine learning are clear. Companies receive increased output per analytics employee, allowing them to derive more value from their investments in data and analytics. Experienced data scientists are freed up to spend more of their time on solving business problems and providing greater value, not wasting their time completing repetitive tasks. Meanwhile, traditional analytics worker with domain knowledge can use automated machine learning software to contribute in ways that they were unable to before while developing new analytical skills.
+
+However, automated machine learning is not a panacea. A solid understanding of the software and underlying methods is still required to ensure appropriate use of the model output. Therefore, the data scientist will always be needed to apply expert human judgment to each unique situation. In addition, no amount of machine learning automation can overcome inadequate internal systems that lack the necessary data.
+
+The history of computing is full of examples where a newly developed technology is initially used only by experts with specialized knowledge who eventually develop tools and software that enable an increasing number of people to take advantage of the technology. The early personal computers came as kits, requiring some assembly, and with only a text based interface, limiting the user base to skilled hobbyists. Over the ensuing decades, personal computers decreased in size and become easier to use resulting in smartphones with touch interfaces that fit in our pockets and require no specialized knowledge to operate.
+
+Data science and machine learning will also change as the field matures. Currently, a specialized set of skills is required to be an effective data scientist. This will not be the case for long. Automated machine learning platforms will continue to lower the barrier to entry and eventually democratize data science.

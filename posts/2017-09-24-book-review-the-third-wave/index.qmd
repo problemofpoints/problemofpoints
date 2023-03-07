@@ -1,0 +1,81 @@
+---
+title: "Book Review - The Third Wave"
+date: '2017-09-24'
+categories: [book review]
+subtitle: "An Entrepreneur's Vision of the Future"
+---
+
+# Overview
+
+Steve Case is an entrepreneur and pioneer in the tech industry. He co-founded America Online (AOL), the top performing company of the 1990s. Since his time at AOL, Case has been investing in early stage startup companies.
+
+In his book, [The Third Wave: An Entrepreneur's Vision of the Future](https://www.amazon.com/dp/B010MH1ENW/ref=dp-kindle-redirect?_encoding=UTF8&btkr=1), Case identifies three waves of the internet:
+
+-   **The First Wave** was about building the infrastructure and foundation for an online world. The companies in this wave included: Cisco Systems, Sprint, HP, Sun Microsystems, Microsoft, Apple, IBM, AOL. They created the hardware, software, and networks that allowed people to connect to the internet.
+-   **The Second Wave** was about building on top of the internet. This includes the search engines like Google and online retailing by Amazon and eBay. Social networking also came in this age.
+-   **The Third Wave** is the era we are moving into now. It is when "the internet stops belonging to internet companies". This era will take the Internet of Things to a new level - the Internet of Everything. In this era, labeling a company as an "internet-enabled" company will be as silly as calling a company "electricity-enabled".
+
+Goal of this book:
+
+> I want to tell you the story of how the consumer Internet was born, and how close companies like AOL came to not making it. I want to share my candid memories from behind the scenes---the details from a roller-coaster ride few have experienced. I want to tell you what it was like at the very top---and give you a view from the boardroom on the way down. But I don't want to do any of that in a vacuum. Each of these stories is meant to illustrate a broader thesis: that the lessons from the First Wave of the Internet will be integral to the Third. And so I want to zoom in on the Third Wave as well. I'll describe what it will look like and how it will unfold, and give you a glimpse of the future it portends. (page 10)
+
+# Characteristics of the Third Wave
+
+> The Third Wave of the Internet is coming, the moment where the Internet transforms from something we interact with to something that interacts with everything around us. (page 201)
+
+Case believes that the Third Wave of the internet will be more similar to the First Wave than the Second Wave. It will be about partnerships with incumbents and working with governments to build a successful company.
+
+Similarities to the First Wave (page 46):
+
+-   Entrepreneurs will spend great deal of time on things other than tech
+-   Need a strategy to work with skeptical industries with powerful gatekeepers
+-   Partnerships between startups and incumbents will be essential
+-   Government will play an important role
+
+Differences from the Second Wave (page 9):
+
+-   Less likely to be dorm-inspired apps that go viral
+-   Partnerships across sectors will be essential
+-   Need to navigate complicated policy landscape
+-   Higher barriers to entry - even for a worthy idea
+
+Defining characteristics:
+
+-   Will be defined by the Internet of Everything (page 47)
+-   Will be fully integrated into every part of our lives
+-   The government's role will be critical as both a regulator and customer (page 164)
+
+> My view is simple: Government is going to play an important role in the Third Wave. Full stop. It doesn't matter what your view of it is; if you can't figure out how to work with government---and how to get government to work with you---you're likely not going to be a successful Third Wave entrepreneur. (159)
+
+# Why Incumbents fail
+
+> As the Third Wave gains momentum, every industry leader in every economic sector is at risk of being disrupted. Think about what's been happening in Silicon Valley over the past few decades and imagine what it will look like when we apply that same culture of innovation and scope of ambition to every part of our economy. That's the Third Wave---and it's not just coming; it's here. (47)
+
+Even though the Third Wave will be defined by partnerships between Incumbents and startups, there will still be many Incumbents disrupted because they are not able to adapt and form successful partnerships.
+
+Case scatters several reasons throughout the book for why Incumbents fail:
+
+-   Incumbents are out-hustled and out-executed by startups (80)
+-   Incumbents lack agility and entrepreneurial passion (80)
+-   Incumbents do not move fast enough (95)
+-   Incumbents are not forward looking enough (95)
+-   Incumbents overlook the impact of nascent technology (96)
+-   Incumbents do not recognize how a technology disrupting a different industry could be adapted to disrupt their own industry (96)
+-   Incumbents are not willing to self-disrupt (97)
+-   Incumbents do not see their future disruption as inevitable (98)
+-   Incumbents do not have a perpetual sense of paranoia and curiosity (205)
+-   Incumbents do not strive to anticipate how things will change (205)
+-   Incumbents only play defense, not offense. They just defend, not attack. (207)
+-   Incumbents try to go it alone (207)
+
+> What these transitions will ultimately require is companies willing to self-disrupt. As Steve Jobs once put it, "If you don't cannibalize yourself, someone else will." (page 97)
+
+> In a CBS interview, Jeff Bezos said it plainly: "Amazon will be disrupted one day. I don't worry because I know it's inevitable." (page 98)
+
+# Conclusion
+
+> To corporate leaders, it's time to develop a perpetual sense of paranoia and curiosity. It's time to both fear the future and seize its promise, to restlessly drive to master it, no matter what it holds. Regardless of where you and your company stand at the end of today, you can always wake up tomorrow to find that things have changed drastically. You jeopardize your position if you don't strive to anticipate how it will change. (page 205)
+
+Case outlines a compelling argument for the Third Wave of the internet. If he is correct, the implications for Incumbents are great, but the opportunity is greater. Incumbents need to be willing to take risks, partner with startups, and shape their own future.
+
+> Teddy Roosevelt said a century ago: It is not the critic who counts...The credit belongs to the man who is actually in the arena, whose face is marred by dust and sweat and blood; who strives valiantly; who errs, who comes short again and again, because there is no effort without error and shortcoming; but who does actually strive to do the deeds; who knows great enthusiasms, the great devotions; who spends himself in a worthy cause; who at the best knows in the end the triumph of high achievement, and who at the worst, if he fails, at least fails while daring greatly, so that his place shall never be with those cold and timid souls who neither know victory nor defeat. (page 213)

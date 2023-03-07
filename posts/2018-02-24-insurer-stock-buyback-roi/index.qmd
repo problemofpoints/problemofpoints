@@ -1,0 +1,134 @@
+---
+title: "P&C (Re)insurer Stock Buyback ROI"
+subtitle: ''
+date: '2018-03-26'
+slug: insurer-stock-buyback-roi
+categories:
+  - insurance
+  - stocks
+draft: no
+---
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+
+library(knitr)
+library(tidyverse)
+library(popformatting)
+library(flextable)
+library(officer)
+
+knitr::opts_chunk$set(
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE,
+	echo = FALSE
+)
+
+```
+
+# Goal
+
+The goal of this analysis is to calculate the historical return on investment (ROI) of share buybacks for P&C (re)insurance companies over the past 20 quarters (2013 - 2017). This is one way to measure whether companies have effectively allocated their capital to share buybacks. We split the buyback ROI into two components - buyback strategy and buyback effectiveness - to understand how well a company has timed their share repurchases.
+
+The methodology used is inherently backwards looking and answers the question: Based on what we know now (i.e. a company's stock price over the period), did the company achieve a reasonable return on their cash spent buying back shares?
+
+# Data used
+
+The data used for this analysis is from SEC Forms 10-Q and 10-K for each company over the time period of 2013 - 2017 on a quarterly basis, per S&P Global Market Intelligence.
+
+-   Number of shares repurchased in the quarter
+-   Average price per share for shares repurchased
+-   Common shares outstanding
+-   Common dividend per share
+-   Special dividend per share
+-   Book value per share
+
+Additionally, historical share price data was downloaded from Yahoo Finance.
+
+The buyback ROI is calculated based on three items:
+
+1.  The cash outflows associated with share repurchases each quarter
+2.  The implied cash inflows of dividends (common and special) "avoided" by repurchasing shares
+3.  A final cash inflow related to the total value of the cumulative shares repurchased
+
+We will walk through the calculations using Travelers (TRV) as an example. The graph below shows the cumulative number of common shares repurchased by TRV since 2013. They have repurchased just under 129 million shares, or about 34% of their total number of shares outstanding at the start of 2013.
+
+![](gg-cum-shares-1.png)
+
+The graph below shows the dollar amount of dollar amount of shares repurchased and dividends "avoided" each quarter. This corresponds to #1 and #2 in the list above. From this we can see that, for example, in the fourth quarters of 2013, 2014, and 2015, TRV repurchased around \$1b of shares. This amount is calculated using the number of shares repurchased each quarter times the average price paid for each share, both of which are disclosed in quarterly filings.
+
+The dividends "avoided" (i.e. an implied cash inflow) are cumulative over time as they are the amount of dividends TRV does not have to pay to shareholders because they repurchased those shares. By the end of 2017, TRV was avoiding ~\$93m of dividend payments each quarter (= \$0.72 common div per share times 129 million shares repurchased).
+
+![](gg-cash-flows-1.png)
+
+The third cash flow (#3) is the final value of the cumulative shares repurchased, or the ending market value of the shares repurchased over the five year time period. This is calculated as the cumulative number of shares repurchased (129 million) times the ending share price on December 31, 2017 (\$135.64).
+
+![](example3-1.png)
+
+Given this set of cash flows, we then calculate the annualized internal rate of return and that gives us the buyback ROI. TRV buyback ROI is 14.8%.
+
+An additional metric to calculate is the "buyback effectiveness" return. This metric isolates the impact of management timing in repurchasing shares by backing out the total shareholder return over the time period from the buyback ROI. So buyback effectiveness equals one plus buyback ROI divided one plus total shareholder return (minus one). This metric highlights companies that successfully buyback more shares right before their stock price increases and buy less before their stock decreases. TRV has a buyback effectiveness result of 2.3%, indicating that management timing slightly improved the total buyback ROI.
+
+![](share-price-1.png)
+
+The table below summarizes key buyback metrics for TRV.
+
+```{r example-table}
+
+trv_summary <- tibble::tribble(
+  ~col1, ~col2,  ~col3, ~col4, ~col5,  ~col6,    ~col7,    ~col8,    ~col9,   ~col10,  ~col11,
+  "TRV",   20L,  36980, 376.4, 128.6, 12929L, "34.20%", "35.00%", "12.10%", "14.80%", "2.30%"
+  )
+
+
+names(trv_summary) <- c("Ticker", "# of quarters", "Current Mkt Cap ($m)", "Initial Shares (mil)", "Shares Repurchased (mil)", "Dollar Repurchased ($m)", "Percent of Initial Shares Repurchased", "Percent of Mkt Cap Repurchased", "Total Shareholder Return", "Buyback ROI", "Buyback Effectiveness")
+
+
+trv_summary %>%
+  filter(Ticker == "TRV") %>%
+  regulartable() %>%
+  ft_theme() %>%
+  add_title_header("TRV buyback ROI summary")
+
+
+```
+
+# Overall results
+
+Now we can look at the results for all P&C (re)insurers. The table below highlights the top 10 companies sorted by buyback effectiveness.
+
+```{r top-15}
+
+top_15 <- tibble::tribble(
+   ~col1, ~col2,  ~col3, ~col4, ~col5, ~col6,    ~col7,    ~col8,    ~col9,   ~col10,   ~col11,
+  "HRTG",   15L,    435,  29.8,   7.1,    88, "23.80%", "20.20%",  "5.50%", "70.70%", "61.80%",
+   "EIG",   20L,   1360,  30.9,   1.4,    42,  "4.70%",  "3.10%", "14.50%", "59.10%", "39.00%",
+  "TPRE",   18L,   1410, 103.9,   3.9,    48,  "3.80%",  "3.40%",  "0.20%", "26.60%", "26.30%",
+   "PRA",   20L,   2520,  61.8,   9.3,   426, "15.10%", "16.90%", "12.40%", "23.40%",  "9.80%",
+   "PGR",   20L,  35550, 603.2,    37,  1008,  "6.10%",  "2.80%", "19.80%", "31.00%",  "9.40%",
+   "AFG",   20L,  10140,  89.9,   8.8,   534,  "9.80%",  "5.30%", "22.10%", "30.20%",  "6.60%",
+   "WRB",   20L,   9450,   136,  17.4,   809, "12.80%",  "8.60%", "12.60%", "19.90%",  "6.60%",
+   "ALL",   20L,  34720,   468, 157.4,  9313, "33.60%", "26.80%", "17.90%", "24.70%",  "5.80%",
+  "KMPR",   20L,   3020,  58.3,   7.7,   269, "13.20%",  "8.90%", "17.80%", "23.10%",  "4.60%",
+  "ACGL",   20L,  11080, 133.1,  17.9,  1052, "13.50%",  "9.50%", "11.50%", "16.50%",  "4.40%"
+  )
+names(top_15) <- c("Ticker", "# of quarters", "Current Mkt Cap ($m)", "Initial Shares (mil)", "Shares Repurchased (mil)", "Dollar Repurchased ($m)", "Percent of Initial Shares Repurchased", "Percent of Mkt Cap Repurchased", "Total Shareholder Return", "Buyback ROI", "Buyback Effectiveness")
+
+top_15 %>%
+  slice(1:10) %>%
+  regulartable() %>%
+  ft_theme() %>%
+  add_title_header("Top 10 most effective share repurchasers")
+
+```
+
+<br>
+
+The table below provides the results for all companies sorted by buyback effectiveness.
+
+<br>
+
+```{r summary-roi}
+
+
+```

@@ -1,0 +1,17 @@
+---
+title: 2018 Global Catastrophe Losses
+subtitle: ""
+date: 2019-01-29
+slug: 2018-global-catastrophe-losses
+categories:
+    - insurance
+draft: false
+---
+
+![source: Impact Forecasting: Weather, Climate & Catastrophe Insight - 2018 Annual Report](IF-2018-infographic.png)
+
+![source: Impact Forecasting: Weather, Climate & Catastrophe Insight - 2018 Annual Report](IF-2018-2.png)
+
+![source: Impact Forecasting: Weather, Climate & Catastrophe Insight - 2018 Annual Report](IF-2018-3.png)
+
+[Impact Forecasting: Weather, Climate & Catastrophe Insight - 2018 Annual Report](https://www.aon.com/global-weather-catastrophe-natural-disasters-costs-climate-change-annual-report)

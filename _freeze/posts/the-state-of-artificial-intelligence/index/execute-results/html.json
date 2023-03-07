@@ -1,0 +1,16 @@
+{
+  "hash": "0457e78afbaa6b2500d2a85db6da8116",
+  "result": {
+    "markdown": "---\ntitle: The State of Artificial Intelligence\nsubtitle: Notes from Andrew Ng talk\ndate: '2018-06-30'\nslug: the-state-of-artificial-intelligence\ntags:\n  - data science\ndraft: false\n---\n\n\n\n::: {.cell layout-align=\"center\"}\n\n:::\n\n\nBelow are my notes from Andrew Ng's talk, \"The State of Artificial Intelligence\". See the [YouTube video](https://www.youtube.com/watch?v=NKpuX_yzdYs).\n\n<!--more-->\n\n\n::: {.cell layout-align=\"center\"}\n::: {.cell-output-display}\n![](index_files/figure-html/write-notes1-1.png){fig-align='center' width=100%}\n:::\n:::\n\n::: {.cell layout-align=\"center\"}\n::: {.cell-output-display}\n![](index_files/figure-html/write-notes2-1.png){fig-align='center' width=100%}\n:::\n:::\n\n::: {.cell layout-align=\"center\"}\n::: {.cell-output-display}\n![](index_files/figure-html/write-notes3-1.png){fig-align='center' width=100%}\n:::\n:::\n",
+    "supporting": [
+      "index_files"
+    ],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}

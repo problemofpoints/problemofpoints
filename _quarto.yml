@@ -1,0 +1,26 @@
+project:
+  type: website
+
+website:
+  title: "Problem of Points"
+  navbar:
+    right:
+      - about.qmd
+      - disclaimer.qmd
+      - icon: github
+        href: https://github.com/problemofpoints
+  favicon: favicons-black-letter-P.ico
+  page-footer: 
+    center:
+      - text: "Copyright © 2023 problemofpoints"
+      - href: disclaimer.qmd
+format:
+  html:
+    theme: litera
+    css: styles.css
+
+editor: source
+
+execute:
+  freeze: auto
+  

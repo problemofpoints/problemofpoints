@@ -1,0 +1,5 @@
+- source: project
+  netlify:
+    - id: "8e2f44e0-9099-46e9-85a5-9150352f343f"
+      url: "https://www.problemofpoints.com"
+  

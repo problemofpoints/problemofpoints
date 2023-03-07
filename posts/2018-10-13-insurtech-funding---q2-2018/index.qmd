@@ -1,0 +1,12 @@
+---
+title: Insurtech Financing - Q2 2018 Update
+subtitle: 2013 to Q2 2018
+date: 2018-10-13
+slug: insurtech-funding---q2-2018
+categories:
+    - insurtech
+    - insurance
+draft: false
+---
+
+![source: FT Partners](FTPartners-insurtech-funding-q2-2018.png)

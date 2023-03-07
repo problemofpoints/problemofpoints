@@ -1,0 +1,15 @@
+---
+title: 2017 Global Catastrophe Losses
+subtitle: Infographic from Impact Forecasting Report
+date: 2018-02-16
+slug: 2017-global-catastrophe-losses
+tags:
+    - insurance
+draft: false
+---
+
+![source: Impact Forecasting: Weather, Climate & Catastrophe Insight - 2017 Annual Report](2017-IF-infographic.png)
+
+[Impact Forecasting: Weather, Climate & Catastrophe Insight - 2017 Annual Report](http://thoughtleadership.aonbenfield.com/Documents/20180124-ab-if-annual-report-weather-climate-2017.pdf)
+
+[Companion Volume to Weather, Climate & Catastrophe Insight](http://thoughtleadership.aonbenfield.com/Documents/20180124-ab-if-annual-companion-volume.pdf)

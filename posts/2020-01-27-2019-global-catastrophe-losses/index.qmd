@@ -1,0 +1,22 @@
+---
+title: 2019 Global Catastrophe Losses
+subtitle: ""
+description: ""
+date: 2020-01-27
+slug: 2019-global-catastrophe-losses
+categories:
+    - insurance
+draft: false
+---
+
+![source: Weather, Climate & Catastrophe Insight - 2019 Annual Report](IF-2019-infographic.png)
+
+![source: Weather, Climate & Catastrophe Insight - 2019 Annual Report](IF-2019-top-10-global-losses.png)
+
+![source: Weather, Climate & Catastrophe Insight - 2019 Annual Report](IF-2019-global-insured-loss.png)
+
+![source: Weather, Climate & Catastrophe Insight - 2019 Annual Report](IF-2019-global-insured-loss-byperil.png)
+
+![source: Weather, Climate & Catastrophe Insight - 2019 Annual Report](IF-2019-billion-dollar-disasters-per-decade.png)
+
+[Impact Forecasting: Weather, Climate & Catastrophe Insight - 2019 Annual Report](http://thoughtleadership.aon.com/Documents/20200122-if-natcat2020.pdf)
