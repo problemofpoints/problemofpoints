@@ -4,7 +4,7 @@ subtitle: Boardroom Battles and the Rise of Shareholder Activism
 date: 2018-01-22
 slug: book-summary---dear-chairman
 categories:
-    - books
+    - book review
 draft: false
 ---
 

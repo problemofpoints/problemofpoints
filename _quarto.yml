@@ -9,11 +9,12 @@ website:
       - disclaimer.qmd
       - icon: github
         href: https://github.com/problemofpoints
+    background: "#F2F2F2"
+    logo: favicons-black-letter-P.ico
   favicon: favicons-black-letter-P.ico
   page-footer: 
     center:
       - text: "Copyright © 2023 problemofpoints"
-      - href: disclaimer.qmd
 format:
   html:
     theme: litera
