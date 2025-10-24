@@ -1,7 +1,10 @@
 on:
   workflow_dispatch:
   push:
-    branches: master
+    branches:
+      - main
+      - master
+  pull_request:
 
 name: Quarto Publish
 
@@ -10,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v2 
+        uses: actions/checkout@v2
 
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
@@ -21,7 +24,20 @@ jobs:
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
+      - name: Deploy Preview to Netlify
+        if: github.event_name == 'pull_request'
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          netlify deploy \
+            --alias="pr-${{ github.event.number }}" \
+            --message="Preview for PR #${{ github.event.number }}" \
+            --dir=_site \
+            --functions=netlify/functions
+
       - name: Deploy to Netlify
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}

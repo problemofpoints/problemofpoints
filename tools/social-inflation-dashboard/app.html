@@ -1,1092 +1,1082 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Social Inflation Dashboard</title>
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4VdXS5yZV3EoHo8Xc5teLo75fWBTnCT+ZpQwK0p3sM="
-    crossorigin=""
-  />
-  <style>
-    .sid-container {
-      font-family: "Source Sans Pro", "Helvetica Neue", Arial, sans-serif;
-      color: #1f2933;
-      background: #f8fafc;
-      border-radius: 18px;
-      padding: 1.5rem;
-      box-shadow: 0 12px 30px -16px rgba(15, 23, 42, 0.35);
-      display: grid;
-      gap: 1.25rem;
-    }
+<link
+rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+crossorigin=""
+/>
+<style>
+  .sid-container {
+    font-family: "Source Sans Pro", "Helvetica Neue", Arial, sans-serif;
+    color: #1f2933;
+    background: #f8fafc;
+    border-radius: 18px;
+    padding: 1.5rem;
+    box-shadow: 0 12px 30px -16px rgba(15, 23, 42, 0.35);
+    display: grid;
+    gap: 1.25rem;
+  }
 
-    .sid-header {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
+  .sid-header {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
 
-    .sid-header h1 {
-      font-size: clamp(1.8rem, 2vw + 1rem, 2.4rem);
-      margin: 0;
-    }
+  .sid-header h1 {
+    font-size: clamp(1.8rem, 2vw + 1rem, 2.4rem);
+    margin: 0;
+  }
 
-    .sid-subtitle {
-      margin: 0;
-      font-size: 1rem;
-      color: #52606d;
-      max-width: 60ch;
-    }
+  .sid-subtitle {
+    margin: 0;
+    font-size: 1rem;
+    color: #52606d;
+    max-width: 60ch;
+  }
 
-    .sid-controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      align-items: flex-end;
-    }
+  .sid-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+  }
 
-    .sid-control {
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
-      font-size: 0.95rem;
-    }
+  .sid-control {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.95rem;
+  }
 
-    .sid-control label {
-      color: #334155;
-      font-weight: 600;
-    }
+  .sid-control label {
+    color: #334155;
+    font-weight: 600;
+  }
 
-    .sid-select {
-      appearance: none;
-      border-radius: 10px;
-      border: 1px solid #cbd5e1;
-      padding: 0.5rem 2.25rem 0.5rem 0.75rem;
-      font-size: 1rem;
-      background: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10L12 15L17 10' stroke='%23637385' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
-        no-repeat right 0.65rem center/1.25rem,
-        linear-gradient(180deg, #fff, #f8fafc);
-      cursor: pointer;
-    }
+  .sid-select {
+    appearance: none;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    padding: 0.5rem 2.25rem 0.5rem 0.75rem;
+    font-size: 1rem;
+    background: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10L12 15L17 10' stroke='%23637385' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    no-repeat right 0.65rem center/1.25rem,
+    linear-gradient(180deg, #fff, #f8fafc);
+    cursor: pointer;
+  }
 
-    .sid-metric-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 1rem;
-    }
+  .sid-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+  }
 
-    .sid-metric-card {
-      border-radius: 16px;
-      background: white;
-      padding: 1.1rem 1.2rem;
-      box-shadow: 0 14px 28px -24px rgba(15, 23, 42, 0.65);
-      display: grid;
-      gap: 0.35rem;
-    }
+  .sid-metric-card {
+    border-radius: 16px;
+    background: white;
+    padding: 1.1rem 1.2rem;
+    box-shadow: 0 14px 28px -24px rgba(15, 23, 42, 0.65);
+    display: grid;
+    gap: 0.35rem;
+  }
 
-    .sid-metric-title {
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #475569;
-      font-weight: 700;
-    }
+  .sid-metric-title {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #475569;
+    font-weight: 700;
+  }
 
-    .sid-metric-value {
-      font-size: 2rem;
-      font-weight: 700;
-      color: #0f172a;
-      line-height: 1.1;
-    }
+  .sid-metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.1;
+  }
 
-    .sid-metric-delta {
-      font-size: 0.95rem;
-      font-weight: 600;
-    }
+  .sid-metric-delta {
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
 
-    .sid-metric-delta.positive {
-      color: #059669;
-    }
+  .sid-metric-delta.positive {
+    color: #059669;
+  }
 
-    .sid-metric-delta.negative {
-      color: #dc2626;
-    }
+  .sid-metric-delta.negative {
+    color: #dc2626;
+  }
 
-    .sid-metric-context {
-      margin: 0;
-      color: #64748b;
-      font-size: 0.85rem;
-      line-height: 1.4;
-    }
+  .sid-metric-context {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
 
-    .sid-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 1.25rem;
-    }
+  .sid-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.25rem;
+  }
 
-    .sid-panel {
-      background: white;
-      border-radius: 18px;
-      padding: 1.25rem;
-      box-shadow: 0 14px 34px -28px rgba(15, 23, 42, 0.55);
-      display: grid;
-      gap: 0.75rem;
-    }
+  .sid-panel {
+    background: white;
+    border-radius: 18px;
+    padding: 1.25rem;
+    box-shadow: 0 14px 34px -28px rgba(15, 23, 42, 0.55);
+    display: grid;
+    gap: 0.75rem;
+  }
 
-    .sid-panel h2 {
-      margin: 0;
-      font-size: 1.25rem;
-      color: #0f172a;
-    }
+  .sid-panel h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #0f172a;
+  }
 
-    .sid-panel p {
-      margin: 0;
-      color: #52606d;
-      font-size: 0.95rem;
-      line-height: 1.5;
-    }
+  .sid-panel p {
+    margin: 0;
+    color: #52606d;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
 
-    #hellhole-map {
-      width: 100%;
-      min-height: 320px;
-      border-radius: 14px;
-      overflow: hidden;
-    }
+  #hellhole-map {
+    width: 100%;
+    min-height: 320px;
+    border-radius: 14px;
+    overflow: hidden;
+  }
 
-    .sid-map-legend {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      align-items: center;
-      font-size: 0.85rem;
-      color: #475569;
-    }
+  .sid-map-legend {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+    font-size: 0.85rem;
+    color: #475569;
+  }
 
-    .sid-map-legend span {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
+  .sid-map-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
 
-    .sid-legend-swatch {
-      width: 16px;
-      height: 16px;
-      border-radius: 4px;
-      display: inline-block;
-      border: 1px solid rgba(15, 23, 42, 0.15);
-    }
+  .sid-legend-swatch {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    display: inline-block;
+    border: 1px solid rgba(15, 23, 42, 0.15);
+  }
 
-    table.sid-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.9rem;
-    }
+  table.sid-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
 
-    table.sid-table thead {
-      text-transform: uppercase;
-      font-size: 0.75rem;
-      letter-spacing: 0.08em;
-      color: #64748b;
-    }
+  table.sid-table thead {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    color: #64748b;
+  }
 
     table.sid-table th,
-    table.sid-table td {
-      text-align: left;
-      padding: 0.55rem 0.35rem;
-      border-bottom: 1px solid #e2e8f0;
-    }
+  table.sid-table td {
+    text-align: left;
+    padding: 0.55rem 0.35rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
 
-    table.sid-table tbody tr:last-child td {
-      border-bottom: none;
-    }
+  table.sid-table tbody tr:last-child td {
+    border-bottom: none;
+  }
 
-    .sid-chart-wrapper {
-      position: relative;
-      width: 100%;
-      min-height: 280px;
-    }
+  .sid-chart-wrapper {
+    position: relative;
+    width: 100%;
+    min-height: 280px;
+  }
 
-    .sid-observations {
-      display: grid;
-      gap: 1rem;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    }
+  .sid-observations {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
 
-    .sid-observations h3 {
-      margin-top: 0;
-      font-size: 1.1rem;
-      color: #0f172a;
-    }
+  .sid-observations h3 {
+    margin-top: 0;
+    font-size: 1.1rem;
+    color: #0f172a;
+  }
 
-    .sid-observations ul {
-      margin: 0;
-      padding-left: 1.15rem;
-      color: #475569;
-      font-size: 0.95rem;
-      display: grid;
-      gap: 0.5rem;
-    }
+  .sid-observations ul {
+    margin: 0;
+    padding-left: 1.15rem;
+    color: #475569;
+    font-size: 0.95rem;
+    display: grid;
+    gap: 0.5rem;
+  }
 
-    .sid-tagline {
-      font-size: 0.85rem;
-      color: #64748b;
-    }
+  .sid-tagline {
+    font-size: 0.85rem;
+    color: #64748b;
+  }
 
-    .sid-footnote {
-      font-size: 0.8rem;
-      color: #94a3b8;
-    }
+  .sid-footnote {
+    font-size: 0.8rem;
+    color: #94a3b8;
+  }
 
-    @media (max-width: 720px) {
-      .sid-container {
-        padding: 1.25rem;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="sid-container">
-    <header class="sid-header">
-      <div>
-        <h1>Social Inflation Risk Monitor</h1>
-        <p class="sid-subtitle">
-          Track judicial hot spots, litigation funding, and nuclear verdict exposure through a property &amp; casualty lens.
-          Built for underwriting, pricing, and reserving leaders.
-        </p>
-      </div>
-      <div class="sid-controls">
-        <div class="sid-control">
-          <label for="sid-year">Reporting Year</label>
-          <select id="sid-year" class="sid-select">
-            <option value="2024">2024 YTD</option>
-            <option value="2023">2023</option>
-            <option value="2022">2022</option>
-            <option value="2021">2021</option>
-          </select>
-        </div>
-        <div class="sid-tagline">Figures expressed in USD unless noted. Funding volumes in billions.</div>
-      </div>
-    </header>
+@media (max-width: 720px) {
+  .sid-container {
+    padding: 1.25rem;
+  }
+  }
+</style>
+<div class="sid-container">
+<header class="sid-header">
+<div>
+<h1>Social Inflation Risk Monitor</h1>
+<p class="sid-subtitle">
+Track judicial hot spots, litigation funding, and nuclear verdict exposure through a property &amp; casualty lens.
+Built for underwriting, pricing, and reserving leaders.
+</p>
+</div>
+<div class="sid-controls">
+<div class="sid-control">
+<label for="sid-year">Reporting Year</label>
+<select id="sid-year" class="sid-select">
+<option value="2024">2024 YTD</option>
+<option value="2023">2023</option>
+<option value="2022">2022</option>
+<option value="2021">2021</option>
+</select>
+</div>
+<div class="sid-tagline">Figures expressed in USD unless noted. Funding volumes in billions.</div>
+</div>
+</header>
 
-    <section class="sid-metric-grid">
-      <article class="sid-metric-card">
-        <div class="sid-metric-title">Social Inflation Index</div>
-        <div class="sid-metric-value" id="sid-metric-index">—</div>
-        <div class="sid-metric-delta" id="sid-metric-index-delta">—</div>
-        <p class="sid-metric-context" id="sid-metric-index-note"></p>
-      </article>
-      <article class="sid-metric-card">
-        <div class="sid-metric-title">Avg. Nuclear Verdict</div>
-        <div class="sid-metric-value" id="sid-metric-verdict">—</div>
-        <div class="sid-metric-delta" id="sid-metric-verdict-delta">—</div>
-        <p class="sid-metric-context" id="sid-metric-verdict-note"></p>
-      </article>
-      <article class="sid-metric-card">
-        <div class="sid-metric-title">3rd-Party Funding Volume</div>
-        <div class="sid-metric-value" id="sid-metric-funding">—</div>
-        <div class="sid-metric-delta" id="sid-metric-funding-delta">—</div>
-        <p class="sid-metric-context" id="sid-metric-funding-note"></p>
-      </article>
-      <article class="sid-metric-card">
-        <div class="sid-metric-title">Reserve Drag</div>
-        <div class="sid-metric-value" id="sid-metric-reserve">—</div>
-        <div class="sid-metric-delta" id="sid-metric-reserve-delta">—</div>
-        <p class="sid-metric-context" id="sid-metric-reserve-note"></p>
-      </article>
-    </section>
+<section class="sid-metric-grid">
+<article class="sid-metric-card">
+<div class="sid-metric-title">Social Inflation Index</div>
+<div class="sid-metric-value" id="sid-metric-index">—</div>
+<div class="sid-metric-delta" id="sid-metric-index-delta">—</div>
+<p class="sid-metric-context" id="sid-metric-index-note"></p>
+</article>
+<article class="sid-metric-card">
+<div class="sid-metric-title">Avg. Nuclear Verdict</div>
+<div class="sid-metric-value" id="sid-metric-verdict">—</div>
+<div class="sid-metric-delta" id="sid-metric-verdict-delta">—</div>
+<p class="sid-metric-context" id="sid-metric-verdict-note"></p>
+</article>
+<article class="sid-metric-card">
+<div class="sid-metric-title">3rd-Party Funding Volume</div>
+<div class="sid-metric-value" id="sid-metric-funding">—</div>
+<div class="sid-metric-delta" id="sid-metric-funding-delta">—</div>
+<p class="sid-metric-context" id="sid-metric-funding-note"></p>
+</article>
+<article class="sid-metric-card">
+<div class="sid-metric-title">Reserve Drag</div>
+<div class="sid-metric-value" id="sid-metric-reserve">—</div>
+<div class="sid-metric-delta" id="sid-metric-reserve-delta">—</div>
+<p class="sid-metric-context" id="sid-metric-reserve-note"></p>
+</article>
+</section>
 
-    <section class="sid-grid">
-      <article class="sid-panel">
-        <div>
-          <h2>Judicial Hellhole Map</h2>
-          <p>Circle size and color indicate relative severity. Click a marker for nuclear verdict and settlement growth detail.</p>
-        </div>
-        <div id="hellhole-map" aria-label="Map of judicial hellhole activity"></div>
-        <div class="sid-map-legend">
-          <span><span class="sid-legend-swatch" style="background:#fee2e2"></span>Emerging</span>
-          <span><span class="sid-legend-swatch" style="background:#fca5a5"></span>Elevated</span>
-          <span><span class="sid-legend-swatch" style="background:#f87171"></span>Severe</span>
-          <span><span class="sid-legend-swatch" style="background:#ef4444"></span>Extreme</span>
-        </div>
-        <p id="sid-map-summary" class="sid-footnote"></p>
-      </article>
+<section class="sid-grid">
+<article class="sid-panel">
+<div>
+<h2>Judicial Hellhole Map</h2>
+<p>Circle size and color indicate relative severity. Click a marker for nuclear verdict and settlement growth detail.</p>
+</div>
+<div id="hellhole-map" aria-label="Map of judicial hellhole activity"></div>
+<div class="sid-map-legend">
+<span><span class="sid-legend-swatch" style="background:#fee2e2"></span>Emerging</span>
+<span><span class="sid-legend-swatch" style="background:#fca5a5"></span>Elevated</span>
+<span><span class="sid-legend-swatch" style="background:#f87171"></span>Severe</span>
+<span><span class="sid-legend-swatch" style="background:#ef4444"></span>Extreme</span>
+</div>
+<p id="sid-map-summary" class="sid-footnote"></p>
+</article>
 
-      <article class="sid-panel">
-        <h2>Litigation Funding &amp; Verdict Pressure</h2>
-        <div class="sid-chart-wrapper">
-          <canvas id="sid-funding-chart" aria-label="Third party litigation funding trend"></canvas>
-        </div>
-        <div class="sid-chart-wrapper">
-          <canvas id="sid-verdict-chart" aria-label="Nuclear verdict frequency and severity trend"></canvas>
-        </div>
-        <p class="sid-footnote">
-          Data points combine industry surveys, court filings, and TPA partner intel. Nuclear verdicts defined as awards &gt; $10M.
-        </p>
-      </article>
-    </section>
+<article class="sid-panel">
+<h2>Litigation Funding &amp; Verdict Pressure</h2>
+<div class="sid-chart-wrapper">
+<canvas id="sid-funding-chart" aria-label="Third party litigation funding trend"></canvas>
+</div>
+<div class="sid-chart-wrapper">
+<canvas id="sid-verdict-chart" aria-label="Nuclear verdict frequency and severity trend"></canvas>
+</div>
+<p class="sid-footnote">
+Data points combine industry surveys, court filings, and TPA partner intel. Nuclear verdicts defined as awards &gt; $10M.
+</p>
+</article>
+</section>
 
-    <section class="sid-panel">
-      <h2>Top Watchlist Jurisdictions</h2>
-      <p>Focus defense spend and rate actions on the courts driving outsized verdict inflation and funding inflows.</p>
-      <table class="sid-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>State</th>
-            <th>Nuclear Verdicts</th>
-            <th>Funding Signal</th>
-            <th>Settlement Growth</th>
-          </tr>
-        </thead>
-        <tbody id="sid-state-table"></tbody>
-      </table>
-    </section>
+<section class="sid-panel">
+<h2>Top Watchlist Jurisdictions</h2>
+<p>Focus defense spend and rate actions on the courts driving outsized verdict inflation and funding inflows.</p>
+<table class="sid-table">
+<thead>
+<tr>
+<th>#</th>
+<th>State</th>
+<th>Nuclear Verdicts</th>
+<th>Funding Signal</th>
+<th>Settlement Growth</th>
+</tr>
+</thead>
+<tbody id="sid-state-table"></tbody>
+</table>
+</section>
 
-    <section class="sid-observations">
-      <div class="sid-panel">
-        <h3>What to Watch</h3>
-        <ul id="sid-observation-list"></ul>
-      </div>
-      <div class="sid-panel">
-        <h3>Action Items</h3>
-        <ul id="sid-action-list"></ul>
-      </div>
-    </section>
-  </div>
+<section class="sid-observations">
+<div class="sid-panel">
+<h3>What to Watch</h3>
+<ul id="sid-observation-list"></ul>
+</div>
+<div class="sid-panel">
+<h3>Action Items</h3>
+<ul id="sid-action-list"></ul>
+</div>
+</section>
+</div>
 
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-VzL730aFDrt8a1Lr8t1Ik5dUvtu1Bqqbb5wGQbB0y+I="
-    crossorigin=""
-  ></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha256-+E8DqRLVQjaxAg/P6MqxsVXni4eWh05rq6ArtyTc95I=" crossorigin="anonymous"></script>
-  <script>
-    const metricsByYear = {
-      2021: {
-        socialIndex: 132,
-        socialIndexYoY: 0.07,
-        verdict: 25.4,
-        verdictYoY: 0.11,
-        funding: 9.8,
-        fundingYoY: 0.23,
-        reserve: 2.6,
-        reserveYoY: 0.3,
-        lawsuits: 158000,
-        lawsuitsYoY: 0.05,
-        notes: {
-          index: "Driven by backlog releases and plaintiff-friendly venue shifts in CA and NY.",
-          verdict: "Transportation and premises liability verdicts dominate severity.",
-          funding: "Capital still concentrating in metro areas with expedited dockets.",
-          reserve: "Personal auto and umbrella seeing the steepest strain."
-        },
-        observations: [
-          "Cook County backlog is still clearing, allowing a wave of aged claims to price with 2019 severity expectations.",
-          "Texas appellate environment stabilized, but nuclear verdicts remain persistent in Harris and Dallas counties.",
-          "Funding commitments jumped as new PE entrants target catastrophic injury cases."
-        ],
-        actions: [
-          "Tighten excess attachment points for transportation fleets exceeding $50M revenue.",
-          "Deploy social inflation endorsement pricing within small commercial packages in CA and NY.",
-          "Expand defense panel usage of early resolution counsel in IL." 
-        ]
-      },
-      2022: {
-        socialIndex: 141,
-        socialIndexYoY: 0.07,
-        verdict: 27.9,
-        verdictYoY: 0.1,
-        funding: 11.6,
-        fundingYoY: 0.18,
-        reserve: 3.1,
-        reserveYoY: 0.19,
-        lawsuits: 167500,
-        lawsuitsYoY: 0.06,
-        notes: {
-          index: "Inflationary jury anchors are spilling into medium severity GL and auto cases.",
-          verdict: "More life-care plan challenges failing in Philadelphia's complex litigation center.",
-          funding: "Portfolio deals now include structured settlements with IRR floors above 12%.",
-          reserve: "Commercial auto adverse development adds 65 bps to calendar year combined ratio."
-        },
-        observations: [
-          "Florida verdicts cooling modestly post-tort reform, but assignment of benefits suits remain elevated.",
-          "TPA partners report longer time-to-close due to medical billing discovery fights.",
-          "Litigation funding terms shifting toward hybrid recourse, reducing plaintiff risk aversion."
-        ],
-        actions: [
-          "Re-underwrite multi-state habitational accounts with exposure to NYC and Cook County venues.",
-          "Enhance claims triage to flag funded cases for early mediation strategies.",
-          "Review umbrella pricing corridors in southeast region for adequacy."
-        ]
-      },
-      2023: {
-        socialIndex: 149,
-        socialIndexYoY: 0.06,
-        verdict: 30.6,
-        verdictYoY: 0.1,
-        funding: 12.9,
-        fundingYoY: 0.11,
-        reserve: 3.6,
-        reserveYoY: 0.16,
-        lawsuits: 175800,
-        lawsuitsYoY: 0.05,
-        notes: {
-          index: "Juror sympathy amplified by cost-of-living narratives and corporate mistrust themes.",
-          verdict: "Aviation and product liability verdicts re-emerge with nine-figure anchors.",
-          funding: "Funding now extends into subrogation and class action defense cost sharing.",
-          reserve: "Carriers increasing IBNR load by 40 bps on excess casualty treaties."
-        },
-        observations: [
-          "Philadelphia, Atlanta, and Oakland show converging plaintiff bar strategies around venue shopping.",
-          "Defense verdicts decreasing in trucking cases despite investment in telematics evidence.",
-          "Medical expense inflation compounding with reptile theory playbooks in jury selection."
-        ],
-        actions: [
-          "Coordinate with reinsurers on swing rate corridors to absorb emerging severity clusters.",
-          "Introduce litigation management dashboards for top 10 defense firms handling nuclear exposures.",
-          "Escalate rate filings mid-term for loss-sensitive casualty deals tied to affected venues."
-        ]
-      },
-      2024: {
-        socialIndex: 155,
-        socialIndexYoY: 0.04,
-        verdict: 32.1,
-        verdictYoY: 0.05,
-        funding: 13.7,
-        fundingYoY: 0.06,
-        reserve: 3.9,
-        reserveYoY: 0.08,
-        lawsuits: 182400,
-        lawsuitsYoY: 0.04,
-        notes: {
-          index: "Legislative reforms slowing but not reversing the acceleration in jury awards.",
-          verdict: "Nuclear verdict medians plateau yet remain 75% above 2017 levels.",
-          funding: "Institutional capital now piloting AI-enabled case screening, increasing speed to invest.",
-          reserve: "Workers' comp excess layers now feel spillover from civil nuclear verdict benchmarks."
-        },
-        observations: [
-          "Cook County introduces time-limited demands legislation, further pressuring settlement negotiations.",
-          "California wildfire subrogation verdict pushes punitive damages narrative into standard GL cases.",
-          "TPF disclosure bills advancing in 7 states, but compliance lag expected until 2025.",
-          "Average mega verdict cycle times dropping below 30 months due to specialty plaintiff financing."
-        ],
-        actions: [
-          "Model layered reinsurance attachment changes assuming 10% additional severity shock in watchlist states.",
-          "Expand defense-side analytics on funding-backed cases to forecast likely discovery hurdles.",
-          "Coordinate underwriting and claims to pre-approve settlement authorities for high-exposure venues.",
-          "Engage government relations to support transparency legislation on litigation funding."
-        ]
-      }
-    };
+<script
+src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+crossorigin=""
+></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" integrity="sha256-IGtui7APx7uix+6AykHbPp4FunvgqjWr66nP1TV/XQ4=" crossorigin="anonymous"></script>
+<script>
+const metricsByYear = {
+2021: {
+socialIndex: 132,
+socialIndexYoY: 0.07,
+verdict: 25.4,
+verdictYoY: 0.11,
+funding: 9.8,
+fundingYoY: 0.23,
+reserve: 2.6,
+reserveYoY: 0.3,
+lawsuits: 158000,
+lawsuitsYoY: 0.05,
+notes: {
+index: "Driven by backlog releases and plaintiff-friendly venue shifts in CA and NY.",
+verdict: "Transportation and premises liability verdicts dominate severity.",
+funding: "Capital still concentrating in metro areas with expedited dockets.",
+reserve: "Personal auto and umbrella seeing the steepest strain."
+},
+observations: [
+"Cook County backlog is still clearing, allowing a wave of aged claims to price with 2019 severity expectations.",
+"Texas appellate environment stabilized, but nuclear verdicts remain persistent in Harris and Dallas counties.",
+"Funding commitments jumped as new PE entrants target catastrophic injury cases."
+],
+actions: [
+"Tighten excess attachment points for transportation fleets exceeding $50M revenue.",
+"Deploy social inflation endorsement pricing within small commercial packages in CA and NY.",
+"Expand defense panel usage of early resolution counsel in IL."
+]
+},
+2022: {
+socialIndex: 141,
+socialIndexYoY: 0.07,
+verdict: 27.9,
+verdictYoY: 0.1,
+funding: 11.6,
+fundingYoY: 0.18,
+reserve: 3.1,
+reserveYoY: 0.19,
+lawsuits: 167500,
+lawsuitsYoY: 0.06,
+notes: {
+index: "Inflationary jury anchors are spilling into medium severity GL and auto cases.",
+verdict: "More life-care plan challenges failing in Philadelphia's complex litigation center.",
+funding: "Portfolio deals now include structured settlements with IRR floors above 12%.",
+reserve: "Commercial auto adverse development adds 65 bps to calendar year combined ratio."
+},
+observations: [
+"Florida verdicts cooling modestly post-tort reform, but assignment of benefits suits remain elevated.",
+"TPA partners report longer time-to-close due to medical billing discovery fights.",
+"Litigation funding terms shifting toward hybrid recourse, reducing plaintiff risk aversion."
+],
+actions: [
+"Re-underwrite multi-state habitational accounts with exposure to NYC and Cook County venues.",
+"Enhance claims triage to flag funded cases for early mediation strategies.",
+"Review umbrella pricing corridors in southeast region for adequacy."
+]
+},
+2023: {
+socialIndex: 149,
+socialIndexYoY: 0.06,
+verdict: 30.6,
+verdictYoY: 0.1,
+funding: 12.9,
+fundingYoY: 0.11,
+reserve: 3.6,
+reserveYoY: 0.16,
+lawsuits: 175800,
+lawsuitsYoY: 0.05,
+notes: {
+index: "Juror sympathy amplified by cost-of-living narratives and corporate mistrust themes.",
+verdict: "Aviation and product liability verdicts re-emerge with nine-figure anchors.",
+funding: "Funding now extends into subrogation and class action defense cost sharing.",
+reserve: "Carriers increasing IBNR load by 40 bps on excess casualty treaties."
+},
+observations: [
+"Philadelphia, Atlanta, and Oakland show converging plaintiff bar strategies around venue shopping.",
+"Defense verdicts decreasing in trucking cases despite investment in telematics evidence.",
+"Medical expense inflation compounding with reptile theory playbooks in jury selection."
+],
+actions: [
+"Coordinate with reinsurers on swing rate corridors to absorb emerging severity clusters.",
+"Introduce litigation management dashboards for top 10 defense firms handling nuclear exposures.",
+"Escalate rate filings mid-term for loss-sensitive casualty deals tied to affected venues."
+]
+},
+2024: {
+socialIndex: 155,
+socialIndexYoY: 0.04,
+verdict: 32.1,
+verdictYoY: 0.05,
+funding: 13.7,
+fundingYoY: 0.06,
+reserve: 3.9,
+reserveYoY: 0.08,
+lawsuits: 182400,
+lawsuitsYoY: 0.04,
+notes: {
+index: "Legislative reforms slowing but not reversing the acceleration in jury awards.",
+verdict: "Nuclear verdict medians plateau yet remain 75% above 2017 levels.",
+funding: "Institutional capital now piloting AI-enabled case screening, increasing speed to invest.",
+reserve: "Workers' comp excess layers now feel spillover from civil nuclear verdict benchmarks."
+},
+observations: [
+"Cook County introduces time-limited demands legislation, further pressuring settlement negotiations.",
+"California wildfire subrogation verdict pushes punitive damages narrative into standard GL cases.",
+"TPF disclosure bills advancing in 7 states, but compliance lag expected until 2025.",
+"Average mega verdict cycle times dropping below 30 months due to specialty plaintiff financing."
+],
+actions: [
+"Model layered reinsurance attachment changes assuming 10% additional severity shock in watchlist states.",
+"Expand defense-side analytics on funding-backed cases to forecast likely discovery hurdles.",
+"Coordinate underwriting and claims to pre-approve settlement authorities for high-exposure venues.",
+"Engage government relations to support transparency legislation on litigation funding."
+]
+}
+};
 
-    const fundingTrend = [
-      { year: 2019, value: 6.1 },
-      { year: 2020, value: 7.2 },
-      { year: 2021, value: 9.8 },
-      { year: 2022, value: 11.6 },
-      { year: 2023, value: 12.9 },
-      { year: 2024, value: 13.7 }
-    ];
+const fundingTrend = [
+{ year: 2019, value: 6.1 },
+{ year: 2020, value: 7.2 },
+{ year: 2021, value: 9.8 },
+{ year: 2022, value: 11.6 },
+{ year: 2023, value: 12.9 },
+{ year: 2024, value: 13.7 }
+];
 
-    const verdictTrend = [
-      { year: 2019, severity: 20.8, frequency: 2.6 },
-      { year: 2020, severity: 23.1, frequency: 2.9 },
-      { year: 2021, severity: 25.4, frequency: 3.2 },
-      { year: 2022, severity: 27.9, frequency: 3.4 },
-      { year: 2023, severity: 30.6, frequency: 3.6 },
-      { year: 2024, severity: 32.1, frequency: 3.7 }
-    ];
+const verdictTrend = [
+{ year: 2019, severity: 20.8, frequency: 2.6 },
+{ year: 2020, severity: 23.1, frequency: 2.9 },
+{ year: 2021, severity: 25.4, frequency: 3.2 },
+{ year: 2022, severity: 27.9, frequency: 3.4 },
+{ year: 2023, severity: 30.6, frequency: 3.6 },
+{ year: 2024, severity: 32.1, frequency: 3.7 }
+];
 
-    const stateDataByYear = {
-      2021: [
-        {
-          state: "California",
-          abbr: "CA",
-          rank: 1,
-          lat: 36.7783,
-          lng: -119.4179,
-          severityScore: 4,
-          nuclearVerdicts: 36,
-          fundingSignal: "Very High",
-          settlementGrowth: 0.14,
-          narrative: "Los Angeles and Alameda courts producing repeated nine-figure product liability verdicts."
-        },
-        {
-          state: "Illinois",
-          abbr: "IL",
-          rank: 2,
-          lat: 40.6331,
-          lng: -89.3985,
-          severityScore: 4,
-          nuclearVerdicts: 29,
-          fundingSignal: "High",
-          settlementGrowth: 0.11,
-          narrative: "Cook County backlog clearing with reptile theory tactics maintaining high anchors."
-        },
-        {
-          state: "New York",
-          abbr: "NY",
-          rank: 3,
-          lat: 43.2994,
-          lng: -74.2179,
-          severityScore: 3,
-          nuclearVerdicts: 22,
-          fundingSignal: "High",
-          settlementGrowth: 0.1,
-          narrative: "Bronx County juries sustaining elevated general damages multiples."
-        },
-        {
-          state: "Florida",
-          abbr: "FL",
-          rank: 4,
-          lat: 27.6648,
-          lng: -81.5158,
-          severityScore: 3,
-          nuclearVerdicts: 19,
-          fundingSignal: "Elevated",
-          settlementGrowth: 0.09,
-          narrative: "AOB litigation still congesting dockets despite reforms." 
-        },
-        {
-          state: "Texas",
-          abbr: "TX",
-          rank: 5,
-          lat: 31.9686,
-          lng: -99.9018,
-          severityScore: 3,
-          nuclearVerdicts: 17,
-          fundingSignal: "Elevated",
-          settlementGrowth: 0.08,
-          narrative: "Transportation cases concentrated in Harris County remain volatile."
-        },
-        {
-          state: "Georgia",
-          abbr: "GA",
-          rank: 6,
-          lat: 32.1656,
-          lng: -82.9001,
-          severityScore: 2,
-          nuclearVerdicts: 12,
-          fundingSignal: "Emerging",
-          settlementGrowth: 0.07,
-          narrative: "DeKalb and Clayton venues driving pain-and-suffering inflation."
-        }
-      ],
-      2022: [
-        {
-          state: "California",
-          abbr: "CA",
-          rank: 1,
-          lat: 36.7783,
-          lng: -119.4179,
-          severityScore: 4,
-          nuclearVerdicts: 41,
-          fundingSignal: "Very High",
-          settlementGrowth: 0.16,
-          narrative: "Tech sector defendants seeing punitive damage escalation."
-        },
-        {
-          state: "Pennsylvania",
-          abbr: "PA",
-          rank: 2,
-          lat: 41.2033,
-          lng: -77.1945,
-          severityScore: 4,
-          nuclearVerdicts: 26,
-          fundingSignal: "High",
-          settlementGrowth: 0.12,
-          narrative: "Philadelphia Complex Litigation Center reopens pipeline of med-mal cases."
-        },
-        {
-          state: "Illinois",
-          abbr: "IL",
-          rank: 3,
-          lat: 40.6331,
-          lng: -89.3985,
-          severityScore: 4,
-          nuclearVerdicts: 31,
-          fundingSignal: "High",
-          settlementGrowth: 0.12,
-          narrative: "Cook County sees funding-backed trucking verdicts exceeding expectations."
-        },
-        {
-          state: "New York",
-          abbr: "NY",
-          rank: 4,
-          lat: 43.2994,
-          lng: -74.2179,
-          severityScore: 3,
-          nuclearVerdicts: 24,
-          fundingSignal: "High",
-          settlementGrowth: 0.11,
-          narrative: "NYCAL asbestos docket continues to push non-economic damages higher."
-        },
-        {
-          state: "Georgia",
-          abbr: "GA",
-          rank: 5,
-          lat: 32.1656,
-          lng: -82.9001,
-          severityScore: 3,
-          nuclearVerdicts: 18,
-          fundingSignal: "Elevated",
-          settlementGrowth: 0.1,
-          narrative: "Nuclear trucking verdicts now spill into premises liability suits."
-        },
-        {
-          state: "Florida",
-          abbr: "FL",
-          rank: 6,
-          lat: 27.6648,
-          lng: -81.5158,
-          severityScore: 2,
-          nuclearVerdicts: 15,
-          fundingSignal: "Moderate",
-          settlementGrowth: 0.07,
-          narrative: "Tort reform impact uneven; South Florida remains an outlier."
-        }
-      ],
-      2023: [
-        {
-          state: "Pennsylvania",
-          abbr: "PA",
-          rank: 1,
-          lat: 41.2033,
-          lng: -77.1945,
-          severityScore: 4,
-          nuclearVerdicts: 34,
-          fundingSignal: "Very High",
-          settlementGrowth: 0.15,
-          narrative: "Funding-backed med-mal cases yield two verdicts above $100M in Philadelphia."
-        },
-        {
-          state: "California",
-          abbr: "CA",
-          rank: 2,
-          lat: 36.7783,
-          lng: -119.4179,
-          severityScore: 4,
-          nuclearVerdicts: 38,
-          fundingSignal: "Very High",
-          settlementGrowth: 0.14,
-          narrative: "Wildfire subrogation claims influencing general liability award levels."
-        },
-        {
-          state: "Illinois",
-          abbr: "IL",
-          rank: 3,
-          lat: 40.6331,
-          lng: -89.3985,
-          severityScore: 4,
-          nuclearVerdicts: 33,
-          fundingSignal: "High",
-          settlementGrowth: 0.13,
-          narrative: "Cook County remains among the most expensive venues for commercial auto."
-        },
-        {
-          state: "New York",
-          abbr: "NY",
-          rank: 4,
-          lat: 43.2994,
-          lng: -74.2179,
-          severityScore: 3,
-          nuclearVerdicts: 27,
-          fundingSignal: "High",
-          settlementGrowth: 0.12,
-          narrative: "Labor law 240 cases pushing severity despite defense reforms."
-        },
-        {
-          state: "Georgia",
-          abbr: "GA",
-          rank: 5,
-          lat: 32.1656,
-          lng: -82.9001,
-          severityScore: 3,
-          nuclearVerdicts: 21,
-          fundingSignal: "Elevated",
-          settlementGrowth: 0.11,
-          narrative: "Atlanta plaintiff bar coordinating around funded multi-plaintiff suits."
-        },
-        {
-          state: "Missouri",
-          abbr: "MO",
-          rank: 6,
-          lat: 37.9643,
-          lng: -91.8318,
-          severityScore: 2,
-          nuclearVerdicts: 14,
-          fundingSignal: "Emerging",
-          settlementGrowth: 0.08,
-          narrative: "St. Louis City courts resurfacing as a preferred venue for product cases."
-        }
-      ],
-      2024: [
-        {
-          state: "California",
-          abbr: "CA",
-          rank: 1,
-          lat: 36.7783,
-          lng: -119.4179,
-          severityScore: 4,
-          nuclearVerdicts: 40,
-          fundingSignal: "Very High",
-          settlementGrowth: 0.15,
-          narrative: "AI-driven settlement analytics used by plaintiffs accelerating negotiation stalemates."
-        },
-        {
-          state: "Pennsylvania",
-          abbr: "PA",
-          rank: 2,
-          lat: 41.2033,
-          lng: -77.1945,
-          severityScore: 4,
-          nuclearVerdicts: 35,
-          fundingSignal: "Very High",
-          settlementGrowth: 0.16,
-          narrative: "Med-mal venues adopt permissive consolidation increasing jury sympathy."
-        },
-        {
-          state: "Georgia",
-          abbr: "GA",
-          rank: 3,
-          lat: 32.1656,
-          lng: -82.9001,
-          severityScore: 3,
-          nuclearVerdicts: 24,
-          fundingSignal: "High",
-          settlementGrowth: 0.13,
-          narrative: "Logistics corridor expansion brings more catastrophic trucking verdicts."
-        },
-        {
-          state: "Illinois",
-          abbr: "IL",
-          rank: 4,
-          lat: 40.6331,
-          lng: -89.3985,
-          severityScore: 3,
-          nuclearVerdicts: 28,
-          fundingSignal: "High",
-          settlementGrowth: 0.12,
-          narrative: "Cook County implementing time-limited demand statutes.",
-        },
-        {
-          state: "New York",
-          abbr: "NY",
-          rank: 5,
-          lat: 43.2994,
-          lng: -74.2179,
-          severityScore: 3,
-          nuclearVerdicts: 25,
-          fundingSignal: "High",
-          settlementGrowth: 0.11,
-          narrative: "Third-party litigation funding disclosure requirements under debate.",
-        },
-        {
-          state: "Texas",
-          abbr: "TX",
-          rank: 6,
-          lat: 31.9686,
-          lng: -99.9018,
-          severityScore: 2,
-          nuclearVerdicts: 18,
-          fundingSignal: "Moderate",
-          settlementGrowth: 0.09,
-          narrative: "Defense verdict frequency improving but severity remains elevated in Houston."
-        }
-      ]
-    };
+const stateDataByYear = {
+2021: [
+{
+state: "California",
+abbr: "CA",
+rank: 1,
+lat: 36.7783,
+lng: -119.4179,
+severityScore: 4,
+nuclearVerdicts: 36,
+fundingSignal: "Very High",
+settlementGrowth: 0.14,
+narrative: "Los Angeles and Alameda courts producing repeated nine-figure product liability verdicts."
+},
+{
+state: "Illinois",
+abbr: "IL",
+rank: 2,
+lat: 40.6331,
+lng: -89.3985,
+severityScore: 4,
+nuclearVerdicts: 29,
+fundingSignal: "High",
+settlementGrowth: 0.11,
+narrative: "Cook County backlog clearing with reptile theory tactics maintaining high anchors."
+},
+{
+state: "New York",
+abbr: "NY",
+rank: 3,
+lat: 43.2994,
+lng: -74.2179,
+severityScore: 3,
+nuclearVerdicts: 22,
+fundingSignal: "High",
+settlementGrowth: 0.1,
+narrative: "Bronx County juries sustaining elevated general damages multiples."
+},
+{
+state: "Florida",
+abbr: "FL",
+rank: 4,
+lat: 27.6648,
+lng: -81.5158,
+severityScore: 3,
+nuclearVerdicts: 19,
+fundingSignal: "Elevated",
+settlementGrowth: 0.09,
+narrative: "AOB litigation still congesting dockets despite reforms."
+},
+{
+state: "Texas",
+abbr: "TX",
+rank: 5,
+lat: 31.9686,
+lng: -99.9018,
+severityScore: 3,
+nuclearVerdicts: 17,
+fundingSignal: "Elevated",
+settlementGrowth: 0.08,
+narrative: "Transportation cases concentrated in Harris County remain volatile."
+},
+{
+state: "Georgia",
+abbr: "GA",
+rank: 6,
+lat: 32.1656,
+lng: -82.9001,
+severityScore: 2,
+nuclearVerdicts: 12,
+fundingSignal: "Emerging",
+settlementGrowth: 0.07,
+narrative: "DeKalb and Clayton venues driving pain-and-suffering inflation."
+}
+],
+2022: [
+{
+state: "California",
+abbr: "CA",
+rank: 1,
+lat: 36.7783,
+lng: -119.4179,
+severityScore: 4,
+nuclearVerdicts: 41,
+fundingSignal: "Very High",
+settlementGrowth: 0.16,
+narrative: "Tech sector defendants seeing punitive damage escalation."
+},
+{
+state: "Pennsylvania",
+abbr: "PA",
+rank: 2,
+lat: 41.2033,
+lng: -77.1945,
+severityScore: 4,
+nuclearVerdicts: 26,
+fundingSignal: "High",
+settlementGrowth: 0.12,
+narrative: "Philadelphia Complex Litigation Center reopens pipeline of med-mal cases."
+},
+{
+state: "Illinois",
+abbr: "IL",
+rank: 3,
+lat: 40.6331,
+lng: -89.3985,
+severityScore: 4,
+nuclearVerdicts: 31,
+fundingSignal: "High",
+settlementGrowth: 0.12,
+narrative: "Cook County sees funding-backed trucking verdicts exceeding expectations."
+},
+{
+state: "New York",
+abbr: "NY",
+rank: 4,
+lat: 43.2994,
+lng: -74.2179,
+severityScore: 3,
+nuclearVerdicts: 24,
+fundingSignal: "High",
+settlementGrowth: 0.11,
+narrative: "NYCAL asbestos docket continues to push non-economic damages higher."
+},
+{
+state: "Georgia",
+abbr: "GA",
+rank: 5,
+lat: 32.1656,
+lng: -82.9001,
+severityScore: 3,
+nuclearVerdicts: 18,
+fundingSignal: "Elevated",
+settlementGrowth: 0.1,
+narrative: "Nuclear trucking verdicts now spill into premises liability suits."
+},
+{
+state: "Florida",
+abbr: "FL",
+rank: 6,
+lat: 27.6648,
+lng: -81.5158,
+severityScore: 2,
+nuclearVerdicts: 15,
+fundingSignal: "Moderate",
+settlementGrowth: 0.07,
+narrative: "Tort reform impact uneven; South Florida remains an outlier."
+}
+],
+2023: [
+{
+state: "Pennsylvania",
+abbr: "PA",
+rank: 1,
+lat: 41.2033,
+lng: -77.1945,
+severityScore: 4,
+nuclearVerdicts: 34,
+fundingSignal: "Very High",
+settlementGrowth: 0.15,
+narrative: "Funding-backed med-mal cases yield two verdicts above $100M in Philadelphia."
+},
+{
+state: "California",
+abbr: "CA",
+rank: 2,
+lat: 36.7783,
+lng: -119.4179,
+severityScore: 4,
+nuclearVerdicts: 38,
+fundingSignal: "Very High",
+settlementGrowth: 0.14,
+narrative: "Wildfire subrogation claims influencing general liability award levels."
+},
+{
+state: "Illinois",
+abbr: "IL",
+rank: 3,
+lat: 40.6331,
+lng: -89.3985,
+severityScore: 4,
+nuclearVerdicts: 33,
+fundingSignal: "High",
+settlementGrowth: 0.13,
+narrative: "Cook County remains among the most expensive venues for commercial auto."
+},
+{
+state: "New York",
+abbr: "NY",
+rank: 4,
+lat: 43.2994,
+lng: -74.2179,
+severityScore: 3,
+nuclearVerdicts: 27,
+fundingSignal: "High",
+settlementGrowth: 0.12,
+narrative: "Labor law 240 cases pushing severity despite defense reforms."
+},
+{
+state: "Georgia",
+abbr: "GA",
+rank: 5,
+lat: 32.1656,
+lng: -82.9001,
+severityScore: 3,
+nuclearVerdicts: 21,
+fundingSignal: "Elevated",
+settlementGrowth: 0.11,
+narrative: "Atlanta plaintiff bar coordinating around funded multi-plaintiff suits."
+},
+{
+state: "Missouri",
+abbr: "MO",
+rank: 6,
+lat: 37.9643,
+lng: -91.8318,
+severityScore: 2,
+nuclearVerdicts: 14,
+fundingSignal: "Emerging",
+settlementGrowth: 0.08,
+narrative: "St. Louis City courts resurfacing as a preferred venue for product cases."
+}
+],
+2024: [
+{
+state: "California",
+abbr: "CA",
+rank: 1,
+lat: 36.7783,
+lng: -119.4179,
+severityScore: 4,
+nuclearVerdicts: 40,
+fundingSignal: "Very High",
+settlementGrowth: 0.15,
+narrative: "AI-driven settlement analytics used by plaintiffs accelerating negotiation stalemates."
+},
+{
+state: "Pennsylvania",
+abbr: "PA",
+rank: 2,
+lat: 41.2033,
+lng: -77.1945,
+severityScore: 4,
+nuclearVerdicts: 35,
+fundingSignal: "Very High",
+settlementGrowth: 0.16,
+narrative: "Med-mal venues adopt permissive consolidation increasing jury sympathy."
+},
+{
+state: "Georgia",
+abbr: "GA",
+rank: 3,
+lat: 32.1656,
+lng: -82.9001,
+severityScore: 3,
+nuclearVerdicts: 24,
+fundingSignal: "High",
+settlementGrowth: 0.13,
+narrative: "Logistics corridor expansion brings more catastrophic trucking verdicts."
+},
+{
+state: "Illinois",
+abbr: "IL",
+rank: 4,
+lat: 40.6331,
+lng: -89.3985,
+severityScore: 3,
+nuclearVerdicts: 28,
+fundingSignal: "High",
+settlementGrowth: 0.12,
+narrative: "Cook County implementing time-limited demand statutes.",
+},
+{
+state: "New York",
+abbr: "NY",
+rank: 5,
+lat: 43.2994,
+lng: -74.2179,
+severityScore: 3,
+nuclearVerdicts: 25,
+fundingSignal: "High",
+settlementGrowth: 0.11,
+narrative: "Third-party litigation funding disclosure requirements under debate.",
+},
+{
+state: "Texas",
+abbr: "TX",
+rank: 6,
+lat: 31.9686,
+lng: -99.9018,
+severityScore: 2,
+nuclearVerdicts: 18,
+fundingSignal: "Moderate",
+settlementGrowth: 0.09,
+narrative: "Defense verdict frequency improving but severity remains elevated in Houston."
+}
+]
+};
 
-    let hellholeMap;
-    let mapLayer;
-    let fundingChart;
-    let verdictChart;
+let hellholeMap;
+let mapLayer;
+let fundingChart;
+let verdictChart;
 
-    function formatCurrency(value, options = {}) {
-      return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits: options.maximumFractionDigits ?? 1,
-        minimumFractionDigits: options.minimumFractionDigits ?? 1
-      }).format(value);
-    }
+function formatCurrency(value, options = {}) {
+return new Intl.NumberFormat("en-US", {
+style: "currency",
+currency: "USD",
+maximumFractionDigits: options.maximumFractionDigits ?? 1,
+minimumFractionDigits: options.minimumFractionDigits ?? 1
+}).format(value);
+}
 
-    function formatBillions(value) {
-      return `${value.toFixed(1)}B`;
-    }
+function formatBillions(value) {
+return `${value.toFixed(1)}B`;
+}
 
-    function formatPercent(value) {
-      const sign = value >= 0 ? "+" : "";
-      return `${sign}${(value * 100).toFixed(1)}%`;
-    }
+function formatPercent(value) {
+const sign = value >= 0 ? "+" : "";
+return `${sign}${(value * 100).toFixed(1)}%`;
+}
 
-    function formatYoY(value) {
-      const sign = value >= 0 ? "+" : "";
-      return `${sign}${(value * 100).toFixed(1)}% YoY`;
-    }
+function formatYoY(value) {
+const sign = value >= 0 ? "+" : "";
+return `${sign}${(value * 100).toFixed(1)}% YoY`;
+}
 
-    function updateMetricCard(metricKey, value, delta, note, formatter) {
-      const valueEl = document.getElementById(`sid-metric-${metricKey}`);
-      const deltaEl = document.getElementById(`sid-metric-${metricKey}-delta`);
-      const noteEl = document.getElementById(`sid-metric-${metricKey}-note`);
-      valueEl.textContent = formatter(value);
-      const classList = deltaEl.classList;
-      classList.remove("positive", "negative");
-      if (delta > 0) {
-        classList.add("negative");
-      } else if (delta < 0) {
-        classList.add("positive");
-      }
-      deltaEl.textContent = formatYoY(delta);
-      noteEl.textContent = note;
-    }
+function updateMetricCard(metricKey, value, delta, note, formatter) {
+const valueEl = document.getElementById(`sid-metric-${metricKey}`);
+const deltaEl = document.getElementById(`sid-metric-${metricKey}-delta`);
+const noteEl = document.getElementById(`sid-metric-${metricKey}-note`);
+valueEl.textContent = formatter(value);
+const classList = deltaEl.classList;
+classList.remove("positive", "negative");
+if (delta > 0) {
+classList.add("negative");
+} else if (delta < 0) {
+classList.add("positive");
+}
+deltaEl.textContent = formatYoY(delta);
+noteEl.textContent = note;
+}
 
-    function severityColor(score) {
-      switch (score) {
-        case 4:
-          return "#ef4444";
-        case 3:
-          return "#f87171";
-        case 2:
-          return "#fca5a5";
-        default:
-          return "#fee2e2";
-      }
-    }
+function severityColor(score) {
+switch (score) {
+case 4:
+return "#ef4444";
+case 3:
+return "#f87171";
+case 2:
+return "#fca5a5";
+default:
+return "#fee2e2";
+}
+}
 
-    function initMap() {
-      hellholeMap = L.map("hellhole-map", {
-        zoomSnap: 0.25,
-        scrollWheelZoom: false,
-        dragging: !L.Browser.mobile,
-        tap: false,
-        zoomControl: true
-      }).setView([39.5, -98.35], 4.2);
+function initMap() {
+hellholeMap = L.map("hellhole-map", {
+zoomSnap: 0.25,
+scrollWheelZoom: false,
+dragging: !L.Browser.mobile,
+tap: false,
+zoomControl: true
+}).setView([39.5, -98.35], 4.2);
 
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap contributors"
-      }).addTo(hellholeMap);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+attribution: "© OpenStreetMap contributors"
+}).addTo(hellholeMap);
 
-      mapLayer = L.layerGroup().addTo(hellholeMap);
-    }
+mapLayer = L.layerGroup().addTo(hellholeMap);
+}
 
-    function updateMap(year) {
-      if (!mapLayer) return;
-      mapLayer.clearLayers();
-      const states = stateDataByYear[year] ?? [];
-      states.forEach((state) => {
-        const marker = L.circleMarker([state.lat, state.lng], {
-          radius: 10 + state.severityScore * 2,
-          fillColor: severityColor(state.severityScore),
-          color: "#b91c1c",
-          weight: 1,
-          opacity: 0.9,
-          fillOpacity: 0.75
-        });
-        marker.bindPopup(
-          `<strong>${state.state}</strong><br/>Rank: ${state.rank}<br/>Nuclear verdicts: ${state.nuclearVerdicts}<br/>Settlement growth: ${(state.settlementGrowth * 100).toFixed(1)}%<br/>Funding signal: ${state.fundingSignal}<br/><em>${state.narrative}</em>`
-        );
-        marker.addTo(mapLayer);
-      });
-      setTimeout(() => hellholeMap.invalidateSize(), 200);
+function updateMap(year) {
+if (!mapLayer) return;
+mapLayer.clearLayers();
+const states = stateDataByYear[year] ?? [];
+states.forEach((state) => {
+const marker = L.circleMarker([state.lat, state.lng], {
+radius: 10 + state.severityScore * 2,
+fillColor: severityColor(state.severityScore),
+color: "#b91c1c",
+weight: 1,
+opacity: 0.9,
+fillOpacity: 0.75
+});
+marker.bindPopup(
+`<strong>${state.state}</strong><br/>Rank: ${state.rank}<br/>Nuclear verdicts: ${state.nuclearVerdicts}<br/>Settlement growth: ${(state.settlementGrowth * 100).toFixed(1)}%<br/>Funding signal: ${state.fundingSignal}<br/><em>${state.narrative}</em>`
+);
+marker.addTo(mapLayer);
+});
+setTimeout(() => hellholeMap.invalidateSize(), 200);
 
-      const totalNuclear = states.reduce((sum, s) => sum + s.nuclearVerdicts, 0);
-      const avgSettlement =
-        states.reduce((sum, s) => sum + s.settlementGrowth, 0) / Math.max(states.length, 1);
-      const summaryEl = document.getElementById("sid-map-summary");
-      summaryEl.textContent = `Top jurisdictions account for ${totalNuclear} nuclear verdicts with average settlement escalation of ${(avgSettlement * 100).toFixed(1)}%.`;
-    }
+const totalNuclear = states.reduce((sum, s) => sum + s.nuclearVerdicts, 0);
+const avgSettlement =
+states.reduce((sum, s) => sum + s.settlementGrowth, 0) / Math.max(states.length, 1);
+const summaryEl = document.getElementById("sid-map-summary");
+summaryEl.textContent = `Top jurisdictions account for ${totalNuclear} nuclear verdicts with average settlement escalation of ${(avgSettlement * 100).toFixed(1)}%.`;
+}
 
-    function updateTable(year) {
-      const tbody = document.getElementById("sid-state-table");
-      tbody.innerHTML = "";
-      const states = stateDataByYear[year] ?? [];
-      [...states]
-        .sort((a, b) => a.rank - b.rank)
-        .forEach((state) => {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${state.rank}</td>
-            <td>${state.state}</td>
-            <td>${state.nuclearVerdicts}</td>
-            <td>${state.fundingSignal}</td>
-            <td>${(state.settlementGrowth * 100).toFixed(1)}%</td>
-          `;
-          tbody.appendChild(row);
-        });
-    }
+function updateTable(year) {
+const tbody = document.getElementById("sid-state-table");
+tbody.innerHTML = "";
+const states = stateDataByYear[year] ?? [];
+[...states]
+.sort((a, b) => a.rank - b.rank)
+.forEach((state) => {
+const row = document.createElement("tr");
+row.innerHTML = `
+<td>${state.rank}</td>
+<td>${state.state}</td>
+<td>${state.nuclearVerdicts}</td>
+<td>${state.fundingSignal}</td>
+<td>${(state.settlementGrowth * 100).toFixed(1)}%</td>
+`;
+tbody.appendChild(row);
+});
+}
 
-    function updateLists(year) {
-      const observationList = document.getElementById("sid-observation-list");
-      const actionList = document.getElementById("sid-action-list");
-      observationList.innerHTML = "";
-      actionList.innerHTML = "";
-      const { observations = [], actions = [] } = metricsByYear[year] ?? {};
-      observations.forEach((item) => {
-        const li = document.createElement("li");
-        li.textContent = item;
-        observationList.appendChild(li);
-      });
-      actions.forEach((item) => {
-        const li = document.createElement("li");
-        li.textContent = item;
-        actionList.appendChild(li);
-      });
-    }
+function updateLists(year) {
+const observationList = document.getElementById("sid-observation-list");
+const actionList = document.getElementById("sid-action-list");
+observationList.innerHTML = "";
+actionList.innerHTML = "";
+const { observations = [], actions = [] } = metricsByYear[year] ?? {};
+observations.forEach((item) => {
+const li = document.createElement("li");
+li.textContent = item;
+observationList.appendChild(li);
+});
+actions.forEach((item) => {
+const li = document.createElement("li");
+li.textContent = item;
+actionList.appendChild(li);
+});
+}
 
-    function buildFundingChart(selectedYear) {
-      const ctx = document.getElementById("sid-funding-chart");
-      const labels = fundingTrend.map((d) => d.year);
-      const data = fundingTrend.map((d) => d.value);
-      const highlight = fundingTrend.map((d) => (d.year === Number(selectedYear) ? "#0f172a" : "#38bdf8"));
-      if (fundingChart) {
-        fundingChart.destroy();
-      }
-      fundingChart = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels,
-          datasets: [
-            {
-              label: "Funding Commitments (B$)",
-              data,
-              backgroundColor: highlight,
-              borderRadius: 6
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              callbacks: {
-                label(context) {
-                  return `${context.parsed.y.toFixed(1)}B`;
-                }
-              }
-            }
-          },
-          scales: {
-            x: {
-              grid: { display: false }
-            },
-            y: {
-              beginAtZero: true,
-              ticks: {
-                callback: (val) => `${val}B`
-              }
-            }
-          }
-        }
-      });
-    }
+function buildFundingChart(selectedYear) {
+const ctx = document.getElementById("sid-funding-chart");
+const labels = fundingTrend.map((d) => d.year);
+const data = fundingTrend.map((d) => d.value);
+const highlight = fundingTrend.map((d) => (d.year === Number(selectedYear) ? "#0f172a" : "#38bdf8"));
+if (fundingChart) {
+fundingChart.destroy();
+}
+fundingChart = new Chart(ctx, {
+type: "bar",
+data: {
+labels,
+datasets: [
+{
+label: "Funding Commitments (B$)",
+data,
+backgroundColor: highlight,
+borderRadius: 6
+}
+]
+},
+options: {
+responsive: true,
+maintainAspectRatio: false,
+plugins: {
+legend: {
+display: false
+},
+tooltip: {
+callbacks: {
+label(context) {
+return `${context.parsed.y.toFixed(1)}B`;
+}
+}
+}
+},
+scales: {
+x: {
+grid: { display: false }
+},
+y: {
+beginAtZero: true,
+ticks: {
+callback: (val) => `${val}B`
+}
+}
+}
+}
+});
+}
 
-    function buildVerdictChart(selectedYear) {
-      const ctx = document.getElementById("sid-verdict-chart");
-      const labels = verdictTrend.map((d) => d.year);
-      if (verdictChart) {
-        verdictChart.destroy();
-      }
-      verdictChart = new Chart(ctx, {
-        type: "line",
-        data: {
-          labels,
-          datasets: [
-            {
-              label: "Avg Nuclear Verdict ($M)",
-              data: verdictTrend.map((d) => d.severity),
-              yAxisID: "y",
-              borderColor: "#f97316",
-              backgroundColor: "rgba(249, 115, 22, 0.15)",
-              tension: 0.4,
-              borderWidth: 3,
-              pointRadius: verdictTrend.map((d) => (d.year === Number(selectedYear) ? 6 : 4)),
-              pointBackgroundColor: verdictTrend.map((d) => (d.year === Number(selectedYear) ? "#b45309" : "#f97316"))
-            },
-            {
-              label: "Mega Verdict Frequency (per 100 cases)",
-              data: verdictTrend.map((d) => d.frequency),
-              yAxisID: "y1",
-              borderColor: "#2563eb",
-              backgroundColor: "rgba(37, 99, 235, 0.1)",
-              tension: 0.4,
-              borderWidth: 3,
-              pointRadius: verdictTrend.map((d) => (d.year === Number(selectedYear) ? 6 : 4)),
-              pointBackgroundColor: verdictTrend.map((d) => (d.year === Number(selectedYear) ? "#1d4ed8" : "#2563eb"))
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: {
-            mode: "index",
-            intersect: false
-          },
-          plugins: {
-            legend: {
-              position: "top"
-            },
-            tooltip: {
-              callbacks: {
-                label(context) {
-                  const datasetLabel = context.dataset.label || "";
-                  const value = context.parsed.y;
-                  if (context.dataset.yAxisID === "y") {
-                    return `${datasetLabel}: $${value.toFixed(1)}M`;
-                  }
-                  return `${datasetLabel}: ${value.toFixed(1)}`;
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              type: "linear",
-              position: "left",
-              title: { display: true, text: "$ Millions" },
-              grid: { drawOnChartArea: false }
-            },
-            y1: {
-              type: "linear",
-              position: "right",
-              title: { display: true, text: "Frequency" },
-              grid: { drawOnChartArea: false },
-              suggestedMin: 2,
-              suggestedMax: 4.5
-            }
-          }
-        }
-      });
-    }
+function buildVerdictChart(selectedYear) {
+const ctx = document.getElementById("sid-verdict-chart");
+const labels = verdictTrend.map((d) => d.year);
+if (verdictChart) {
+verdictChart.destroy();
+}
+verdictChart = new Chart(ctx, {
+type: "line",
+data: {
+labels,
+datasets: [
+{
+label: "Avg Nuclear Verdict ($M)",
+data: verdictTrend.map((d) => d.severity),
+yAxisID: "y",
+borderColor: "#f97316",
+backgroundColor: "rgba(249, 115, 22, 0.15)",
+tension: 0.4,
+borderWidth: 3,
+pointRadius: verdictTrend.map((d) => (d.year === Number(selectedYear) ? 6 : 4)),
+pointBackgroundColor: verdictTrend.map((d) => (d.year === Number(selectedYear) ? "#b45309" : "#f97316"))
+},
+{
+label: "Mega Verdict Frequency (per 100 cases)",
+data: verdictTrend.map((d) => d.frequency),
+yAxisID: "y1",
+borderColor: "#2563eb",
+backgroundColor: "rgba(37, 99, 235, 0.1)",
+tension: 0.4,
+borderWidth: 3,
+pointRadius: verdictTrend.map((d) => (d.year === Number(selectedYear) ? 6 : 4)),
+pointBackgroundColor: verdictTrend.map((d) => (d.year === Number(selectedYear) ? "#1d4ed8" : "#2563eb"))
+}
+]
+},
+options: {
+responsive: true,
+maintainAspectRatio: false,
+interaction: {
+mode: "index",
+intersect: false
+},
+plugins: {
+legend: {
+position: "top"
+},
+tooltip: {
+callbacks: {
+label(context) {
+const datasetLabel = context.dataset.label || "";
+const value = context.parsed.y;
+if (context.dataset.yAxisID === "y") {
+return `${datasetLabel}: $${value.toFixed(1)}M`;
+}
+return `${datasetLabel}: ${value.toFixed(1)}`;
+}
+}
+}
+},
+scales: {
+y: {
+type: "linear",
+position: "left",
+title: { display: true, text: "$ Millions" },
+grid: { drawOnChartArea: false }
+},
+y1: {
+type: "linear",
+position: "right",
+title: { display: true, text: "Frequency" },
+grid: { drawOnChartArea: false },
+suggestedMin: 2,
+suggestedMax: 4.5
+}
+}
+}
+});
+}
 
-    function updateDashboard(year) {
-      const metrics = metricsByYear[year];
-      if (!metrics) return;
-      updateMetricCard("index", metrics.socialIndex, metrics.socialIndexYoY, metrics.notes.index, (value) => `${value}`);
-      updateMetricCard("verdict", metrics.verdict, metrics.verdictYoY, metrics.notes.verdict, (value) => `$${value.toFixed(1)}M`);
-      updateMetricCard("funding", metrics.funding, metrics.fundingYoY, metrics.notes.funding, (value) => formatBillions(value));
-      updateMetricCard("reserve", metrics.reserve, metrics.reserveYoY, metrics.notes.reserve, (value) => `${value.toFixed(1)} pts`);
-      updateMap(year);
-      updateTable(year);
-      updateLists(year);
-      buildFundingChart(year);
-      buildVerdictChart(year);
-    }
+function updateDashboard(year) {
+const metrics = metricsByYear[year];
+if (!metrics) return;
+updateMetricCard("index", metrics.socialIndex, metrics.socialIndexYoY, metrics.notes.index, (value) => `${value}`);
+updateMetricCard("verdict", metrics.verdict, metrics.verdictYoY, metrics.notes.verdict, (value) => `$${value.toFixed(1)}M`);
+updateMetricCard("funding", metrics.funding, metrics.fundingYoY, metrics.notes.funding, (value) => formatBillions(value));
+updateMetricCard("reserve", metrics.reserve, metrics.reserveYoY, metrics.notes.reserve, (value) => `${value.toFixed(1)} pts`);
+updateMap(year);
+updateTable(year);
+updateLists(year);
+buildFundingChart(year);
+buildVerdictChart(year);
+}
 
-    document.addEventListener("DOMContentLoaded", () => {
-      initMap();
-      const select = document.getElementById("sid-year");
-      select.addEventListener("change", (event) => {
-        updateDashboard(event.target.value);
-      });
-      updateDashboard(select.value);
-    });
-  </script>
-</body>
-</html>
+document.addEventListener("DOMContentLoaded", () => {
+initMap();
+const select = document.getElementById("sid-year");
+select.addEventListener("change", (event) => {
+updateDashboard(event.target.value);
+});
+updateDashboard(select.value);
+});
+</script>
