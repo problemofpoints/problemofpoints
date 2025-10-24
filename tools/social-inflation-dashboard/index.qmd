@@ -1,0 +1,14 @@
+---
+title: "Social Inflation Dashboard"
+description: "Interactive dashboard tracking litigation trends, judicial hellholes, and reserve pressure for P&C carriers."
+page-layout: full
+---
+
+{{</* include app.html */>}}
+
+## How to Use This Dashboard
+
+- **Select a year** using the filter at the top to update the metrics across the entire view.
+- **Review the map** to understand which jurisdictions are driving social inflation risk for property & casualty carriers.
+- **Hover over chart elements** for specific values and context; the charts provide trending detail for litigation funding and lawsuit severity.
+- **Scan the key actions** at the bottom for underwriting, pricing, and reserving responses.
