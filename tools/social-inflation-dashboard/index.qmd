@@ -4,7 +4,7 @@ description: "Interactive dashboard tracking litigation trends, judicial hellhol
 page-layout: full
 ---
 
-{{</* include app.html */>}}
+{{< include app.html >}}
 
 ## How to Use This Dashboard
 
