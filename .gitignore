@@ -5,3 +5,9 @@
 
 /.quarto/
 /_site/
+.venv/
+.venv_py39/
+.env
+
+# Local Netlify folder
+.netlify

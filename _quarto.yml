@@ -1,5 +1,7 @@
 project:
   type: website
+  resources:
+    - "tools/*/**"
 
 website:
   title: "Problem of Points"
@@ -7,6 +9,8 @@ website:
     right:
       - about.qmd
       - disclaimer.qmd
+      - text: Tools
+        href: tools/
       - icon: github
         href: https://github.com/problemofpoints
     background: "#F2F2F2"
@@ -14,7 +18,7 @@ website:
   favicon: favicons-black-letter-P.ico
   page-footer: 
     center:
-      - text: "Copyright © 2023 problemofpoints"
+      - text: "Copyright © 2025 problemofpoints"
 format:
   html:
     theme: litera

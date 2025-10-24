@@ -1,0 +1,15 @@
+---
+title: "Tools"
+page-layout: full
+title-block-banner: false
+listing:
+  contents:
+    - "./*/index.qmd"
+  type: grid
+  sort: "title"
+  categories: false
+  filter-ui: false
+  max-description-length: 160
+---
+
+Explore single-page utilities built for this site. Select a tool to open its dedicated page.

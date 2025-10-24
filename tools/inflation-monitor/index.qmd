@@ -1,0 +1,16 @@
+---
+title: "Inflation Monitor"
+description: "Interactive CPI dashboard for property & casualty exposures with category filters, trend charts, and snapshot tables."
+page-layout: full
+execute: 
+  echo: false
+---
+
+{{< include app.html >}}
+
+### About this dashboard
+
+- **Data source:** Bureau of Labor Statistics (CPI-U, seasonally adjusted) accessed live through the BLS Public Data API.  
+- **Categories:** Focus on property & casualty exposures—auto insurance, vehicle repairs, construction-sensitive goods (durables, tools & hardware), shelter/energy inputs, and medical cost drivers (mix of seasonally adjusted headline CPI and not-seasonally-adjusted component series).  
+- **Metrics:** Switch between the price index level, year-over-year change, or month-over-month change to highlight different dynamics.  
+- **Workflow tips:** Use the “Select core exposures” shortcut for a quick P&C view, or enable every category, then export snapshots via your browser’s print-to-PDF functionality.  

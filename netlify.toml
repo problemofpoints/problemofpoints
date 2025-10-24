@@ -1,0 +1,9 @@
+[functions]
+directory = "netlify/functions"
+node_bundler = "esbuild"
+
+[dev]
+command = "quarto preview --port 8888 --no-browser"
+targetPort = 8888
+port = 8889
+autoLaunch = false

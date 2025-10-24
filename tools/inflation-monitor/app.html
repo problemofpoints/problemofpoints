@@ -1,0 +1,1190 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
+<style>
+  .inflation-monitor {
+    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #1f2933;
+    background: #f6f6f9;
+    padding: 24px 20px 64px;
+    border-radius: 16px;
+  }
+
+  .inflation-monitor * {
+    box-sizing: border-box;
+  }
+
+  .inflation-monitor h1,
+  .inflation-monitor h2,
+  .inflation-monitor h3 {
+    margin: 0 0 8px;
+    font-weight: 600;
+    color: #1f2933;
+  }
+
+  .inflation-monitor p {
+    line-height: 1.55;
+    margin: 0 0 12px;
+    color: #576373;
+  }
+
+  .inflation-monitor .header {
+    margin-bottom: 28px;
+  }
+
+  .inflation-monitor .header .source {
+    font-size: 0.9rem;
+    color: #576373;
+  }
+
+  .inflation-monitor .status-cards {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    margin-bottom: 24px;
+  }
+
+  .inflation-monitor .status-card {
+    background: #ffffff;
+    border: 1px solid #d5d7de;
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .inflation-monitor .status-card span {
+    font-size: 0.85rem;
+    color: #576373;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .inflation-monitor .status-card strong {
+    font-size: 1.35rem;
+    font-weight: 600;
+  }
+
+  .inflation-monitor .controls {
+    background: #ffffff;
+    border: 1px solid #d5d7de;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 24px;
+    display: grid;
+    gap: 16px;
+  }
+
+  .inflation-monitor .control-row {
+    display: grid;
+    gap: 12px;
+  }
+
+  .inflation-monitor .control-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: #576373;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .inflation-monitor .category-grid {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+
+.inflation-monitor .category-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #d5d7de;
+  background: #f6f6f9;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  font-size: 0.95rem;
+}
+
+.inflation-monitor .category-item input {
+  accent-color: #0f62fe;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.inflation-monitor .category-item.selected {
+  border-color: #0f62fe;
+  background: rgba(15, 98, 254, 0.1);
+}
+
+.inflation-monitor .category-item-description {
+  font-size: 0.8rem;
+  color: #576373;
+}
+
+.inflation-monitor .category-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.inflation-monitor .category-actions button {
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid #d5d7de;
+  background: #ffffff;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  font-weight: 500;
+}
+
+.inflation-monitor .category-actions button:hover {
+  border-color: #0f62fe;
+  background: rgba(15, 98, 254, 0.1);
+}
+
+  .inflation-monitor .slider-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .inflation-monitor .slider-control input[type="range"] {
+    flex: 1;
+  }
+
+  .inflation-monitor .slider-value {
+    font-weight: 600;
+    color: #1f2933;
+  }
+
+  .inflation-monitor .metric-toggle {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .inflation-monitor .metric-toggle label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 20px;
+    background: #f6f6f9;
+    border: 1px solid #d5d7de;
+    cursor: pointer;
+    font-size: 0.95rem;
+  }
+
+  .inflation-monitor .metric-toggle input {
+    accent-color: #0f62fe;
+    cursor: pointer;
+  }
+
+  .inflation-monitor .charts {
+    display: grid;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+
+  .inflation-monitor .chart-card {
+    background: #ffffff;
+    border: 1px solid #d5d7de;
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  .inflation-monitor canvas {
+    width: 100%;
+    max-height: 420px;
+  }
+
+  .inflation-monitor .table-card {
+    background: #ffffff;
+    border: 1px solid #d5d7de;
+    border-radius: 12px;
+    padding: 16px;
+    background: #111827;
+    border-color: #1f2933;
+  }
+
+  .inflation-monitor table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    color: #f5f7fa;
+  }
+
+  .inflation-monitor th,
+  .inflation-monitor td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #1f2933;
+    text-align: left;
+    color: #f5f7fa;
+    background: #111827;
+  }
+
+  .inflation-monitor th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9ea6b5;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .inflation-monitor th .sort-indicator {
+    margin-left: 4px;
+    font-size: 0.75rem;
+    opacity: 0.7;
+  }
+
+  .inflation-monitor tbody tr:hover {
+    background: #1f2937;
+  }
+
+  .inflation-monitor .value-positive {
+    color: #0a7f47;
+  }
+
+  .inflation-monitor .value-negative {
+    color: #cc3340;
+  }
+
+  .inflation-monitor .notes {
+    font-size: 0.9rem;
+    color: #576373;
+    margin-top: 16px;
+  }
+
+  .inflation-monitor .loading,
+  .inflation-monitor .error {
+    margin-top: 24px;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid #d5d7de;
+    background: #ffffff;
+    display: none;
+    font-size: 0.95rem;
+  }
+
+  .inflation-monitor .error {
+    border-color: #cc3340;
+    color: #cc3340;
+  }
+
+  @media (min-width: 960px) {
+    .inflation-monitor .control-row {
+      grid-template-columns: 1.5fr 1fr;
+      align-items: start;
+    }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .inflation-monitor {
+      color: #f5f7fa;
+      background: #1f232a;
+    }
+
+    .inflation-monitor h1,
+    .inflation-monitor h2,
+    .inflation-monitor h3 {
+      color: #f5f7fa;
+    }
+
+    .inflation-monitor p,
+    .inflation-monitor .control-title,
+    .inflation-monitor .header .source {
+      color: #9ea6b5;
+    }
+
+    .inflation-monitor .status-card,
+    .inflation-monitor .controls,
+    .inflation-monitor .chart-card,
+    .inflation-monitor .table-card,
+    .inflation-monitor .loading,
+    .inflation-monitor .error {
+      background: #171a1f;
+      border-color: #2b3038;
+    }
+
+    .inflation-monitor .category-item,
+    .inflation-monitor .metric-toggle label {
+      background: #1f232a;
+      border-color: #2b3038;
+    }
+
+    .inflation-monitor .category-item-description {
+      color: #9ea6b5;
+    }
+
+    .inflation-monitor tbody tr:hover {
+      background: #1f232a;
+    }
+  }
+</style>
+
+<div class="inflation-monitor">
+<header class="header">
+<h1>Inflation Monitor</h1>
+<p>Track U.S. consumer price inflation by category using monthly CPI (seasonally adjusted) data from the Bureau of Labor Statistics. Select the categories and timeframe that matter to you, then switch metrics to explore price level trends, year-over-year changes, or month-to-month momentum.</p>
+<p class="source">Source: Bureau of Labor Statistics, CPI for All Urban Consumers (CPI-U). Headline CPI is seasonally adjusted; component series are not seasonally adjusted. Data refreshes on demand via the BLS Public Data API.</p>
+</header>
+<section class="status-cards">
+<div class="status-card">
+<span>Latest Observation</span>
+<strong id="latest-period">Loading…</strong>
+<p id="latest-release-note"></p>
+</div>
+<div class="status-card">
+<span>Headline CPI (YoY)</span>
+<strong id="headline-yoy">–</strong>
+<p>Series: All items (CUSR0000SA0)</p>
+</div>
+<div class="status-card">
+<span>Auto Insurance (YoY)</span>
+<strong id="auto-yoy">–</strong>
+<p>Motor vehicle insurance (CUUR0000SETA01, NSA)</p>
+</div>
+<div class="status-card">
+<span>Medical Care Services (YoY)</span>
+<strong id="medical-yoy">–</strong>
+<p>Medical care services (CUUR0000SAM2, NSA)</p>
+</div>
+</section>
+<section class="controls">
+<div>
+<div class="control-title">Category Filters</div>
+<div class="category-actions">
+<button type="button" id="select-essential">Select core exposures</button>
+<button type="button" id="select-all">Select all</button>
+<button type="button" id="select-none">Clear all</button>
+</div>
+<div id="category-list" class="category-grid"></div>
+</div>
+<div class="control-row">
+<div>
+<div class="control-title">Start Year</div>
+<div class="slider-control">
+<input type="range" id="start-year" min="2000" max="2024" value="2010" step="1">
+<span class="slider-value" id="start-year-label">2010</span>
+</div>
+</div>
+<div>
+<div class="control-title">Metric</div>
+<div class="metric-toggle" id="metric-toggle">
+<label>
+<input type="radio" name="metric" value="index" checked>
+Price index
+</label>
+<label>
+<input type="radio" name="metric" value="yoy">
+Year-over-year %
+</label>
+<label>
+<input type="radio" name="metric" value="mom">
+Month-over-month %
+</label>
+</div>
+</div>
+</div>
+</section>
+<section class="charts">
+<div class="chart-card">
+<h2 id="trend-title">Trend: Price index</h2>
+<canvas id="trend-chart" height="360"></canvas>
+</div>
+<div class="chart-card">
+<h2>Latest year-over-year change</h2>
+<canvas id="snapshot-chart" height="360"></canvas>
+</div>
+</section>
+<section class="table-card">
+<h2>Category detail</h2>
+<p>Table reflects the categories you have selected above. Click column headers to sort by latest YoY or MoM change.</p>
+<table id="series-table">
+<thead>
+<tr>
+<th data-key="label">Category <span class="sort-indicator"></span></th>
+<th data-key="index">Latest index <span class="sort-indicator"></span></th>
+<th data-key="yoy">YoY % <span class="sort-indicator"></span></th>
+<th data-key="mom">MoM % <span class="sort-indicator"></span></th>
+<th data-key="date">Observation <span class="sort-indicator"></span></th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+<p class="notes">Values represent the Consumer Price Index for All Urban Consumers (CPI-U). Headline CPI is seasonally adjusted; component categories (auto, property, medical, energy) are not seasonally adjusted. Year-over-year comparisons align to the same month one year earlier; month-over-month compares to the prior month.</p>
+</section>
+<div class="loading" id="loading">Fetching CPI series from the BLS API…</div>
+<div class="error" id="error"></div>
+</div>
+
+<script>
+  const API_BASE = (() => {
+    if (typeof window !== "undefined" && window.location && window.location.port === "8888") {
+      return "http://localhost:8889/.netlify/functions/bls-proxy";
+    }
+    return "/.netlify/functions/bls-proxy";
+  })();
+  const REQUEST_START_YEAR = 2000;
+  const categories = [
+    {
+      id: "CUSR0000SA0",
+      label: "All items",
+      description: "Headline CPI for context."
+    },
+    {
+      id: "CUUR0000SETA01",
+      label: "Motor vehicle insurance",
+      description: "Auto insurance premiums."
+    },
+    {
+      id: "CUUR0000SETA03",
+      label: "Auto maintenance & repair",
+      description: "Vehicle maintenance and repair services."
+    },
+    {
+      id: "CUUR0000SETD",
+      label: "Auto parts & equipment",
+      description: "Motor vehicle parts and equipment."
+    },
+    {
+      id: "CUUR0000SAH1",
+      label: "Shelter",
+      description: "Shelter costs impacting property exposures."
+    },
+    {
+      id: "CUUR0000SEHC",
+      label: "Owners' equivalent rent",
+      description: "Housing costs for owner-occupied properties."
+    },
+    {
+      id: "CUUR0000SEHF01",
+      label: "Electricity",
+      description: "Residential electricity costs."
+    },
+    {
+      id: "CUUR0000SEHF02",
+      label: "Utility gas service",
+      description: "Piped natural gas service costs."
+    },
+    {
+      id: "CUUR0000SEHG",
+      label: "Tools & hardware",
+      description: "Tools, hardware, outdoor equipment and supplies."
+    },
+    {
+      id: "CUUR0000SAD",
+      label: "Durables (NSA)",
+      description: "Durable goods including construction-related materials."
+    },
+    {
+      id: "CUUR0000SAM1",
+      label: "Prescription drugs",
+      description: "Out-of-pocket prescription drug costs."
+    },
+    {
+      id: "CUUR0000SAM2",
+      label: "Medical care services",
+      description: "Aggregate medical services inflation."
+    },
+    {
+      id: "CUUR0000SAM12",
+      label: "Hospital services",
+      description: "Inpatient and outpatient hospital services."
+    },
+    {
+      id: "CUUR0000SAM13",
+      label: "Physicians' services",
+      description: "Office-based physician services."
+    }
+  ];
+
+    const state = {
+      selectedIds: new Set(categories.map((category) => category.id)),
+      startYear: 2010,
+      metric: "index",
+      dataBySeries: {},
+      minYear: 2010,
+      maxYear: new Date().getFullYear(),
+      fetchedAt: null
+    };
+
+    const colorPalette = [
+      "#0f62fe",
+      "#009d9a",
+      "#8a3ffc",
+      "#ff832b",
+      "#0072c3",
+      "#fa4d56",
+      "#24a148",
+      "#b28600",
+      "#d12771",
+      "#570408",
+      "#9f1853",
+      "#1192e8",
+      "#005d5d",
+      "#6929c4",
+      "#ee538b",
+      "#198038"
+    ];
+
+    const loadingEl = document.getElementById("loading");
+    const errorEl = document.getElementById("error");
+    const categoryListEl = document.getElementById("category-list");
+    const startYearInput = document.getElementById("start-year");
+    const startYearLabel = document.getElementById("start-year-label");
+    const trendTitle = document.getElementById("trend-title");
+    const metricToggle = document.getElementById("metric-toggle");
+    const latestPeriodEl = document.getElementById("latest-period");
+    const latestReleaseNoteEl = document.getElementById("latest-release-note");
+    const headlineYoyEl = document.getElementById("headline-yoy");
+    const autoYoyEl = document.getElementById("auto-yoy");
+    const medicalYoyEl = document.getElementById("medical-yoy");
+    const selectEssentialBtn = document.getElementById("select-essential");
+    const selectAllBtn = document.getElementById("select-all");
+    const selectNoneBtn = document.getElementById("select-none");
+    const tableEl = document.getElementById("series-table");
+    const tableBodyEl = tableEl.querySelector("tbody");
+
+    let trendChart = null;
+    let snapshotChart = null;
+    const tableState = { sortKey: "label", direction: "asc" };
+
+    function showLoading() {
+      loadingEl.style.display = "block";
+    }
+
+    function hideLoading() {
+      loadingEl.style.display = "none";
+    }
+
+    function showError(message) {
+      errorEl.textContent = message;
+      errorEl.style.display = "block";
+    }
+
+    function clearError() {
+      errorEl.style.display = "none";
+      errorEl.textContent = "";
+    }
+
+    function formatNumber(value, digits = 1) {
+      if (value === null || value === undefined || Number.isNaN(value)) {
+        return "—";
+      }
+      return Number(value).toFixed(digits);
+    }
+
+    function formatPercent(value, digits = 1) {
+      if (value === null || value === undefined || Number.isNaN(value)) {
+        return "—";
+      }
+      return `${Number(value).toFixed(digits)}%`;
+    }
+
+    function formatDateForDisplay(date) {
+      if (!date) {
+        return "—";
+      }
+      const formatter = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" });
+      return formatter.format(date);
+    }
+
+    function formatTimestamp(isoString) {
+      if (!isoString) {
+        return "";
+      }
+      const date = new Date(isoString);
+      if (Number.isNaN(date.getTime())) {
+        return isoString;
+      }
+      return new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(date);
+    }
+
+    function populateCategoryList() {
+      categoryListEl.innerHTML = "";
+      categories.forEach((category) => {
+        const wrapper = document.createElement("label");
+        wrapper.className = "category-item";
+        if (state.selectedIds.has(category.id)) {
+          wrapper.classList.add("selected");
+        }
+
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.value = category.id;
+        input.checked = state.selectedIds.has(category.id);
+        input.addEventListener("change", (event) => {
+          handleCategoryToggle(category.id, event.target.checked);
+        });
+
+        const textContainer = document.createElement("div");
+        const name = document.createElement("div");
+        name.textContent = category.label;
+        name.style.fontWeight = "500";
+        const description = document.createElement("div");
+        description.textContent = category.description;
+        description.className = "category-item-description";
+
+        textContainer.appendChild(name);
+        textContainer.appendChild(description);
+
+        wrapper.appendChild(input);
+        wrapper.appendChild(textContainer);
+        categoryListEl.appendChild(wrapper);
+      });
+    }
+
+    function handleCategoryToggle(id, checked) {
+      if (checked) {
+        state.selectedIds.add(id);
+      } else {
+        if (state.selectedIds.size === 1 && state.selectedIds.has(id)) {
+          // Prevent empty selection
+          const checkbox = categoryListEl.querySelector(`input[value="${id}"]`);
+          if (checkbox) {
+            checkbox.checked = true;
+          }
+          return;
+        }
+        state.selectedIds.delete(id);
+      }
+      updateCategorySelectionStyles();
+      updateVisualizations();
+    }
+
+    function updateCategorySelectionStyles() {
+      categoryListEl.querySelectorAll(".category-item").forEach((element) => {
+        const input = element.querySelector("input");
+        if (input && state.selectedIds.has(input.value)) {
+          element.classList.add("selected");
+        } else {
+          element.classList.remove("selected");
+        }
+      });
+    }
+
+    function setupCategoryButtons() {
+      selectEssentialBtn.addEventListener("click", () => {
+        state.selectedIds = new Set([
+          "CUSR0000SA0",
+          "CUUR0000SETA01",
+          "CUUR0000SETA03",
+          "CUUR0000SETD",
+          "CUUR0000SAH1",
+          "CUUR0000SEHF01",
+          "CUUR0000SEHF02",
+          "CUUR0000SEHG",
+          "CUUR0000SAD",
+          "CUUR0000SAM2",
+          "CUUR0000SAM12"
+        ]);
+        populateCategoryList();
+        updateVisualizations();
+      });
+
+      selectAllBtn.addEventListener("click", () => {
+        state.selectedIds = new Set(categories.map((category) => category.id));
+        populateCategoryList();
+        updateVisualizations();
+      });
+
+      selectNoneBtn.addEventListener("click", () => {
+        state.selectedIds = new Set(["CUSR0000SA0"]);
+        populateCategoryList();
+        updateVisualizations();
+      });
+    }
+
+    function setupStartYearControl() {
+      startYearInput.addEventListener("input", (event) => {
+        const value = Number(event.target.value);
+        state.startYear = value;
+        startYearLabel.textContent = value;
+        updateVisualizations();
+      });
+    }
+
+    function setupMetricToggle() {
+      metricToggle.querySelectorAll("input[name='metric']").forEach((radio) => {
+        radio.addEventListener("change", (event) => {
+          if (event.target.checked) {
+            state.metric = event.target.value;
+            const titles = {
+              index: "Trend: Price index",
+              yoy: "Trend: Year-over-year change",
+              mom: "Trend: Month-over-month change"
+            };
+            trendTitle.textContent = titles[state.metric] || "Trend";
+            updateVisualizations();
+          }
+        });
+      });
+    }
+
+    function prepareSeriesData(rawSeries) {
+      const sorted = rawSeries
+        .filter((item) => item.period && item.period.startsWith("M"))
+        .map((item) => {
+          const month = Number(item.period.replace("M", "")) - 1;
+          const date = new Date(Number(item.year), month, 1);
+          return {
+            date,
+            index: Number(item.value)
+          };
+        })
+        .sort((a, b) => a.date - b.date);
+
+      const valueByKey = new Map();
+      sorted.forEach((point) => {
+        valueByKey.set(`${point.date.getFullYear()}-${point.date.getMonth()}`, point.index);
+      });
+
+      const points = sorted.map((point, idx) => {
+        const prevPoint = idx > 0 ? sorted[idx - 1] : null;
+        const prevYearValue = valueByKey.get(`${point.date.getFullYear() - 1}-${point.date.getMonth()}`);
+
+        const yoy = prevYearValue ? ((point.index - prevYearValue) / prevYearValue) * 100 : null;
+        const mom = prevPoint ? ((point.index - prevPoint.index) / prevPoint.index) * 100 : null;
+
+        return {
+          date: point.date,
+          index: point.index,
+          yoy,
+          mom
+        };
+      });
+
+      return points;
+    }
+
+    async function fetchSeries() {
+      showLoading();
+      clearError();
+
+      state.dataBySeries = {};
+      state.fetchedAt = null;
+
+      const currentYear = new Date().getFullYear();
+      try {
+        const response = await fetch(API_BASE, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            seriesId: categories.map((category) => category.id),
+            startYear: REQUEST_START_YEAR,
+            endYear: currentYear
+          })
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => ({}));
+          const message = errorBody.error || `Proxy responded with status ${response.status}`;
+          throw new Error(message);
+        }
+
+        const payload = await response.json();
+        state.fetchedAt = payload.fetchedAt || null;
+
+        const results = Array.isArray(payload.series) ? payload.series : [];
+        results.forEach((series) => {
+          state.dataBySeries[series.seriesID] = prepareSeriesData(series.data || []);
+        });
+
+        if (console && console.info) {
+          const coverageSummary = results.map((series) => {
+            const data = series.data || [];
+            if (!data.length) {
+              return { id: series.seriesID, start: null, end: null };
+            }
+            const first = data[data.length - 1];
+            const last = data[0];
+            return {
+              id: series.seriesID,
+              start: `${first.periodName || first.period} ${first.year}`,
+              end: `${last.periodName || last.period} ${last.year}`
+            };
+          });
+          console.info("CPI series coverage", coverageSummary);
+        }
+
+      const availableYears = Object.values(state.dataBySeries)
+        .flat()
+        .map((point) => point.date.getFullYear());
+
+      if (availableYears.length) {
+        state.minYear = Math.max(REQUEST_START_YEAR, Math.min(...availableYears));
+        state.maxYear = Math.max(...availableYears);
+      } else {
+        state.minYear = REQUEST_START_YEAR;
+        state.maxYear = currentYear;
+      }
+
+      startYearInput.min = state.minYear;
+      startYearInput.max = state.maxYear;
+
+      if (state.startYear < state.minYear) {
+        state.startYear = state.minYear;
+      } else if (state.startYear > state.maxYear) {
+        state.startYear = state.maxYear;
+      }
+      startYearInput.value = state.startYear;
+      startYearLabel.textContent = state.startYear;
+
+        hideLoading();
+
+        const missing = categories.filter((category) => !state.dataBySeries[category.id]);
+        if (missing.length) {
+          const list = missing.map((item) => item.label).join(", ");
+          showError(`Missing CPI data for: ${list}. Check BLS API limits or series availability.`);
+        } else {
+          clearError();
+        }
+
+        if (!Object.keys(state.dataBySeries).length) {
+          showError("Unable to load CPI data. Ensure the Netlify proxy is deployed with a valid BLS API key.");
+        }
+      } catch (error) {
+        hideLoading();
+        showError(`Unable to load CPI data. ${error.message}`);
+        console.error(error);
+      }
+    }
+
+    function getFilteredPoints(seriesId) {
+      const allPoints = state.dataBySeries[seriesId] || [];
+      return allPoints.filter((point) => point.date.getFullYear() >= state.startYear);
+    }
+
+    function getMetricValue(point) {
+      if (state.metric === "yoy") {
+        return point.yoy;
+      }
+      if (state.metric === "mom") {
+        return point.mom;
+      }
+      return point.index;
+    }
+
+    function buildTrendDatasets() {
+      const datasets = [];
+      Array.from(state.selectedIds).forEach((seriesId, index) => {
+        const points = getFilteredPoints(seriesId)
+          .map((point) => ({ x: point.date, y: getMetricValue(point) }))
+          .filter((item) => item.y !== null && item.y !== undefined);
+
+        if (!points.length) {
+          return;
+        }
+
+        const category = categories.find((item) => item.id === seriesId);
+        datasets.push({
+          label: category ? category.label : seriesId,
+          data: points,
+          borderColor: colorPalette[index % colorPalette.length],
+          backgroundColor: colorPalette[index % colorPalette.length],
+          borderWidth: 2,
+          tension: 0.15,
+          pointRadius: 0,
+          spanGaps: true
+        });
+      });
+
+      return datasets;
+    }
+
+    function updateTrendChart() {
+      const datasets = buildTrendDatasets();
+      const ctx = document.getElementById("trend-chart").getContext("2d");
+      const metric = state.metric;
+
+      const yAxisLabel = {
+        index: "CPI index level (1982-84 = 100)",
+        yoy: "12-month change (%)",
+        mom: "1-month change (%)"
+      }[metric] || "Value";
+
+      const tooltipLabelFormatter = (context) => {
+        const value = context.parsed.y;
+        if (metric === "index") {
+          return `${context.dataset.label}: ${formatNumber(value, 1)}`;
+        }
+        return `${context.dataset.label}: ${formatNumber(value, 2)}%`;
+      };
+
+      if (!trendChart) {
+        trendChart = new Chart(ctx, {
+          type: "line",
+          data: { datasets },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: "nearest", intersect: false },
+            plugins: {
+              legend: {
+                position: "bottom"
+              },
+              tooltip: {
+                callbacks: {
+                  label: tooltipLabelFormatter
+                }
+              }
+            },
+            scales: {
+              x: {
+                type: "time",
+                time: {
+                  unit: "month",
+                  tooltipFormat: "LLL yyyy"
+                },
+                ticks: {
+                  maxRotation: 0,
+                  autoSkip: true,
+                  major: {
+                    enabled: true
+                  }
+                }
+              },
+              y: {
+                title: { display: true, text: yAxisLabel },
+                ticks: {
+                  callback: (value) => metric === "index" ? value : `${value}%`
+                }
+              }
+            }
+          }
+        });
+      } else {
+        trendChart.data.datasets = datasets;
+        trendChart.options.scales.y.title.text = yAxisLabel;
+        trendChart.options.plugins.tooltip.callbacks.label = tooltipLabelFormatter;
+        trendChart.update();
+      }
+    }
+
+    function updateSnapshotChart() {
+      const latestRows = buildLatestRows();
+      const filteredRows = latestRows.filter((row) => row.yoy !== null && row.yoy !== undefined);
+
+      const ctx = document.getElementById("snapshot-chart").getContext("2d");
+      const labels = filteredRows.map((row) => row.label);
+      const yoyValues = filteredRows.map((row) => row.yoy);
+
+      if (!snapshotChart) {
+        snapshotChart = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels,
+            datasets: [
+              {
+                label: "YoY %",
+                data: yoyValues,
+                backgroundColor: filteredRows.map((row) => row.yoy >= 0 ? "rgba(15, 98, 254, 0.65)" : "rgba(204, 51, 64, 0.65)"),
+                borderRadius: 6,
+                borderWidth: 0
+              }
+            ]
+          },
+          options: {
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (context) => `${context.parsed.x.toFixed(2)}%`
+                }
+              }
+            },
+            scales: {
+              x: {
+                title: { display: true, text: "Year-over-year change (%)" }
+              },
+              y: {
+                ticks: { autoSkip: false }
+              }
+            }
+          }
+        });
+      } else {
+        snapshotChart.data.labels = labels;
+        snapshotChart.data.datasets[0].data = yoyValues;
+        snapshotChart.data.datasets[0].backgroundColor = filteredRows.map((row) => row.yoy >= 0 ? "rgba(15, 98, 254, 0.65)" : "rgba(204, 51, 64, 0.65)");
+        snapshotChart.update();
+      }
+    }
+
+    function buildLatestRows() {
+      const rows = [];
+
+      Array.from(state.selectedIds).forEach((seriesId) => {
+        const points = getFilteredPoints(seriesId);
+        if (!points.length) {
+          return;
+        }
+        const lastPoint = points[points.length - 1];
+        const category = categories.find((item) => item.id === seriesId);
+        rows.push({
+          id: seriesId,
+          label: category ? category.label : seriesId,
+          index: lastPoint.index,
+          yoy: lastPoint.yoy,
+          mom: lastPoint.mom,
+          date: lastPoint.date
+        });
+      });
+
+      return rows;
+    }
+
+    function renderTable() {
+      const rows = buildLatestRows();
+
+      const sortKey = tableState.sortKey;
+      const direction = tableState.direction === "desc" ? -1 : 1;
+
+      rows.sort((a, b) => {
+        let valueA = a[sortKey];
+        let valueB = b[sortKey];
+
+        if (sortKey === "label") {
+          return valueA.localeCompare(valueB) * direction;
+        }
+        if (sortKey === "date") {
+          return ((valueA || 0) - (valueB || 0)) * direction;
+        }
+
+        valueA = valueA !== null && valueA !== undefined ? valueA : (direction > 0 ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY);
+        valueB = valueB !== null && valueB !== undefined ? valueB : (direction > 0 ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY);
+
+        return (valueA - valueB) * direction;
+      });
+
+      tableBodyEl.innerHTML = "";
+
+      rows.forEach((row) => {
+        const tr = document.createElement("tr");
+
+        const labelCell = document.createElement("td");
+        labelCell.textContent = row.label;
+        tr.appendChild(labelCell);
+
+        const indexCell = document.createElement("td");
+        indexCell.textContent = formatNumber(row.index, 1);
+        tr.appendChild(indexCell);
+
+        const yoyCell = document.createElement("td");
+        yoyCell.textContent = formatPercent(row.yoy, 2);
+        yoyCell.className = row.yoy !== null ? (row.yoy >= 0 ? "value-positive" : "value-negative") : "";
+        tr.appendChild(yoyCell);
+
+        const momCell = document.createElement("td");
+        momCell.textContent = formatPercent(row.mom, 2);
+        momCell.className = row.mom !== null ? (row.mom >= 0 ? "value-positive" : "value-negative") : "";
+        tr.appendChild(momCell);
+
+        const dateCell = document.createElement("td");
+        dateCell.textContent = formatDateForDisplay(row.date);
+        tr.appendChild(dateCell);
+
+        tableBodyEl.appendChild(tr);
+      });
+    }
+
+    function setupTableSorting() {
+      tableEl.querySelectorAll("th[data-key]").forEach((header) => {
+        header.addEventListener("click", () => {
+          const key = header.dataset.key;
+          if (tableState.sortKey === key) {
+            tableState.direction = tableState.direction === "asc" ? "desc" : "asc";
+          } else {
+            tableState.sortKey = key;
+            tableState.direction = key === "label" ? "asc" : "desc";
+          }
+          updateSortIndicators();
+          renderTable();
+        });
+      });
+    }
+
+    function updateSortIndicators() {
+      tableEl.querySelectorAll("th[data-key]").forEach((header) => {
+        const indicator = header.querySelector(".sort-indicator");
+        if (!indicator) {
+          return;
+        }
+        const key = header.dataset.key;
+        if (tableState.sortKey === key) {
+          indicator.textContent = tableState.direction === "asc" ? "▲" : "▼";
+        } else {
+          indicator.textContent = "";
+        }
+      });
+    }
+
+    function updateStatusCards() {
+      const headlineSeries = state.dataBySeries["CUSR0000SA0"] || [];
+      const autoSeries = state.dataBySeries["CUUR0000SETA01"] || [];
+      const medicalSeries = state.dataBySeries["CUUR0000SAM2"] || [];
+
+      const latestPoint = headlineSeries.length ? headlineSeries[headlineSeries.length - 1] : null;
+      const latestDate = latestPoint ? latestPoint.date : null;
+
+      latestPeriodEl.textContent = formatDateForDisplay(latestDate);
+      const noteParts = [];
+      if (latestDate) {
+        noteParts.push(`Data through ${formatDateForDisplay(latestDate)}.`);
+      }
+      if (state.fetchedAt) {
+        noteParts.push(`Dataset refreshed ${formatTimestamp(state.fetchedAt)}.`);
+      }
+      latestReleaseNoteEl.textContent = noteParts.join(" ");
+
+      const headlineYoy = latestPoint ? latestPoint.yoy : null;
+      headlineYoyEl.textContent = formatPercent(headlineYoy, 2);
+      headlineYoyEl.className = headlineYoy !== null ? (headlineYoy >= 0 ? "value-positive" : "value-negative") : "";
+
+      const autoPoint = autoSeries.length ? autoSeries[autoSeries.length - 1] : null;
+      const autoYoy = autoPoint ? autoPoint.yoy : null;
+      autoYoyEl.textContent = formatPercent(autoYoy, 2);
+      autoYoyEl.className = autoYoy !== null ? (autoYoy >= 0 ? "value-positive" : "value-negative") : "";
+
+      const medicalPoint = medicalSeries.length ? medicalSeries[medicalSeries.length - 1] : null;
+      const medicalYoy = medicalPoint ? medicalPoint.yoy : null;
+      medicalYoyEl.textContent = formatPercent(medicalYoy, 2);
+      medicalYoyEl.className = medicalYoy !== null ? (medicalYoy >= 0 ? "value-positive" : "value-negative") : "";
+    }
+
+    function updateVisualizations() {
+      updateTrendChart();
+      updateSnapshotChart();
+      renderTable();
+      updateStatusCards();
+    }
+
+    async function initialize() {
+      populateCategoryList();
+      setupCategoryButtons();
+      setupStartYearControl();
+      setupMetricToggle();
+      setupTableSorting();
+      updateSortIndicators();
+
+      await fetchSeries();
+      updateVisualizations();
+    }
+
+    initialize();
+  </script>
