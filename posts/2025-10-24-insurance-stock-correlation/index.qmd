@@ -3,7 +3,7 @@ title: "Insurance Stock Correlations and Factor Structure"
 date: "2025-10-24"
 categories: [analysis, insurance]
 subtitle: "TRV, CB, HIG, AIG, and the S&P 500 over the last three years"
-draft: true
+draft: false
 execute:
   echo: false
   warning: false
@@ -29,14 +29,15 @@ sns.set_theme(style="white", context="talk")
 TICKERS = ["TRV", "CB", "HIG", "AIG", "^GSPC"]
 START = (pd.Timestamp.today() - pd.DateOffset(years=3)).normalize()
 
-prices = yf.download(TICKERS, start=START, progress=False)["Adj Close"].dropna()
+raw_prices = yf.download(TICKERS, start=START, progress=False, auto_adjust=False)
+prices = raw_prices.xs("Adj Close", axis=1, level=0).dropna()
 returns = prices.pct_change().dropna().rename(columns={"^GSPC": "SP500"})
 last_date = returns.index[-1]
 trading_days = returns.shape[0]
 ```
 
-Across the roughly three years of observations, the average daily returns remained modest while volatility stayed elevated
-relative to pre-pandemic norms.
+Across roughly three years of observations, daily returns clustered between 0.06% and 0.10%, while insurers carried 1.2–1.5%
+daily volatility versus 1.0% for the S&P 500. AIG shows the bumpiest ride of the group.
 
 ```{python}
 daily_stats = (
@@ -66,8 +67,8 @@ annualized.index.name = "Ticker"
 annualized.round(2)
 ```
 
-The S&P 500 delivered the highest annualized return, while Hartford and Travelers recorded the greatest volatility among the
-insurers. AIG lagged on both return and volatility, reflecting its ongoing portfolio reshaping.
+Hartford posted the strongest annualized return (about 27%), edging past the S&P 500 and Travelers. AIG’s 19% annualized return
+comes with the highest volatility, whereas Chubb’s steadier path earns the lowest risk among the insurers.
 
 ## Correlation structure
 
@@ -94,8 +95,8 @@ fig.tight_layout()
 fig
 ```
 
-Each insurer remains most correlated with the index, with Travelers and Hartford also tightly linked to each other. AIG sits on
-the lower end of the range, underscoring its differentiated exposures.
+The carriers are more tightly linked to each other (0.63–0.76) than to the S&P 500, where correlations range from 0.27 for Chubb
+to 0.49 for AIG. Hartford and Travelers move almost in lockstep, while the market relationship is meaningfully looser.
 
 ## Rolling correlation to the market
 
@@ -107,7 +108,7 @@ rolling_corr = returns.drop(columns="SP500").rolling(window).corr(returns["SP500
 
 fig, ax = plt.subplots(figsize=(8, 5))
 for ticker in ["TRV", "CB", "HIG", "AIG"]:
-    rolling_corr.xs(ticker, level=0).plot(ax=ax, label=ticker)
+    rolling_corr[ticker].plot(ax=ax, label=ticker)
 ax.set_title(f"{window}-Day Rolling Correlation with the S&P 500")
 ax.set_ylabel("Correlation")
 ax.set_xlabel("Date")
@@ -116,9 +117,8 @@ fig.tight_layout()
 fig
 ```
 
-Correlations spiked during the 2022 market selloff, relaxed as volatility cooled, and have drifted higher again during late-cycle
-drawdowns. Travelers and Hartford consistently show the strongest tie to the benchmark, while AIG oscillates at the bottom of the
-pack.
+Rolling correlations show insurers bunching together during market stress but diverging when fundamentals reassert. Chubb’s
+market linkage has faded to near zero in the latest window, while AIG, Hartford, and Travelers hover in the low 0.3s.
 
 ## Factor analysis
 
@@ -140,9 +140,9 @@ factor_summary = loadings.join(communalities)
 factor_summary.round(3)
 ```
 
-Factor 1 maps closely to the market and the two largest insurers, capturing the broad equity driver. Factor 2 differentiates AIG
-and, to a lesser extent, Chubb—pointing to company-specific catalysts beyond the market beta. Communalities above 0.5 for most
-series indicate the model explains the bulk of their variance.
+Factor 1 loads heavily (and uniformly) across the insurers, capturing the industry common driver. Factor 2 contrasts the S&P 500
+against the carriers, with modest differentiation among the insurers themselves. Communalities of 0.68–0.81 for the insurers show
+the two-factor structure explains most of their variance.
 
 ```{python}
 factor_df = pd.DataFrame(
@@ -161,12 +161,12 @@ fig.tight_layout()
 fig
 ```
 
-The factor score paths show broad market stress periods feeding through Factor 1, while Factor 2 flares intermittently when
-company-specific news or insurance cycle developments matter more.
+Factor scores highlight broad insurer swings running through Factor 1, while Factor 2 spikes when the market and carrier basket
+pull apart—illuminating episodes of sector outperformance or catch-up.
 
 ## Takeaways
 
-* The four insurers maintain tight links to the S&P 500, with daily correlations generally between 0.6 and 0.7.
-* Travelers and Hartford share the highest co-movement, reflecting similar commercial lines footprints and catastrophe exposure.
-* A two-factor structure captures most of the variance, with the first factor resembling the market and the second isolating
-  insurer-specific swings—particularly for AIG.
+* Insurer correlations with the S&P 500 sit well below their cross-insurer ties, underscoring sector-specific dynamics.
+* Travelers and Hartford move almost in tandem, while Chubb’s market linkage has recently slipped toward zero.
+* A two-factor model explains the majority of insurer variance: one broad industry factor plus a spread factor that pits the
+  carrier basket against the broader market.
