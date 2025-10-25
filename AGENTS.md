@@ -4,6 +4,9 @@
 - This repository contains the Quarto source for [problemofpoints.com](https://www.problemofpoints.com), a static site generated from `.qmd` sources and lightweight HTML tools.
 - Content lives in two main areas: long-form posts under `posts/` and interactive utilities under `tools/`.
 - Rendering relies on the Quarto CLI plus Python 3.12 and the packages pinned in `requirements.txt`.
+- You have access to Netlify Functions for server-side API calls, with secrets managed via environment variables.
+- The site is deployed automatically on Netlify when changes are pushed to the `main` branch.
+- You have access to the internet if you need to search for information or resources.
 
 ## Local Environment
 - Install Quarto separately if it is not already available on the machine.
@@ -22,17 +25,18 @@
    ```yaml
    ---
    title: "Concise, Descriptive Title"
-   date: "2024-07-04"
+   date: today's date 
    categories: [analysis, insurance]
    subtitle: "Optional subtitle"
-   draft: true
+   draft: false
    ---
    ```
-   - `draft: true` keeps the post out of production until removed.
 3. **Write content** below the front matter using standard Quarto Markdown. By default posts inherit options from `posts/_metadata.yml` (`freeze: true`, no table of contents, etc.).
-4. **Embed computations** by adding Python/R code chunks. Quarto will respect the global `freeze` setting; to force re-execution set `freeze: false` in the front matter or `execute: { eval: true }`.
+4. **Embed computations** by adding Python code chunks. Quarto will respect the global `freeze` setting; to force re-execution set `freeze: false` in the front matter or `execute: { eval: true }`.
 5. **Reference static assets** by placing images or data within the post folder and linking relatively (`![Alt text](figure.png)`).
-6. **Preview locally** with `quarto preview` to confirm formatting, then remove `draft: true` when ready to publish. Run `quarto render` to generate final HTML under `_site/`.
+6. **Test the build**: Run `quarto render posts/your-post-slug/index.qmd` to ensure there are no errors. Fix any issues that arise.
+7. **Revise commentary**: After running the code, go back through all text and narrative sections to reflect results from the code. Any numeric values in the text and resulting commentary must reflect the output of the code chunks.
+8. **Preview locally** with `quarto preview` to confirm formatting, then remove `draft: true` when ready to publish. Run `quarto render` to generate final HTML under `_site/`.
 
 ## Creating a Tool
 1. **Choose a slug** and create a folder under `tools/` (e.g., `tools/my-new-tool/`).
@@ -48,8 +52,9 @@
    {{</* include app.html */>}}
    ```
    - Add additional narrative sections or usage notes below the include as needed.
-4. **Test locally**: `quarto preview tools/index.qmd` ensures the tool loads and works in the generated site.
-5. **Confirm listing**: The gallery at `tools/index.qmd` automatically discovers `*/index.qmd`, so no manual registration is required. Ensure the title/description fit within the 160-character limit enforced by the listing configuration.
+4. Use Netlify Functions for any server-side API calls such as downloading data or making the tool dynamic. 
+5. **Test locally**: `quarto preview tools/index.qmd` ensures the tool loads and works in the generated site.
+6. **Confirm listing**: The gallery at `tools/index.qmd` automatically discovers `*/index.qmd`, so no manual registration is required. Ensure the title/description fit within the 160-character limit enforced by the listing configuration.
 
 ## Operational Tips
 - Keep Markdown lint-friendly (wrap at ~100 characters, use heading hierarchies).

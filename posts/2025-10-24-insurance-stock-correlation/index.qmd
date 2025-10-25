@@ -92,7 +92,8 @@ heatmap = sns.heatmap(
 )
 ax.set_title("Daily Return Correlations (Last 3 Years)")
 fig.tight_layout()
-fig
+plt.show()
+plt.close(fig)
 ```
 
 The carriers are more tightly linked to each other (0.63–0.76) than to the S&P 500, where correlations range from 0.27 for Chubb
@@ -114,7 +115,8 @@ ax.set_ylabel("Correlation")
 ax.set_xlabel("Date")
 ax.legend()
 fig.tight_layout()
-fig
+plt.show()
+plt.close(fig)
 ```
 
 Rolling correlations show insurers bunching together during market stress but diverging when fundamentals reassert. Chubb’s
@@ -158,7 +160,8 @@ ax.set_ylabel("Standardized units")
 ax.set_xlabel("Date")
 ax.legend()
 fig.tight_layout()
-fig
+plt.show()
+plt.close(fig)
 ```
 
 Factor scores highlight broad insurer swings running through Factor 1, while Factor 2 spikes when the market and carrier basket

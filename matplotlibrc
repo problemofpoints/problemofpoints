@@ -1,0 +1,17 @@
+# matplotlibrc file to define the style of the plots
+axes.prop_cycle: cycler('color', ["#00AEEF", "#A2AAAD", "#EF5399", "#00AE5E", "#FFD534", "#F68A33", "#CB333B", "#00AEEF66", "#5B677066", "#EF539966", "#00AE5E66", "#FFD53466", "#F68A3366","#CB333B66","#35FFA5","#005677"])
+
+# Set the default font family and size
+font.family: sans-serif
+font.sans-serif: Liberation Sans, DejaVu Sans, Segoe UI, Arial
+text.color: white
+
+figure.facecolor: black
+axes.facecolor: black
+axes.grid: True
+grid.alpha: 0.2
+grid.color: white
+xtick.color: white
+ytick.color: white
+axes.labelcolor: white
+axes.edgecolor: white
