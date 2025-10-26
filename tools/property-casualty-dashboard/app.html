@@ -1,0 +1,753 @@
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2"></script>
+<style>
+  :root {
+    color-scheme: light dark;
+    --pcd-bg: #0f172a;
+    --pcd-panel: rgba(15, 23, 42, 0.42);
+    --pcd-card: rgba(15, 23, 42, 0.66);
+    --pcd-text: #e2e8f0;
+    --pcd-muted: rgba(148, 163, 184, 0.85);
+    --pcd-accent: #38bdf8;
+    --pcd-positive: #34d399;
+    --pcd-negative: #f87171;
+    --pcd-border: rgba(148, 163, 184, 0.22);
+    font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .pcd-dashboard {
+    background: radial-gradient(circle at top, rgba(56, 189, 248, 0.15), transparent 50%),
+      radial-gradient(circle at 20% 80%, rgba(129, 140, 248, 0.1), transparent 40%), var(--pcd-bg);
+    color: var(--pcd-text);
+    padding: clamp(2rem, 4vw, 3rem);
+    border-radius: 28px;
+    box-shadow: 0 35px 60px -40px rgba(14, 116, 144, 0.65);
+    display: grid;
+    gap: clamp(1.8rem, 3vw, 2.4rem);
+  }
+
+  .pcd-header {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .pcd-title {
+    margin: 0;
+    font-weight: 700;
+    font-size: clamp(2.1rem, 2vw + 1.6rem, 2.8rem);
+    letter-spacing: -0.015em;
+  }
+
+  .pcd-subtitle {
+    margin: 0;
+    color: var(--pcd-muted);
+    max-width: 70ch;
+    line-height: 1.6;
+    font-size: 1.05rem;
+  }
+
+  .pcd-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    color: var(--pcd-muted);
+    font-size: 0.95rem;
+  }
+
+  .pcd-chip {
+    background: rgba(56, 189, 248, 0.12);
+    color: var(--pcd-accent);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 999px;
+    padding: 0.35rem 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  .pcd-metric-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  }
+
+  .pcd-card {
+    background: var(--pcd-card);
+    border-radius: 20px;
+    padding: 1.35rem 1.5rem;
+    border: 1px solid var(--pcd-border);
+    display: grid;
+    gap: 0.4rem;
+    box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.22), 0 18px 30px -28px rgba(15, 23, 42, 0.9);
+  }
+
+  .pcd-card-title {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--pcd-muted);
+  }
+
+  .pcd-card-value {
+    font-size: clamp(1.6rem, 1.3vw + 1.1rem, 2.1rem);
+    font-weight: 700;
+  }
+
+  .pcd-card-context {
+    font-size: 0.85rem;
+    color: var(--pcd-muted);
+  }
+
+  .pcd-control-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    align-items: flex-end;
+  }
+
+  .pcd-control {
+    display: grid;
+    gap: 0.4rem;
+    font-size: 0.95rem;
+  }
+
+  .pcd-select,
+  .pcd-input {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid var(--pcd-border);
+    border-radius: 12px;
+    color: var(--pcd-text);
+    padding: 0.55rem 1rem;
+    font-size: 1rem;
+    min-width: 200px;
+    appearance: none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .pcd-chart-card {
+    background: var(--pcd-panel);
+    border-radius: 24px;
+    border: 1px solid var(--pcd-border);
+    padding: clamp(1.5rem, 3vw, 2.2rem);
+    display: grid;
+    gap: 1.4rem;
+    box-shadow: 0 26px 48px -38px rgba(0, 0, 0, 0.75);
+  }
+
+  .pcd-chart-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .pcd-chart-header h2 {
+    margin: 0;
+    font-size: 1.35rem;
+  }
+
+  .pcd-chart-header p {
+    margin: 0;
+    color: var(--pcd-muted);
+    font-size: 0.95rem;
+  }
+
+  #pcd-price-chart {
+    width: 100%;
+    min-height: 360px;
+  }
+
+  .pcd-grid-2 {
+    display: grid;
+    gap: 1.4rem;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  }
+
+  .pcd-table-card {
+    background: var(--pcd-panel);
+    border-radius: 22px;
+    border: 1px solid var(--pcd-border);
+    padding: 1.4rem;
+    display: grid;
+    gap: 1.1rem;
+  }
+
+  .pcd-table-card h2 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+  }
+
+  th,
+  td {
+    text-align: left;
+    padding: 0.55rem 0.45rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  }
+
+  th {
+    color: rgba(226, 232, 240, 0.8);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .pcd-percent-positive {
+    color: var(--pcd-positive);
+  }
+
+  .pcd-percent-negative {
+    color: var(--pcd-negative);
+  }
+
+  .pcd-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    background: rgba(148, 163, 184, 0.14);
+    border-radius: 999px;
+    padding: 0.2rem 0.7rem;
+  }
+
+  .pcd-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .pcd-footnotes {
+    color: var(--pcd-muted);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 640px) {
+    .pcd-dashboard {
+      padding: 1.5rem;
+    }
+
+    .pcd-select,
+    .pcd-input {
+      min-width: unset;
+      width: 100%;
+    }
+  }
+</style>
+
+<div class="pcd-dashboard" id="pcd-dashboard">
+  <header class="pcd-header">
+    <h1 class="pcd-title">Property &amp; Casualty (Re)Insurance Market Monitor</h1>
+    <p class="pcd-subtitle">
+      Intraday snapshot of U.S.-listed property &amp; casualty carriers and reinsurers. Track market breadth,
+      performance momentum, valuation trends, and risk metrics across a curated universe of listed writers.
+    </p>
+    <div class="pcd-meta">
+      <span class="pcd-chip" id="pcd-refresh-chip">Loading...</span>
+      <span id="pcd-summary"></span>
+    </div>
+  </header>
+
+  <section class="pcd-metric-grid" id="pcd-metric-grid"></section>
+
+  <section class="pcd-control-bar">
+    <div class="pcd-control">
+      <label for="pcd-ticker-select">Focus company</label>
+      <select class="pcd-select" id="pcd-ticker-select"></select>
+    </div>
+    <div class="pcd-control">
+      <label for="pcd-benchmark-select">Relative benchmark</label>
+      <select class="pcd-select" id="pcd-benchmark-select"></select>
+    </div>
+    <div class="pcd-control">
+      <label for="pcd-return-select">Return horizon</label>
+      <select class="pcd-select" id="pcd-return-select">
+        <option value="1d">1 day</option>
+        <option value="1w">1 week</option>
+        <option value="1m">1 month</option>
+        <option value="3m">3 months</option>
+        <option value="6m">6 months</option>
+        <option value="ytd">YTD</option>
+        <option value="12m">12 months</option>
+        <option value="24m">24 months</option>
+      </select>
+    </div>
+  </section>
+
+  <section class="pcd-chart-card">
+    <div class="pcd-chart-header">
+      <h2 id="pcd-chart-title">Relative price performance</h2>
+      <p id="pcd-chart-context">Indexed to 100 over the selected horizon.</p>
+    </div>
+    <div id="pcd-price-chart"></div>
+  </section>
+
+  <section class="pcd-grid-2">
+    <div class="pcd-table-card">
+      <h2>Return matrix</h2>
+      <div class="pcd-badges" id="pcd-movers"></div>
+      <table id="pcd-return-table"></table>
+    </div>
+    <div class="pcd-table-card">
+      <h2>Market structure</h2>
+      <table id="pcd-market-table"></table>
+    </div>
+  </section>
+
+  <section class="pcd-grid-2">
+    <div class="pcd-table-card">
+      <h2>Valuation &amp; yield</h2>
+      <table id="pcd-valuation-table"></table>
+    </div>
+    <div class="pcd-table-card">
+      <h2>Risk diagnostics</h2>
+      <table id="pcd-risk-table"></table>
+    </div>
+  </section>
+
+  <footer class="pcd-footnotes">
+    Data sourced from Yahoo Finance via yfinance. Prices reflect adjusted closes. Returns are total return proxies calculated from
+    adjusted pricing. Figures refresh when the underlying JSON is regenerated.
+  </footer>
+</div>
+
+<script>
+  const metricOrder = [
+    { key: "1d", label: "1d" },
+    { key: "1w", label: "1w" },
+    { key: "1m", label: "1m" },
+    { key: "3m", label: "3m" },
+    { key: "6m", label: "6m" },
+    { key: "ytd", label: "YTD" },
+    { key: "12m", label: "12m" },
+    { key: "24m", label: "24m" },
+  ];
+
+  const horizonLookback = {
+    "1d": 3,
+    "1w": 8,
+    "1m": 35,
+    "3m": 95,
+    "6m": 190,
+    ytd: 370,
+    "12m": 380,
+    "24m": 760,
+  };
+
+  const formatter = {
+    currency: (value) =>
+      value === null || value === undefined
+        ? "—"
+        : Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value),
+    currencyCompact: (value) =>
+      value === null || value === undefined
+        ? "—"
+        : Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency: "USD",
+            maximumFractionDigits: 1,
+            notation: "compact",
+          }).format(value),
+    number: (value, digits = 0) =>
+      value === null || value === undefined
+        ? "—"
+        : Intl.NumberFormat("en-US", { maximumFractionDigits: digits, minimumFractionDigits: digits }).format(value),
+    percent: (value, digits = 1) =>
+      value === null || value === undefined
+        ? "—"
+        : `${(value * 100).toFixed(digits)}%`,
+  };
+
+  function classifyPercent(value) {
+    if (value === null || value === undefined) return "";
+    if (value > 0) return "pcd-percent-positive";
+    if (value < 0) return "pcd-percent-negative";
+    return "";
+  }
+
+  function computeAggregateMetrics(companies) {
+    const coverage = companies.length;
+    const totalMarketCap = companies.reduce((acc, row) => acc + (row.market_cap || 0), 0);
+    const betaSeries = companies.filter((row) => row.beta !== null && row.beta !== undefined);
+    const avgBeta = betaSeries.length
+      ? betaSeries.reduce((acc, row) => acc + row.beta, 0) / betaSeries.length
+      : null;
+    const advancers = companies.filter((row) => (row.returns?.["1d"] || 0) > 0).length;
+    const decliners = companies.filter((row) => (row.returns?.["1d"] || 0) < 0).length;
+    const breadth1d = coverage ? advancers / coverage : null;
+
+    return {
+      coverage,
+      totalMarketCap,
+      avgBeta,
+      advancers,
+      decliners,
+      breadth1d,
+    };
+  }
+
+  function buildMetricCards(container, companies, aggregates, lastTradeDate) {
+    const cards = [
+      {
+        title: "Aggregate market cap",
+        value: formatter.currencyCompact(aggregates.totalMarketCap),
+        context: `Across ${aggregates.coverage} listed (re)insurers`,
+      },
+      {
+        title: "Average beta",
+        value: formatter.number(aggregates.avgBeta, 2),
+        context: "Equal-weighted market sensitivity",
+      },
+      {
+        title: "1-day breadth",
+        value: formatter.percent(aggregates.breadth1d, 0),
+        context: `${aggregates.advancers} advancers · ${aggregates.decliners} decliners`,
+      },
+      {
+        title: "Latest close",
+        value: new Date(lastTradeDate).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+        context: "Data aggregated post-settlement",
+      },
+    ];
+
+    container.innerHTML = cards
+      .map(
+        (card) => `
+          <div class="pcd-card">
+            <span class="pcd-card-title">${card.title}</span>
+            <span class="pcd-card-value">${card.value}</span>
+            <span class="pcd-card-context">${card.context}</span>
+          </div>
+        `
+      )
+      .join("");
+  }
+
+  function buildMovers(badgeContainer, companies) {
+    const sorted = [...companies]
+      .filter((row) => row.returns?.["1d"] !== null && row.returns?.["1d"] !== undefined)
+      .sort((a, b) => (b.returns?.["1d"] || 0) - (a.returns?.["1d"] || 0));
+
+    if (!sorted.length) {
+      badgeContainer.innerHTML = "";
+      return;
+    }
+
+    const best = sorted.slice(0, Math.min(3, sorted.length));
+    const worst = sorted.slice(-Math.min(3, sorted.length)).reverse();
+
+    const renderBadge = (label, rows) => `
+      <span class="pcd-tag">
+        <strong>${label}</strong>
+        ${rows
+          .map(
+            (row) =>
+              `<span class="${classifyPercent(row.returns?.["1d"]) || "pcd-percent-positive"}">${row.ticker} ${formatter.percent(
+                row.returns?.["1d"],
+                2
+              )}</span>`
+          )
+          .join(" · ")}
+      </span>
+    `;
+
+    const renderLagging = (label, rows) => `
+      <span class="pcd-tag">
+        <strong>${label}</strong>
+        ${rows
+          .map(
+            (row) =>
+              `<span class="${classifyPercent(row.returns?.["1d"]) || "pcd-percent-negative"}">${row.ticker} ${formatter.percent(
+                row.returns?.["1d"],
+                2
+              )}</span>`
+          )
+          .join(" · ")}
+      </span>
+    `;
+
+    badgeContainer.innerHTML = `${renderBadge("Top 1d", best)}${renderLagging("Lagging 1d", worst)}`;
+  }
+
+  function buildReturnTable(container, companies) {
+    const header = `
+      <thead>
+        <tr>
+          <th>Ticker</th>
+          ${metricOrder.map((m) => `<th>${m.label}</th>`).join("")}
+        </tr>
+      </thead>
+    `;
+
+    const body = `
+      <tbody>
+        ${companies
+          .map((row) => {
+            const cells = metricOrder
+              .map((m) => {
+                const value = row.returns?.[m.key];
+                const cls = classifyPercent(value);
+                return `<td class="${cls}">${formatter.percent(value, 1)}</td>`;
+              })
+              .join("");
+            return `<tr><td><strong>${row.ticker}</strong></td>${cells}</tr>`;
+          })
+          .join("")}
+      </tbody>
+    `;
+
+    container.innerHTML = header + body;
+  }
+
+  function buildMarketTable(container, companies) {
+    const sorted = [...companies].sort((a, b) => (b.market_cap || 0) - (a.market_cap || 0));
+    container.innerHTML = `
+      <thead>
+        <tr>
+          <th>Company</th>
+          <th>Market cap</th>
+          <th>1d</th>
+          <th>YTD</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sorted
+          .map((row) => {
+            const oneDay = row.returns?.["1d"];
+            const ytd = row.returns?.ytd;
+            return `
+              <tr>
+                <td><strong>${row.ticker}</strong> · ${row.name}</td>
+                <td>${formatter.currencyCompact(row.market_cap)}</td>
+                <td class="${classifyPercent(oneDay)}">${formatter.percent(oneDay, 2)}</td>
+                <td class="${classifyPercent(ytd)}">${formatter.percent(ytd, 1)}</td>
+              </tr>
+            `;
+          })
+          .join("")}
+      </tbody>
+    `;
+  }
+
+  function buildValuationTable(container, companies) {
+    const sorted = [...companies].sort((a, b) => (a.pe_ratio || Infinity) - (b.pe_ratio || Infinity));
+    container.innerHTML = `
+      <thead>
+        <tr>
+          <th>Ticker</th>
+          <th>P/E</th>
+          <th>P/B</th>
+          <th>Dividend</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sorted
+          .map((row) => `
+            <tr>
+              <td><strong>${row.ticker}</strong></td>
+              <td>${formatter.number(row.pe_ratio, 1)}</td>
+              <td>${formatter.number(row.pb_ratio, 2)}</td>
+              <td class="${classifyPercent(row.dividend_yield)}">${formatter.percent(row.dividend_yield, 1)}</td>
+            </tr>
+          `)
+          .join("")}
+      </tbody>
+    `;
+  }
+
+  function buildRiskTable(container, companies) {
+    const sorted = [...companies].sort((a, b) => (b.volatility || 0) - (a.volatility || 0));
+    container.innerHTML = `
+      <thead>
+        <tr>
+          <th>Ticker</th>
+          <th>Beta</th>
+          <th>Volatility</th>
+          <th>Max drawdown</th>
+          <th>52w % to high</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sorted
+          .map((row) => `
+            <tr>
+              <td><strong>${row.ticker}</strong></td>
+              <td>${formatter.number(row.beta, 2)}</td>
+              <td>${formatter.percent(row.volatility, 1)}</td>
+              <td class="${classifyPercent(row.max_drawdown)}">${formatter.percent(row.max_drawdown, 1)}</td>
+              <td class="${classifyPercent(row.year_high_pct)}">${formatter.percent(row.year_high_pct, 1)}</td>
+            </tr>
+          `)
+          .join("")}
+      </tbody>
+    `;
+  }
+
+  function populateSelectors(selectEl, companies, defaultTicker) {
+    selectEl.innerHTML = companies
+      .map((row) => `<option value="${row.ticker}">${row.ticker} · ${row.name}</option>`)
+      .join("");
+    if (defaultTicker) {
+      selectEl.value = defaultTicker;
+    }
+  }
+
+  function buildChart(prices, ticker, benchmark, horizonKey) {
+    const targetSeries = prices[ticker] || [];
+    const benchmarkSeries = prices[benchmark] || [];
+    const lookback = horizonLookback[horizonKey] || horizonLookback["12m"];
+
+    const trim = (series) => series.slice(-lookback);
+    const normalize = (series) => {
+      if (!series.length) return [];
+      const base = series[0].adj_close;
+      return series.map((point) => ({
+        x: point.date,
+        y: (point.adj_close / base) * 100,
+      }));
+    };
+
+    const focusSeries = normalize(trim(targetSeries));
+    const benchSeries = normalize(trim(benchmarkSeries));
+
+    const data = [
+      {
+        type: "scatter",
+        mode: "lines",
+        name: ticker,
+        line: { color: "#38bdf8", width: 3 },
+        hovertemplate: `<b>${ticker}</b><br>%{x}<br>%{y:.2f}`,
+        x: focusSeries.map((point) => point.x),
+        y: focusSeries.map((point) => point.y),
+      },
+      {
+        type: "scatter",
+        mode: "lines",
+        name: benchmark,
+        line: { color: "#818cf8", width: 2, dash: "dot" },
+        hovertemplate: `<b>${benchmark}</b><br>%{x}<br>%{y:.2f}`,
+        x: benchSeries.map((point) => point.x),
+        y: benchSeries.map((point) => point.y),
+      },
+    ];
+
+    const layout = {
+      margin: { l: 50, r: 30, t: 10, b: 40 },
+      paper_bgcolor: "rgba(0,0,0,0)",
+      plot_bgcolor: "rgba(0,0,0,0)",
+      font: { color: "#e2e8f0" },
+      legend: { orientation: "h", y: -0.2, x: 0 },
+      yaxis: {
+        title: "Indexed price",
+        gridcolor: "rgba(148, 163, 184, 0.2)",
+      },
+      xaxis: {
+        gridcolor: "rgba(148, 163, 184, 0.1)",
+      },
+    };
+
+    Plotly.react("pcd-price-chart", data, layout, { responsive: true, displaylogo: false });
+  }
+
+  async function initDashboard() {
+    try {
+      const [metricsRes, pricesRes] = await Promise.all([
+        fetch("metrics.json"),
+        fetch("prices.json"),
+      ]);
+
+      if (!metricsRes.ok || !pricesRes.ok) {
+        throw new Error("Failed to load data. Ensure metrics.json and prices.json are present.");
+      }
+
+      const metrics = await metricsRes.json();
+      const prices = await pricesRes.json();
+
+      if (
+        !metrics ||
+        typeof metrics !== "object" ||
+        !metrics.generated_at ||
+        !Array.isArray(metrics.companies)
+      ) {
+        throw new Error("Metrics payload is missing required fields.");
+      }
+
+      if (!prices || typeof prices !== "object") {
+        throw new Error("Price history payload is missing.");
+      }
+
+      const companies = metrics.companies;
+
+      const refreshChip = document.getElementById("pcd-refresh-chip");
+      refreshChip.textContent = `Refreshed ${new Date(metrics.generated_at).toLocaleString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })} UTC`;
+
+      const aggregates = computeAggregateMetrics(companies);
+
+      document.getElementById(
+        "pcd-summary"
+      ).textContent = `Universe coverage: ${aggregates.coverage} names across ${formatter.currencyCompact(
+        aggregates.totalMarketCap
+      )} in float.`;
+
+      buildMetricCards(document.getElementById("pcd-metric-grid"), companies, aggregates, metrics.last_trade_date);
+      buildMovers(document.getElementById("pcd-movers"), companies);
+      buildReturnTable(document.getElementById("pcd-return-table"), companies);
+      buildMarketTable(document.getElementById("pcd-market-table"), companies);
+      buildValuationTable(document.getElementById("pcd-valuation-table"), companies);
+      buildRiskTable(document.getElementById("pcd-risk-table"), companies);
+
+      const tickerSelect = document.getElementById("pcd-ticker-select");
+      const benchmarkSelect = document.getElementById("pcd-benchmark-select");
+
+      populateSelectors(tickerSelect, companies, companies[0]?.ticker);
+      populateSelectors(benchmarkSelect, companies, "BRK-B");
+
+      const returnSelect = document.getElementById("pcd-return-select");
+
+      const redraw = () => {
+        const ticker = tickerSelect.value;
+        const benchmark = benchmarkSelect.value === ticker ? "BRK-B" : benchmarkSelect.value;
+        const horizon = returnSelect.value;
+        document.getElementById(
+          "pcd-chart-title"
+        ).textContent = `${ticker} vs ${benchmark} | ${returnSelect.options[returnSelect.selectedIndex].text}`;
+        buildChart(prices, ticker, benchmark, horizon);
+      };
+
+      tickerSelect.addEventListener("change", redraw);
+      benchmarkSelect.addEventListener("change", redraw);
+      returnSelect.addEventListener("change", redraw);
+
+      redraw();
+    } catch (error) {
+      console.error(error);
+      const dashboard = document.getElementById("pcd-dashboard");
+      dashboard.innerHTML = `<p style="color: #f87171;">${error.message}</p>`;
+    }
+  }
+
+  initDashboard();
+</script>
