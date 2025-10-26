@@ -1,0 +1,7 @@
+---
+title: "Property & Casualty Market Monitor"
+description: "Performance, valuation, and risk dashboard for U.S.-listed P&C (re)insurers"
+page-layout: full
+---
+
+{{< include app.html >}}
