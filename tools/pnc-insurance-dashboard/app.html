@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>US P&C (Re)Insurance Market Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/v/bs5/dt-2.1.8/datatables.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.5.0/build/global/luxon.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/v/bs5/dt-2.1.8/datatables.min.js"></script>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f7fb;
+        --panel: #ffffff;
+        --border: #e4e8f1;
+        --primary: #0a2342;
+        --accent: #2f80ed;
+        --text-muted: #5a6577;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        margin: 0;
+        background: var(--bg);
+        color: var(--primary);
+        line-height: 1.5;
+      }
+
+      header {
+        padding: 3rem 5vw 1.5rem 5vw;
+        background: linear-gradient(135deg, rgba(10, 35, 66, 0.92), rgba(47, 128, 237, 0.9)), url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80') center/cover;
+        color: white;
+      }
+
+      header h1 {
+        font-size: clamp(2.2rem, 4vw, 3rem);
+        margin: 0 0 0.5rem 0;
+      }
+
+      header p {
+        max-width: 720px;
+        font-size: 1.05rem;
+        color: rgba(255, 255, 255, 0.85);
+        margin: 0;
+      }
+
+      main {
+        padding: 2.5rem 5vw 4rem 5vw;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      .meta-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem 2rem;
+        align-items: center;
+        margin-bottom: 2rem;
+        color: var(--text-muted);
+        font-size: 0.95rem;
+      }
+
+      .card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+      }
+
+      .metric-card {
+        background: var(--panel);
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        padding: 1.6rem;
+        box-shadow: 0 12px 30px -20px rgba(10, 35, 66, 0.45);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 18px 36px -16px rgba(10, 35, 66, 0.55);
+      }
+
+      .metric-label {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.6rem;
+      }
+
+      .metric-value {
+        font-size: 1.9rem;
+        font-weight: 600;
+      }
+
+      .metric-delta {
+        font-size: 0.85rem;
+        margin-top: 0.4rem;
+        color: var(--text-muted);
+      }
+
+      section {
+        margin-bottom: 3rem;
+      }
+
+      section h2 {
+        font-size: 1.7rem;
+        margin: 0 0 1.2rem 0;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 1.5rem;
+        box-shadow: 0 24px 40px -32px rgba(10, 35, 66, 0.5);
+      }
+
+      .flex {
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+      }
+
+      .flex > * {
+        flex: 1 1 320px;
+      }
+
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.4rem;
+      }
+
+      select {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        font-size: 1rem;
+        font-family: inherit;
+        background: #fefefe;
+      }
+
+      #price-chart {
+        width: 100%;
+        min-height: 420px;
+      }
+
+      .chart-meta {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-top: 1.2rem;
+      }
+
+      .chart-meta .stat {
+        background: rgba(47, 128, 237, 0.08);
+        border-radius: 12px;
+        padding: 0.9rem 1.1rem;
+        border: 1px solid rgba(47, 128, 237, 0.2);
+      }
+
+      .chart-meta .stat span {
+        display: block;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+      }
+
+      .chart-meta .stat strong {
+        font-size: 1.15rem;
+        font-weight: 600;
+      }
+
+      table.dataTable {
+        width: 100% !important;
+      }
+
+      table.dataTable thead th {
+        background: #f1f4fb;
+        border-bottom: none;
+        font-weight: 600;
+        color: var(--text-muted);
+      }
+
+      table.dataTable tbody tr:nth-child(even) {
+        background: rgba(10, 35, 66, 0.015);
+      }
+
+      .legend {
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+      }
+
+      .return-bar {
+        height: 14px;
+        border-radius: 999px;
+        display: inline-block;
+        min-width: 60px;
+      }
+
+      .scatter-container {
+        min-height: 420px;
+      }
+
+      .footer-note {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-top: 1rem;
+      }
+
+      @media (max-width: 768px) {
+        header {
+          padding: 2.5rem 6vw 1.5rem 6vw;
+        }
+
+        main {
+          padding: 2rem 6vw 3rem 6vw;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>US Property &amp; Casualty (Re)Insurance Observatory</h1>
+      <p>
+        Daily updated market intelligence across leading US-listed property &amp; casualty and reinsurance carriers.
+        Explore two years of price action, return regimes across key horizons, and capital structure context in a single analytical cockpit.
+      </p>
+    </header>
+    <main>
+      <div class="meta-bar">
+        <div>Dataset refreshed: <strong id="as-of">—</strong></div>
+        <div>Total constituents: <strong id="constituents">—</strong></div>
+      </div>
+
+      <div class="card-grid" id="headline-cards"></div>
+
+      <section>
+        <div class="panel">
+          <div class="flex" style="align-items: flex-end;">
+            <div>
+              <label for="ticker-select">Focus Company</label>
+              <select id="ticker-select"></select>
+            </div>
+            <div>
+              <label for="metric-select">Return Horizon</label>
+              <select id="metric-select">
+                <option value="1D">1 day</option>
+                <option value="1W">1 week</option>
+                <option value="1M">1 month</option>
+                <option value="3M">3 month</option>
+                <option value="6M">6 month</option>
+                <option value="YTD">Year-to-date</option>
+                <option value="12M">12 month</option>
+              </select>
+            </div>
+          </div>
+          <div id="price-chart"></div>
+          <div class="chart-meta" id="chart-meta"></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Valuation &amp; Return Matrix</h2>
+        <div class="panel">
+          <table id="summary-table" class="display" style="width: 100%">
+            <thead>
+              <tr>
+                <th>Ticker</th>
+                <th>Company</th>
+                <th>Market Cap</th>
+                <th>Price</th>
+                <th>1D</th>
+                <th>1W</th>
+                <th>1M</th>
+                <th>3M</th>
+                <th>6M</th>
+                <th>YTD</th>
+                <th>12M</th>
+                <th>P/E</th>
+                <th>P/B</th>
+                <th>Dividend Yield</th>
+                <th>Beta</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <p class="footer-note">
+            Returns are total return approximations based on adjusted close. Market capitalization sourced from Yahoo Finance and expressed in USD.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h2>Market Structure Diagnostics</h2>
+        <div class="panel flex">
+          <div id="scatter" class="scatter-container"></div>
+          <div>
+            <h3 style="margin-top: 0;">Top &amp; Bottom Performers</h3>
+            <div id="leaderboard"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const fmtCurrency = (value) => {
+        if (value === null || value === undefined) return '—';
+        if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
+        if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+        if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
+        return `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+      };
+
+      const fmtNumber = (value, digits = 2) => {
+        if (value === null || value === undefined) return '—';
+        return value.toLocaleString(undefined, {
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits,
+        });
+      };
+
+      const fmtPercent = (value, digits = 2) => {
+        if (value === null || value === undefined) return '—';
+        return `${(value * 100).toFixed(digits)}%`;
+      };
+
+      const buildHeadlineCards = (companies) => {
+        const totalMktCap = companies
+          .map((c) => c.marketCap || 0)
+          .reduce((acc, cur) => acc + cur, 0);
+        const best12M = [...companies]
+          .filter((c) => c.returns['12M'] !== null)
+          .sort((a, b) => b.returns['12M'] - a.returns['12M'])[0];
+        const worst12M = [...companies]
+          .filter((c) => c.returns['12M'] !== null)
+          .sort((a, b) => a.returns['12M'] - b.returns['12M'])[0];
+
+        const templates = [
+          {
+            label: 'Sector Equity Capitalisation',
+            value: fmtCurrency(totalMktCap),
+            delta: `Across ${companies.length} publicly listed carriers`,
+          },
+          {
+            label: 'Median Dividend Yield',
+            value: fmtPercent(
+              (function () {
+                const yields = companies
+                  .map((c) => c.dividendYield)
+                  .filter((v) => v !== null && v !== undefined)
+                  .sort((a, b) => a - b);
+                if (!yields.length) return null;
+                const mid = Math.floor(yields.length / 2);
+                if (yields.length % 2) return yields[mid];
+                return (yields[mid - 1] + yields[mid]) / 2;
+              })()
+            ),
+            delta: 'Trailing twelve months',
+          },
+          {
+            label: 'Capital Efficiency (median P/B)',
+            value: fmtNumber(
+              (function () {
+                const pbs = companies
+                  .map((c) => c.pb)
+                  .filter((v) => v !== null && v !== undefined)
+                  .sort((a, b) => a - b);
+                if (!pbs.length) return null;
+                const mid = Math.floor(pbs.length / 2);
+                if (pbs.length % 2) return pbs[mid];
+                return (pbs[mid - 1] + pbs[mid]) / 2;
+              })(),
+              2
+            ),
+            delta: 'Book value multiple snapshot',
+          },
+          {
+            label: 'Momentum Leaders',
+            value: best12M
+              ? `${best12M.ticker} ${fmtPercent(best12M.returns['12M'])}`
+              : '—',
+            delta: worst12M
+              ? `Laggard: ${worst12M.ticker} ${fmtPercent(worst12M.returns['12M'])}`
+              : '—',
+          },
+        ];
+
+        const container = document.getElementById('headline-cards');
+        container.innerHTML = templates
+          .map(
+            (card) => `
+              <div class="metric-card">
+                <div class="metric-label">${card.label}</div>
+                <div class="metric-value">${card.value}</div>
+                <div class="metric-delta">${card.delta || ''}</div>
+              </div>
+            `
+          )
+          .join('');
+      };
+
+      const renderTable = (companies) => {
+        const tbody = document.querySelector('#summary-table tbody');
+        tbody.innerHTML = companies
+          .map((company) => {
+            const cells = [
+              company.ticker,
+              company.name,
+              fmtCurrency(company.marketCap),
+              `$${fmtNumber(company.price, 2)}`,
+              fmtPercent(company.returns['1D']),
+              fmtPercent(company.returns['1W']),
+              fmtPercent(company.returns['1M']),
+              fmtPercent(company.returns['3M']),
+              fmtPercent(company.returns['6M']),
+              fmtPercent(company.returns['YTD']),
+              fmtPercent(company.returns['12M']),
+              fmtNumber(company.pe ?? null, 1),
+              fmtNumber(company.pb ?? null, 2),
+              company.dividendYield !== null && company.dividendYield !== undefined
+                ? fmtPercent(company.dividendYield, 2)
+                : '—',
+              fmtNumber(company.beta ?? null, 2),
+            ];
+            return `<tr>${cells.map((c) => `<td>${c}</td>`).join('')}</tr>`;
+          })
+          .join('');
+
+        if ($.fn.DataTable.isDataTable('#summary-table')) {
+          $('#summary-table').DataTable().destroy();
+        }
+
+        $('#summary-table').DataTable({
+          paging: false,
+          info: false,
+          searching: true,
+          order: [[2, 'desc']],
+          columnDefs: [
+            { targets: [4, 5, 6, 7, 8, 9, 10, 13], className: 'dt-center' },
+          ],
+          language: {
+            search: '',
+            searchPlaceholder: 'Search companies…',
+          },
+        });
+      };
+
+      const renderPriceChart = (company) => {
+        const dates = company.timeSeries.map((d) => d[0]);
+        const prices = company.timeSeries.map((d) => d[1]);
+
+        const trace = {
+          x: dates,
+          y: prices,
+          type: 'scatter',
+          mode: 'lines',
+          fill: 'tozeroy',
+          fillcolor: 'rgba(47, 128, 237, 0.18)',
+          line: { color: 'rgba(47, 128, 237, 1)', width: 3 },
+          hovertemplate: '%{x}<br>$%{y:.2f}<extra></extra>',
+        };
+
+        const layout = {
+          margin: { l: 60, r: 20, t: 20, b: 40 },
+          yaxis: {
+            title: 'Adj Close (USD)',
+            gridcolor: 'rgba(10, 35, 66, 0.08)',
+            zeroline: false,
+          },
+          xaxis: {
+            gridcolor: 'rgba(10, 35, 66, 0.08)',
+            tickformat: '%b %Y',
+          },
+          hovermode: 'x unified',
+          paper_bgcolor: 'rgba(0,0,0,0)',
+          plot_bgcolor: 'rgba(0,0,0,0)',
+        };
+
+        Plotly.newPlot('price-chart', [trace], layout, { displayModeBar: false, responsive: true });
+
+        const latest = company.timeSeries[company.timeSeries.length - 1];
+        const yearAgo = company.timeSeries[Math.max(company.timeSeries.length - 252, 0)];
+
+        document.getElementById('chart-meta').innerHTML = `
+          <div class="stat">
+            <span>Latest Close</span>
+            <strong>$${fmtNumber(company.price, 2)}</strong>
+          </div>
+          <div class="stat">
+            <span>52-Week Range</span>
+            <strong>$${fmtNumber(company.fiftyTwoWeekLow, 2)} – $${fmtNumber(company.fiftyTwoWeekHigh, 2)}</strong>
+          </div>
+          <div class="stat">
+            <span>12M Momentum</span>
+            <strong>${fmtPercent(company.returns['12M'])}</strong>
+          </div>
+          <div class="stat">
+            <span>Volume vs Avg</span>
+            <strong>${fmtNumber(company.volume / (company.avgVolume || company.volume), 2)}×</strong>
+          </div>
+        `;
+      };
+
+      const renderScatter = (companies) => {
+        const filtered = companies.filter(
+          (c) => c.marketCap && c.returns['12M'] !== null
+        );
+        const trace = {
+          x: filtered.map((c) => c.marketCap / 1e9),
+          y: filtered.map((c) => c.returns['12M'] * 100),
+          mode: 'markers+text',
+          type: 'scatter',
+          text: filtered.map((c) => c.ticker),
+          textposition: 'top center',
+          marker: {
+            size: filtered.map((c) => Math.max(12, Math.sqrt(c.marketCap) / 1200)),
+            color: filtered.map((c) => (c.returns['12M'] >= 0 ? '#2f80ed' : '#eb5757')),
+            opacity: 0.85,
+            line: { width: 1, color: '#0a2342' },
+          },
+          hovertemplate:
+            '%{text}<br>Market Cap: $%{x:.1f}B<br>12M Return: %{y:.1f}%<extra></extra>',
+        };
+
+        const layout = {
+          margin: { l: 70, r: 20, t: 10, b: 60 },
+          xaxis: {
+            title: 'Market Capitalisation (USD billions)',
+            gridcolor: 'rgba(10, 35, 66, 0.08)',
+          },
+          yaxis: {
+            title: '12M Total Return (%)',
+            gridcolor: 'rgba(10, 35, 66, 0.08)',
+            zeroline: true,
+            zerolinecolor: 'rgba(10, 35, 66, 0.2)',
+          },
+          paper_bgcolor: 'rgba(0,0,0,0)',
+          plot_bgcolor: 'rgba(0,0,0,0)',
+        };
+
+        Plotly.newPlot('scatter', [trace], layout, { displayModeBar: false, responsive: true });
+      };
+
+      const renderLeaderboard = (companies) => {
+        const metric = document.getElementById('metric-select').value;
+        const available = companies.filter((c) => c.returns[metric] !== null);
+        const top = [...available].sort((a, b) => b.returns[metric] - a.returns[metric]).slice(0, 5);
+        const bottom = [...available].sort((a, b) => a.returns[metric] - b.returns[metric]).slice(0, 5);
+
+        const renderList = (items) => `
+          <ul style="list-style: none; padding: 0; margin: 0;">
+            ${items
+              .map(
+                (item) => `
+                  <li style="display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid rgba(10,35,66,0.08);">
+                    <span style="font-weight: 600;">${item.ticker}</span>
+                    <span>${fmtPercent(item.returns[metric])}</span>
+                  </li>
+                `
+              )
+              .join('')}
+          </ul>`;
+
+        document.getElementById('leaderboard').innerHTML = `
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+            <div>
+              <h4 style="margin: 0 0 0.5rem 0; color: #219653;">Top ${metric} movers</h4>
+              ${renderList(top)}
+            </div>
+            <div>
+              <h4 style="margin: 0 0 0.5rem 0; color: #eb5757;">Bottom ${metric} movers</h4>
+              ${renderList(bottom)}
+            </div>
+          </div>
+        `;
+      };
+
+      const initialiseSelects = (companies) => {
+        const select = document.getElementById('ticker-select');
+        select.innerHTML = companies
+          .map((c) => `<option value="${c.ticker}">${c.ticker} — ${c.name}</option>`)
+          .join('');
+      };
+
+      let state = { companies: [], selected: null };
+
+      const onSelectionChange = () => {
+        const ticker = document.getElementById('ticker-select').value;
+        const metric = document.getElementById('metric-select').value;
+        const company = state.companies.find((c) => c.ticker === ticker) || state.companies[0];
+        if (!company) return;
+        state.selected = company;
+        renderPriceChart(company);
+        renderLeaderboard(state.companies);
+      };
+
+      document.getElementById('ticker-select').addEventListener('change', onSelectionChange);
+      document.getElementById('metric-select').addEventListener('change', () => {
+        renderLeaderboard(state.companies);
+      });
+
+      fetch('data.json')
+        .then((response) => response.json())
+        .then((data) => {
+          document.getElementById('as-of').textContent = data.generated;
+          document.getElementById('constituents').textContent = data.companies.length;
+          const companies = data.companies.sort((a, b) => (b.marketCap || 0) - (a.marketCap || 0));
+          state.companies = companies;
+          initialiseSelects(companies);
+          buildHeadlineCards(companies);
+          renderTable(companies);
+          renderScatter(companies);
+          renderLeaderboard(companies);
+          state.selected = companies[0];
+          renderPriceChart(companies[0]);
+        })
+        .catch((error) => {
+          console.error('Failed to load data', error);
+          document.querySelector('main').innerHTML = '<p>Unable to load market data at this time.</p>';
+        });
+    </script>
+  </body>
+</html>

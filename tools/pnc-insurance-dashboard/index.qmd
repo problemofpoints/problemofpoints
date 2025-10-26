@@ -1,0 +1,7 @@
+---
+title: "US P&C (Re)Insurance Observatory"
+description: "Two-year equity performance, valuation, and flow of funds intelligence across US-listed property and casualty carriers."
+page-layout: full
+---
+
+{{< include app.html >}}
