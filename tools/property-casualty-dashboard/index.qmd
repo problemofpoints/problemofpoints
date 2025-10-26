@@ -4,4 +4,4 @@ description: "Performance, valuation, and risk dashboard for U.S.-listed P&C (re
 page-layout: full
 ---
 
-{{</* include app.html */>}}
+{{< include app.html >}}
