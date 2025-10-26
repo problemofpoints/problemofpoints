@@ -23,6 +23,7 @@ format:
   html:
     theme: litera
     css: styles.css
+    sourcemap: false
 
 editor: source
 

@@ -8,6 +8,7 @@
 .venv/
 .venv_py39/
 .env
+node_modules/
 
 # Local Netlify folder
 .netlify

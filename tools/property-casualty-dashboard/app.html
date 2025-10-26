@@ -1,3 +1,4 @@
+<!--html_preserve-->
 <link
   rel="stylesheet"
   href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
@@ -55,6 +56,12 @@
     gap: 1rem;
     color: var(--pcd-muted);
     font-size: 0.95rem;
+  }
+
+  .pcd-meta p,
+  .pcd-control p {
+    margin: 0;
+    display: contents;
   }
 
   .pcd-chip {
@@ -180,28 +187,39 @@
     font-size: 1.25rem;
   }
 
-  table {
+  .pcd-table-card table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.92rem;
+    background: rgba(11, 17, 32, 0.96) !important;
+    color: var(--pcd-text) !important;
   }
 
-  th,
-  td {
+  .pcd-table-card th,
+  .pcd-table-card td {
     text-align: left;
     padding: 0.55rem 0.45rem;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    background: transparent !important;
   }
 
-  th {
-    color: rgba(226, 232, 240, 0.8);
+  .pcd-table-card th {
+    color: rgba(226, 232, 240, 0.88) !important;
     font-weight: 600;
     text-transform: uppercase;
     font-size: 0.75rem;
     letter-spacing: 0.08em;
   }
 
-  tbody tr:last-child td {
+  .pcd-table-card tbody tr:nth-child(even) {
+    background: rgba(30, 41, 59, 0.6) !important;
+  }
+
+  .pcd-table-card tbody tr:hover {
+    background: rgba(56, 189, 248, 0.12) !important;
+  }
+
+  .pcd-table-card tbody tr:last-child td {
     border-bottom: none;
   }
 
@@ -248,86 +266,92 @@
   }
 </style>
 
-<div class="pcd-dashboard" id="pcd-dashboard">
-  <header class="pcd-header">
-    <h1 class="pcd-title">Property &amp; Casualty (Re)Insurance Market Monitor</h1>
-    <p class="pcd-subtitle">
+<div class="pcd-dashboard" id="pcd-dashboard" markdown="0">
+<header class="pcd-header">
+<h1 class="pcd-title">Property &amp; Casualty (Re)Insurance Market Monitor</h1>
+<p class="pcd-subtitle">
       Intraday snapshot of U.S.-listed property &amp; casualty carriers and reinsurers. Track market breadth,
       performance momentum, valuation trends, and risk metrics across a curated universe of listed writers.
-    </p>
-    <div class="pcd-meta">
-      <span class="pcd-chip" id="pcd-refresh-chip">Loading...</span>
-      <span id="pcd-summary"></span>
-    </div>
-  </header>
+</p>
+<div class="pcd-meta">
+<span class="pcd-chip" id="pcd-refresh-chip">Loading...</span>
+<span id="pcd-summary"></span>
+</div>
+</header>
 
-  <section class="pcd-metric-grid" id="pcd-metric-grid"></section>
+<section class="pcd-metric-grid" id="pcd-metric-grid"></section>
 
-  <section class="pcd-control-bar">
-    <div class="pcd-control">
-      <label for="pcd-ticker-select">Focus company</label>
-      <select class="pcd-select" id="pcd-ticker-select"></select>
-    </div>
-    <div class="pcd-control">
-      <label for="pcd-benchmark-select">Relative benchmark</label>
-      <select class="pcd-select" id="pcd-benchmark-select"></select>
-    </div>
-    <div class="pcd-control">
-      <label for="pcd-return-select">Return horizon</label>
-      <select class="pcd-select" id="pcd-return-select">
-        <option value="1d">1 day</option>
-        <option value="1w">1 week</option>
-        <option value="1m">1 month</option>
-        <option value="3m">3 months</option>
-        <option value="6m">6 months</option>
-        <option value="ytd">YTD</option>
-        <option value="12m">12 months</option>
-        <option value="24m">24 months</option>
-      </select>
-    </div>
-  </section>
+<section class="pcd-control-bar">
+<div class="pcd-control">
+<label for="pcd-ticker-select">Focus company</label>
+<select class="pcd-select" id="pcd-ticker-select"></select>
+</div>
+<div class="pcd-control">
+<label for="pcd-benchmark-select">Relative benchmark</label>
+<select class="pcd-select" id="pcd-benchmark-select"></select>
+</div>
+<div class="pcd-control">
+<label for="pcd-return-select">Return horizon</label>
+<select class="pcd-select" id="pcd-return-select">
+<option value="1m">1 month</option>
+<option value="3m">3 months</option>
+<option value="6m">6 months</option>
+<option value="ytd" selected>YTD</option>
+<option value="12m">12 months</option>
+<option value="24m">24 months</option>
+</select>
+</div>
+</section>
 
-  <section class="pcd-chart-card">
-    <div class="pcd-chart-header">
-      <h2 id="pcd-chart-title">Relative price performance</h2>
-      <p id="pcd-chart-context">Indexed to 100 over the selected horizon.</p>
-    </div>
-    <div id="pcd-price-chart"></div>
-  </section>
+<section class="pcd-chart-card">
+<div class="pcd-chart-header">
+<h2 id="pcd-chart-title">Relative price performance</h2>
+<p id="pcd-chart-context">Indexed to 100 over the selected horizon.</p>
+</div>
+<div id="pcd-price-chart"></div>
+</section>
 
-  <section class="pcd-grid-2">
-    <div class="pcd-table-card">
-      <h2>Return matrix</h2>
-      <div class="pcd-badges" id="pcd-movers"></div>
-      <table id="pcd-return-table"></table>
-    </div>
-    <div class="pcd-table-card">
-      <h2>Market structure</h2>
-      <table id="pcd-market-table"></table>
-    </div>
-  </section>
+<section class="pcd-grid-2">
+<div class="pcd-table-card">
+<h2>Return matrix</h2>
+<div class="pcd-badges" id="pcd-movers"></div>
+<table id="pcd-return-table"></table>
+</div>
+<div class="pcd-table-card">
+<h2>Market structure</h2>
+<table id="pcd-market-table"></table>
+</div>
+</section>
 
-  <section class="pcd-grid-2">
-    <div class="pcd-table-card">
-      <h2>Valuation &amp; yield</h2>
-      <table id="pcd-valuation-table"></table>
-    </div>
-    <div class="pcd-table-card">
-      <h2>Risk diagnostics</h2>
-      <table id="pcd-risk-table"></table>
-    </div>
-  </section>
+<section class="pcd-grid-2">
+<div class="pcd-table-card">
+<h2>Valuation &amp; yield</h2>
+<table id="pcd-valuation-table"></table>
+</div>
+<div class="pcd-table-card">
+<h2>Risk diagnostics</h2>
+<table id="pcd-risk-table"></table>
+</div>
+</section>
 
-  <footer class="pcd-footnotes">
-    Data sourced from Yahoo Finance via yfinance. Prices reflect adjusted closes. Returns are total return proxies calculated from
-    adjusted pricing. Figures refresh when the underlying JSON is regenerated.
-  </footer>
+<footer class="pcd-footnotes">
+    Data sourced from Yahoo Finance via a Netlify serverless function. Prices reflect adjusted closes. Returns are total return proxies
+    calculated from adjusted pricing. Figures refresh on demand when the endpoint is invoked.
+</footer>
 </div>
 
 <script>
+  function resolveDashboardEndpoints() {
+    const endpoints = [];
+    if (typeof window !== "undefined" && window.location && window.location.port === "8888") {
+      endpoints.push("http://localhost:8889/.netlify/functions/pcd-dashboard");
+    }
+    endpoints.push("/.netlify/functions/pcd-dashboard");
+    endpoints.push("https://www.problemofpoints.com/.netlify/functions/pcd-dashboard");
+    return [...new Set(endpoints)];
+  }
+
   const metricOrder = [
-    { key: "1d", label: "1d" },
-    { key: "1w", label: "1w" },
     { key: "1m", label: "1m" },
     { key: "3m", label: "3m" },
     { key: "6m", label: "6m" },
@@ -337,8 +361,6 @@
   ];
 
   const horizonLookback = {
-    "1d": 3,
-    "1w": 8,
     "1m": 35,
     "3m": 95,
     "6m": 190,
@@ -400,6 +422,10 @@
   }
 
   function buildMetricCards(container, companies, aggregates, lastTradeDate) {
+    const lastCloseLabel = lastTradeDate
+      ? new Date(lastTradeDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      : "—";
+
     const cards = [
       {
         title: "Aggregate market cap",
@@ -418,11 +444,7 @@
       },
       {
         title: "Latest close",
-        value: new Date(lastTradeDate).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
+        value: lastCloseLabel,
         context: "Data aggregated post-settlement",
       },
     ];
@@ -430,11 +452,11 @@
     container.innerHTML = cards
       .map(
         (card) => `
-          <div class="pcd-card">
-            <span class="pcd-card-title">${card.title}</span>
-            <span class="pcd-card-value">${card.value}</span>
-            <span class="pcd-card-context">${card.context}</span>
-          </div>
+<div class="pcd-card">
+<span class="pcd-card-title">${card.title}</span>
+<span class="pcd-card-value">${card.value}</span>
+<span class="pcd-card-context">${card.context}</span>
+</div>
         `
       )
       .join("");
@@ -454,8 +476,8 @@
     const worst = sorted.slice(-Math.min(3, sorted.length)).reverse();
 
     const renderBadge = (label, rows) => `
-      <span class="pcd-tag">
-        <strong>${label}</strong>
+<span class="pcd-tag">
+<strong>${label}</strong>
         ${rows
           .map(
             (row) =>
@@ -465,12 +487,12 @@
               )}</span>`
           )
           .join(" · ")}
-      </span>
+</span>
     `;
 
     const renderLagging = (label, rows) => `
-      <span class="pcd-tag">
-        <strong>${label}</strong>
+<span class="pcd-tag">
+<strong>${label}</strong>
         ${rows
           .map(
             (row) =>
@@ -480,7 +502,7 @@
               )}</span>`
           )
           .join(" · ")}
-      </span>
+</span>
     `;
 
     badgeContainer.innerHTML = `${renderBadge("Top 1d", best)}${renderLagging("Lagging 1d", worst)}`;
@@ -488,16 +510,16 @@
 
   function buildReturnTable(container, companies) {
     const header = `
-      <thead>
-        <tr>
-          <th>Ticker</th>
+<thead>
+<tr>
+<th>Ticker</th>
           ${metricOrder.map((m) => `<th>${m.label}</th>`).join("")}
-        </tr>
-      </thead>
+</tr>
+</thead>
     `;
 
     const body = `
-      <tbody>
+<tbody>
         ${companies
           .map((row) => {
             const cells = metricOrder
@@ -510,7 +532,7 @@
             return `<tr><td><strong>${row.ticker}</strong></td>${cells}</tr>`;
           })
           .join("")}
-      </tbody>
+</tbody>
     `;
 
     container.innerHTML = header + body;
@@ -519,97 +541,105 @@
   function buildMarketTable(container, companies) {
     const sorted = [...companies].sort((a, b) => (b.market_cap || 0) - (a.market_cap || 0));
     container.innerHTML = `
-      <thead>
-        <tr>
-          <th>Company</th>
-          <th>Market cap</th>
-          <th>1d</th>
-          <th>YTD</th>
-        </tr>
-      </thead>
-      <tbody>
+<thead>
+<tr>
+<th>Company</th>
+<th>Market cap</th>
+<th>1d</th>
+<th>YTD</th>
+</tr>
+</thead>
+<tbody>
         ${sorted
           .map((row) => {
             const oneDay = row.returns?.["1d"];
             const ytd = row.returns?.ytd;
             return `
-              <tr>
-                <td><strong>${row.ticker}</strong> · ${row.name}</td>
-                <td>${formatter.currencyCompact(row.market_cap)}</td>
-                <td class="${classifyPercent(oneDay)}">${formatter.percent(oneDay, 2)}</td>
-                <td class="${classifyPercent(ytd)}">${formatter.percent(ytd, 1)}</td>
-              </tr>
+<tr>
+<td><strong>${row.ticker}</strong> · ${row.name}</td>
+<td>${formatter.currencyCompact(row.market_cap)}</td>
+<td class="${classifyPercent(oneDay)}">${formatter.percent(oneDay, 2)}</td>
+<td class="${classifyPercent(ytd)}">${formatter.percent(ytd, 1)}</td>
+</tr>
             `;
           })
           .join("")}
-      </tbody>
+</tbody>
     `;
   }
 
   function buildValuationTable(container, companies) {
     const sorted = [...companies].sort((a, b) => (a.pe_ratio || Infinity) - (b.pe_ratio || Infinity));
     container.innerHTML = `
-      <thead>
-        <tr>
-          <th>Ticker</th>
-          <th>P/E</th>
-          <th>P/B</th>
-          <th>Dividend</th>
-        </tr>
-      </thead>
-      <tbody>
+<thead>
+<tr>
+<th>Ticker</th>
+<th>P/E</th>
+<th>P/B</th>
+<th>Dividend</th>
+</tr>
+</thead>
+<tbody>
         ${sorted
           .map((row) => `
-            <tr>
-              <td><strong>${row.ticker}</strong></td>
-              <td>${formatter.number(row.pe_ratio, 1)}</td>
-              <td>${formatter.number(row.pb_ratio, 2)}</td>
-              <td class="${classifyPercent(row.dividend_yield)}">${formatter.percent(row.dividend_yield, 1)}</td>
-            </tr>
+<tr>
+<td><strong>${row.ticker}</strong></td>
+<td>${formatter.number(row.pe_ratio, 1)}</td>
+<td>${formatter.number(row.pb_ratio, 2)}</td>
+<td class="${classifyPercent(row.dividend_yield)}">${formatter.percent(row.dividend_yield, 1)}</td>
+</tr>
           `)
           .join("")}
-      </tbody>
+</tbody>
     `;
   }
 
   function buildRiskTable(container, companies) {
     const sorted = [...companies].sort((a, b) => (b.volatility || 0) - (a.volatility || 0));
     container.innerHTML = `
-      <thead>
-        <tr>
-          <th>Ticker</th>
-          <th>Beta</th>
-          <th>Volatility</th>
-          <th>Max drawdown</th>
-          <th>52w % to high</th>
-        </tr>
-      </thead>
-      <tbody>
+<thead>
+<tr>
+<th>Ticker</th>
+<th>Beta</th>
+<th>Volatility</th>
+<th>Max drawdown</th>
+<th>52w % to high</th>
+</tr>
+</thead>
+<tbody>
         ${sorted
           .map((row) => `
-            <tr>
-              <td><strong>${row.ticker}</strong></td>
-              <td>${formatter.number(row.beta, 2)}</td>
-              <td>${formatter.percent(row.volatility, 1)}</td>
-              <td class="${classifyPercent(row.max_drawdown)}">${formatter.percent(row.max_drawdown, 1)}</td>
-              <td class="${classifyPercent(row.year_high_pct)}">${formatter.percent(row.year_high_pct, 1)}</td>
-            </tr>
+<tr>
+<td><strong>${row.ticker}</strong></td>
+<td>${formatter.number(row.beta, 2)}</td>
+<td>${formatter.percent(row.volatility, 1)}</td>
+<td class="${classifyPercent(row.max_drawdown)}">${formatter.percent(row.max_drawdown, 1)}</td>
+<td class="${classifyPercent(row.year_high_pct)}">${formatter.percent(row.year_high_pct, 1)}</td>
+</tr>
           `)
           .join("")}
-      </tbody>
+</tbody>
     `;
   }
 
-  function populateSelectors(selectEl, companies, defaultTicker) {
-    selectEl.innerHTML = companies
-      .map((row) => `<option value="${row.ticker}">${row.ticker} · ${row.name}</option>`)
-      .join("");
-    if (defaultTicker) {
-      selectEl.value = defaultTicker;
+  function populateSelect(selectEl, options, defaultValue) {
+    if (!selectEl) return;
+    selectEl.innerHTML = options.map((option) => `<option value="${option.value}">${option.label}</option>`).join("");
+    if (defaultValue !== undefined && defaultValue !== null) {
+      selectEl.value = defaultValue;
     }
   }
 
   function buildChart(prices, ticker, benchmark, horizonKey) {
+    const chartContainer = document.getElementById("pcd-price-chart");
+    if (!chartContainer || !window.Plotly) {
+      if (chartContainer) {
+        chartContainer.innerHTML =
+          '<p style="color:#f87171;">Interactive chart unavailable (Plotly failed to load).</p>';
+      }
+      return;
+    }
+
     const targetSeries = prices[ticker] || [];
     const benchmarkSeries = prices[benchmark] || [];
     const lookback = horizonLookback[horizonKey] || horizonLookback["12m"];
@@ -627,26 +657,30 @@
     const focusSeries = normalize(trim(targetSeries));
     const benchSeries = normalize(trim(benchmarkSeries));
 
-    const data = [
-      {
-        type: "scatter",
-        mode: "lines",
-        name: ticker,
-        line: { color: "#38bdf8", width: 3 },
-        hovertemplate: `<b>${ticker}</b><br>%{x}<br>%{y:.2f}`,
-        x: focusSeries.map((point) => point.x),
-        y: focusSeries.map((point) => point.y),
-      },
-      {
-        type: "scatter",
-        mode: "lines",
-        name: benchmark,
-        line: { color: "#818cf8", width: 2, dash: "dot" },
-        hovertemplate: `<b>${benchmark}</b><br>%{x}<br>%{y:.2f}`,
-        x: benchSeries.map((point) => point.x),
-        y: benchSeries.map((point) => point.y),
-      },
-    ];
+    const focusTrace = {
+      type: "scatter",
+      mode: "lines",
+      name: ticker,
+      line: { color: "#38bdf8", width: 3 },
+      hovertemplate: `<b>${ticker}</b><br>%{x}<br>%{y:.2f}`,
+      x: focusSeries.map((point) => point.x),
+      y: focusSeries.map((point) => point.y),
+    };
+
+    const benchmarkTrace =
+      benchSeries.length > 0
+        ? {
+            type: "scatter",
+            mode: "lines",
+            name: benchmark,
+            line: { color: "#818cf8", width: 2, dash: "dot" },
+            hovertemplate: `<b>${benchmark}</b><br>%{x}<br>%{y:.2f}`,
+            x: benchSeries.map((point) => point.x),
+            y: benchSeries.map((point) => point.y),
+          }
+        : null;
+
+    const data = benchmarkTrace ? [focusTrace, benchmarkTrace] : [focusTrace];
 
     const layout = {
       margin: { l: 50, r: 30, t: 10, b: 40 },
@@ -657,97 +691,194 @@
       yaxis: {
         title: "Indexed price",
         gridcolor: "rgba(148, 163, 184, 0.2)",
+        tickformat: ".1f",
       },
       xaxis: {
         gridcolor: "rgba(148, 163, 184, 0.1)",
+        tickformat: "%b %Y",
       },
     };
 
-    Plotly.react("pcd-price-chart", data, layout, { responsive: true, displaylogo: false });
+    const config = { responsive: true, displaylogo: false };
+
+    Plotly.newPlot(chartContainer, data, layout, config);
   }
 
   async function initDashboard() {
     try {
-      const [metricsRes, pricesRes] = await Promise.all([
-        fetch("metrics.json"),
-        fetch("prices.json"),
-      ]);
+      let benchmarkOptions = [];
+      let payload = null;
+      let responseStatus = null;
+      let lastError = null;
 
-      if (!metricsRes.ok || !pricesRes.ok) {
-        throw new Error("Failed to load data. Ensure metrics.json and prices.json are present.");
+      for (const endpoint of resolveDashboardEndpoints()) {
+        try {
+          const response = await fetch(endpoint, { cache: "no-store" });
+          responseStatus = response.status;
+          if (!response.ok) {
+            throw new Error(`Status ${response.status}`);
+          }
+          payload = await response.json();
+          break;
+        } catch (err) {
+          lastError = err;
+        }
       }
 
-      const metrics = await metricsRes.json();
-      const prices = await pricesRes.json();
-
-      if (
-        !metrics ||
-        typeof metrics !== "object" ||
-        !metrics.generated_at ||
-        !Array.isArray(metrics.companies)
-      ) {
-        throw new Error("Metrics payload is missing required fields.");
+      if (!payload) {
+        throw new Error(
+          lastError?.message
+            ? `Failed to load dashboard data (${lastError.message})`
+            : `Failed to load dashboard data (status ${responseStatus ?? "unknown"})`
+        );
       }
 
-      if (!prices || typeof prices !== "object") {
-        throw new Error("Price history payload is missing.");
+      const {
+        companies: companyList,
+        prices,
+        generated_at: generatedAt,
+        last_trade_date: lastTradeDate,
+        benchmarks: benchmarkList = [],
+        aggregates: serverAggregates,
+        errors = [],
+      } = payload || {};
+
+      if (!Array.isArray(companyList) || !companyList.length || !prices || typeof prices !== "object") {
+        throw new Error("Dashboard payload is missing required fields.");
       }
 
-      const companies = metrics.companies;
+      if (Array.isArray(errors) && errors.length) {
+        console.warn("pcd-dashboard partial errors", errors);
+      }
+
+      const fallbackKey = companyList
+        .map((row) => row.ticker)
+        .find((ticker) => Array.isArray(prices[ticker]) && prices[ticker].length);
+      const fallbackSeries = fallbackKey ? prices[fallbackKey] : null;
+      const metrics = {
+        generated_at: generatedAt || new Date().toISOString(),
+        last_trade_date:
+          lastTradeDate ||
+          (fallbackSeries ? fallbackSeries[fallbackSeries.length - 1]?.date || null : null),
+        companies: companyList,
+      };
+
+      const aggregates =
+        serverAggregates && typeof serverAggregates === "object" && Object.keys(serverAggregates).length
+          ? serverAggregates
+          : computeAggregateMetrics(companyList);
 
       const refreshChip = document.getElementById("pcd-refresh-chip");
-      refreshChip.textContent = `Refreshed ${new Date(metrics.generated_at).toLocaleString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })} UTC`;
+      if (refreshChip) {
+        refreshChip.textContent = `Refreshed ${new Date(metrics.generated_at).toLocaleString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })} UTC`;
+      }
 
-      const aggregates = computeAggregateMetrics(companies);
+      const summaryEl = document.getElementById("pcd-summary");
+      if (summaryEl) {
+        summaryEl.textContent = `Universe coverage: ${aggregates.coverage} names across ${formatter.currencyCompact(
+          aggregates.totalMarketCap
+        )} in float.`;
+      }
 
-      document.getElementById(
-        "pcd-summary"
-      ).textContent = `Universe coverage: ${aggregates.coverage} names across ${formatter.currencyCompact(
-        aggregates.totalMarketCap
-      )} in float.`;
+      const metricGrid = document.getElementById("pcd-metric-grid");
+      const movers = document.getElementById("pcd-movers");
+      const returnTable = document.getElementById("pcd-return-table");
+      const marketTable = document.getElementById("pcd-market-table");
+      const valuationTable = document.getElementById("pcd-valuation-table");
+      const riskTable = document.getElementById("pcd-risk-table");
 
-      buildMetricCards(document.getElementById("pcd-metric-grid"), companies, aggregates, metrics.last_trade_date);
-      buildMovers(document.getElementById("pcd-movers"), companies);
-      buildReturnTable(document.getElementById("pcd-return-table"), companies);
-      buildMarketTable(document.getElementById("pcd-market-table"), companies);
-      buildValuationTable(document.getElementById("pcd-valuation-table"), companies);
-      buildRiskTable(document.getElementById("pcd-risk-table"), companies);
+      if (metricGrid) buildMetricCards(metricGrid, companyList, aggregates, metrics.last_trade_date);
+      if (movers) buildMovers(movers, companyList);
+      if (returnTable) buildReturnTable(returnTable, companyList);
+      if (marketTable) buildMarketTable(marketTable, companyList);
+      if (valuationTable) buildValuationTable(valuationTable, companyList);
+      if (riskTable) buildRiskTable(riskTable, companyList);
 
       const tickerSelect = document.getElementById("pcd-ticker-select");
       const benchmarkSelect = document.getElementById("pcd-benchmark-select");
-
-      populateSelectors(tickerSelect, companies, companies[0]?.ticker);
-      populateSelectors(benchmarkSelect, companies, "BRK-B");
-
       const returnSelect = document.getElementById("pcd-return-select");
+      const chartTitle = document.getElementById("pcd-chart-title");
+
+      const companyOptions = companyList.map((row) => ({
+        value: row.ticker,
+        label: `${row.ticker} · ${row.name}`,
+      }));
+
+      benchmarkOptions = [...companyOptions];
+      if (Array.isArray(benchmarkList)) {
+        benchmarkList.forEach((bench) => {
+          if (!benchmarkOptions.some((option) => option.value === bench.ticker)) {
+            benchmarkOptions.push({
+              value: bench.ticker,
+              label: `${bench.ticker} · ${bench.name}`,
+            });
+          }
+        });
+      }
+
+      if (tickerSelect) {
+        populateSelect(tickerSelect, companyOptions, companyOptions[0]?.value);
+      }
+
+      if (benchmarkSelect) {
+        const defaultBenchmark =
+          benchmarkOptions.find((option) => option.value !== companyOptions[0]?.value)?.value ||
+          benchmarkOptions[0]?.value ||
+          null;
+        populateSelect(benchmarkSelect, benchmarkOptions, defaultBenchmark);
+      }
+
+      if (returnSelect) {
+        returnSelect.value = "ytd";
+      }
 
       const redraw = () => {
+        if (!tickerSelect || !benchmarkSelect || !returnSelect) return;
         const ticker = tickerSelect.value;
-        const benchmark = benchmarkSelect.value === ticker ? "BRK-B" : benchmarkSelect.value;
+        let benchmark = benchmarkSelect.value;
+
+        if (benchmark === ticker) {
+          const fallbackBenchmark = benchmarkOptions.find((option) => option.value !== ticker);
+          if (fallbackBenchmark) {
+            benchmark = fallbackBenchmark.value;
+            benchmarkSelect.value = benchmark;
+          }
+        }
+
         const horizon = returnSelect.value;
-        document.getElementById(
-          "pcd-chart-title"
-        ).textContent = `${ticker} vs ${benchmark} | ${returnSelect.options[returnSelect.selectedIndex].text}`;
+        if (chartTitle) {
+          chartTitle.textContent = `${ticker} vs ${benchmark} | ${
+            returnSelect.options[returnSelect.selectedIndex]?.text ?? ""
+          }`;
+        }
         buildChart(prices, ticker, benchmark, horizon);
       };
 
-      tickerSelect.addEventListener("change", redraw);
-      benchmarkSelect.addEventListener("change", redraw);
-      returnSelect.addEventListener("change", redraw);
+      if (tickerSelect) tickerSelect.addEventListener("change", redraw);
+      if (benchmarkSelect) benchmarkSelect.addEventListener("change", redraw);
+      if (returnSelect) returnSelect.addEventListener("change", redraw);
 
       redraw();
     } catch (error) {
       console.error(error);
       const dashboard = document.getElementById("pcd-dashboard");
-      dashboard.innerHTML = `<p style="color: #f87171;">${error.message}</p>`;
+      if (dashboard) {
+        dashboard.innerHTML = `<p style="color: #f87171;">${error.message}</p>`;
+      }
     }
   }
 
-  initDashboard();
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initDashboard, { once: true });
+  } else {
+    initDashboard();
+  }
 </script>
+
+<!--/html_preserve-->

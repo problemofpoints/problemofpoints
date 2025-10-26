@@ -1,0 +1,23 @@
+{
+  "name": "problemofpoints",
+  "version": "1.0.0",
+  "description": "Repository for website at [https://www.problemofpoints.com](https://www.problemofpoints.com)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/problemofpoints/problemofpoints.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/problemofpoints/problemofpoints/issues"
+  },
+  "homepage": "https://github.com/problemofpoints/problemofpoints#readme",
+  "dependencies": {
+    "yahoo-finance2": "^3.10.0"
+  }
+}
