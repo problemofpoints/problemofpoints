@@ -1,0 +1,191 @@
+---
+title: "Simulating Equity and Fixed-Income Returns in 2025"
+date: 2025-10-27
+categories: [analysis, insurance]
+subtitle: "Economic-capital ready scenario generation for P&C insurers"
+draft: false
+description: "State-of-the-art techniques, data governance practices, and Python tooling for multi-asset scenario simulation."
+---
+
+> “An economic capital model is only as strong as its weakest scenario.” — every regulator, implicitly.
+
+## Why the latest simulation craft matters
+
+Property & casualty (P&C) carriers rely on multi-horizon market scenarios to stress solvency ratios, price
+reinsurance, and respond to ORSA review cycles. Over the last two years, advances in high-frequency
+factor data, Bayesian filtering, and generative models have shifted best practice away from “scaled
+historicals” toward richer, governance-friendly pipelines. This post inventories the 2025 playbook for
+simulating equity total returns and sovereign or credit yield curves/returns, with an eye on regulatory
+transparency, reproducibility, and computational efficiency.
+
+We assume you already have a capital framework that translates market shocks into balance-sheet
+impacts. The focus here is the upstream scenario engine.
+
+## Data management first
+
+1. **Granular but reconciled histories**: daily equity and rate panels should reconcile to the general
+   ledger and market data tapes (ICE, Bloomberg B-PIPE, Refinitiv). Use immutable Bronze/Silver/Gold
+   zones or data vault patterns so auditors can reproduce runs.
+2. **Point-in-time fundamentals & macro**: incorporate restated fundamentals, macro forecasts, and
+   climate stress narratives. Scenario conditioning is increasingly requested in NAIC and EIOPA
+   examinations.
+3. **Forward-looking overlays**: consensus analyst targets, option-implied distributions, and liquidity
+   haircuts provide forward guidance when pure time-series methods under-react to regime shifts.
+4. **Metadata capture**: track every resampling seed, calibration window, and code revision. A simple
+   combination of `dvc`, `git`, and a metadata table inside your risk data mart is sufficient for audit.
+
+## Equity return engines
+
+### 1. Block bootstrap variants
+
+* **Stationary bootstrap / circular bootstrap**: captures volatility clustering without overstating
+  persistence. Ideal when your historical window already contains multiple shocks (e.g., 2020, 2022,
+  2024). Implement using `arch.bootstrap.StationaryBootstrap` or
+  `arch.bootstrap.CircularBlockBootstrap` from the [`arch` project](https://github.com/bashtage/arch),
+  which combines Cython/Numba performance with standard econometric diagnostics.
+* **Conditional scenarios**: re-weight blocks using macro regimes (inflation, unemployment) to mirror
+  climate or inflation stresses. Store regime weights alongside run metadata for auditability.
+
+### 2. Factor and cross-sectionally aware models
+
+* **Dynamic factor models (DFM)**: combine equity excess returns, macro surprises, and liquidity spreads.
+  Estimate with Kalman filtering (`statsmodels.tsa.statespace.DynamicFactorMQ`) and propagate uncertainty
+  through simulation draws.
+* **Partial equilibrium macro-factor overlays**: line up capital market assumptions (CMAs) from your CIO
+  desk with factor shocks using shrinkage (`sklearn.covariance.LedoitWolf`) to stabilize covariance
+  estimates on medium-sized universes.
+* **Riskfolio workflows**: the open-source [Riskfolio-Lib](https://github.com/dcajasn/Riskfolio-Lib)
+  package supports scenario resampling, Black-Litterman posterior generation, and downside risk metrics
+  that map neatly into economic capital frameworks.
+
+### 3. Volatility and higher-moment dynamics
+
+* **GARCH/EGARCH/FIGARCH families**: calibrate to sector or regional buckets, then simulate conditional
+  vol paths. `arch.univariate` covers the full suite; mix in `arch.multivariate` DCC models when you need
+  co-volatility dynamics.
+* **Stochastic volatility (SV) models**: Heston, SABR, and rough volatility processes capture volatility
+  smiles embedded in option markets. `QuantLib` bindings via `QuantLib-SWIG` expose Monte Carlo pricers,
+  Fourier inversion tools, and calibration helpers suitable for daily scenario refreshes.
+* **Jump diffusion & variance-gamma**: integrate observed jump intensities from limit-order-book data.
+  Use `sympy.stats` for symbolic sanity checks and `numpyro`/`PyMC` for Bayesian posterior draws.
+
+### 4. Regime-switching and hidden Markov structures
+
+* **Markov-switching VAR/GARCH**: `statsmodels.tsa.regime_switching` fits Hamilton-style switches that
+  distinguish high-volatility drawdown regimes from calm periods.
+* **Macro-conditioned hidden semi-Markov**: extend dwell-time distributions beyond geometric using
+  `hsmmlearn` (community package) or bespoke Pyro/PyMC code. Particularly useful for modeling prolonged
+  inflationary regimes.
+
+### 5. Generative AI accelerators
+
+* **Diffusion models for return paths**: research-grade pipelines (e.g., _Diffusion Models for Financial
+  Time Series_, arXiv:2406.07812) generate entire paths conditioned on initial states and macro features.
+  Practical implementations leverage `torch`, `diffusers`, and time-series embeddings such as
+  `tsdiffusion`.
+* **Variational autoencoders (VAEs)**: pair with copula-based dependence reconstruction to retain tail
+  structure. Libraries like `pytorch-forecasting` and `sktime-dl` provide templates.
+* **Generative reinforcement learning**: use `tf-agents` or `rlax` to learn stress paths that maximize
+  solvency impact subject to plausibility constraints.
+
+## Dependence modeling across asset classes
+
+* **Dynamic copulas**: `pyvinecopulib` delivers vine copulas with time-varying parameters and rich tail
+  asymmetry controls—ideal when equity-bond correlations flip signs.
+* **Graphical factor copulas**: calibrate sparse precision matrices with `skggm` or `quic` to obtain
+  explainable dependency networks.
+* **DCC/GOGARCH**: rely on `arch.multivariate` or `mgarch` to model conditional correlations and feed
+  them into both equity and rates engines.
+
+## Yield curve and fixed-income return engines
+
+### 1. Cross-sectional curve construction
+
+* **Overnight index swap (OIS) bootstrapping**: implement multi-curve bootstraps with `QuantLib`. Modern
+  builds (see the [QuantLib-SWIG README](https://github.com/lballabio/QuantLib-SWIG)) expose curve
+  bootstrap helpers for SOFR, €STR, and TONAR.
+* **Smooth parametric families**: Nelson-Siegel-Svensson (NSS) remains the regulatory workhorse. Use the
+  `YieldCurve` or `pynss` packages to fit NSS, or rely on `scikit-curve` wrappers for cross-validation.
+* **Smith-Wilson and extrapolation**: necessary for Solvency II long-end requirements. Community libraries
+  like `smithwilson` (PyPI) enforce monotonicity and convergence to the Ultimate Forward Rate (UFR).
+* **Monotone convex splines**: `scipy.interpolate.PchipInterpolator` or `pycubicspline` maintain no-arb
+  conditions when building callable bond curves.
+
+### 2. Dynamic term-structure models (TSMs)
+
+* **Affine models (Hull-White, LGM, CIR++)**: calibrate to swaption cubes using `QuantLib`, then simulate
+  yield paths via short-rate Monte Carlo.
+* **Heath-Jarrow-Morton (HJM) and LIBOR market models (LMM)**: use `QuantLib` or specialized libraries
+  such as `rateslib` (supports multi-curve HJM/LMM with trade valuation) to evolve entire curves under
+  forward measures.
+* **Dynamic Nelson-Siegel (DNS)**: employ state-space formulations with Kalman filtering—`statsmodels` and
+  `pydlm` handle DNS with stochastic volatility. Kalman-smoothing residuals become inputs for scenario
+  generation.
+* **Macro-consistent term-structure**: integrate shadow-rate or macro-finance models (e.g., Adrian
+  Crump Moench) via Bayesian platforms (`PyMC`, `numpyro`) to align with central-bank narratives.
+
+### 3. Credit and spread processes
+
+* **Reduced-form hazard models**: calibrate Poisson intensities to CDS curves using `QuantLib` and update
+  via particle filters (`particles` library) to reflect macro shocks.
+* **Structural / distance-to-default overlays**: couple equity simulations with balance-sheet dynamics
+  using `merton`-style models implemented in `risk-neutral` or `mibian`.
+* **Liquidity and roll-down effects**: embed bid-ask dynamics using `alphalens`/`zipline-reloaded`
+  analytics or custom microstructure adjustments for illiquid municipal books.
+
+## Scenario design for economic capital
+
+1. **Horizon mapping**: align scenario steps with regulatory horizons (1-day, 10-day, 1-year). Use nested
+   Monte Carlo only when valuation is strongly path dependent.
+2. **Tail amplification**: apply filtered historical simulation (FHS) or extreme value theory (EVT) with
+   `scipy.stats.genpareto` fits to fatten tails before injecting into net asset value (NAV) calculations.
+3. **Balance-sheet feedback**: overlay dynamic hedging rules and reinsurance recoveries; ensure
+   reproducible business-rule code via `nbdev` or well-tested modules.
+4. **Governance artifacts**: produce calibration books that version-control data sources, seeds, and
+   modeling assumptions. Export to PDF/Quarto for ORSA appendices.
+
+## Implementation blueprint
+
+| Layer | Purpose | Key Python libraries |
+| --- | --- | --- |
+| Data ingestion | Market + macro ETL | `pandas`, `polars`, `duckdb`, `pyarrow`, `pandera` |
+| Equity dynamics | Return/vol simulation | `arch`, `statsmodels`, `torch`, `diffusers`, `PyMC`, `riskfolio-lib` |
+| Dependence | Correlations & copulas | `arch.multivariate`, `pyvinecopulib`, `skggm`, `networkx` |
+| Yield curves | Curve fit & Monte Carlo | `QuantLib`, `pynss`, `smithwilson`, `scipy`, `rateslib` |
+| Credit spreads | Hazard + structural | `QuantLib`, `mibian`, `particles`, `lifelines` |
+| Governance | Metadata & testing | `dvc`, `mlflow`, `prefect`, `great_expectations`, `pytest` |
+
+## Practical tips for P&C insurers
+
+* **Align with actuarial cash-flow models**: ensure market scenarios feed directly into projected claim
+  payouts, cat reinsurance layers, and ALM analytics. Document mapping tables.
+* **Version-controlled narratives**: store scenario rationales (e.g., “inflationary stagnation”) next to
+  code. Regulators increasingly request the qualitative story during onsite reviews.
+* **Hardware acceleration**: GPU-enabled diffusion/GAN models run 10–30× faster on modest RTX cards.
+  Containerize with `docker` plus `nvidia-container-toolkit` and orchestrate via `prefect` or `dagster`.
+* **Model risk management (MRM)**: maintain independent challenger models—e.g., pure historical
+  bootstraps vs. diffusion-based scenarios—and compare tail percentiles quarterly.
+
+## Further reading
+
+* _Diffusion Models for Financial Time Series_, arXiv:2406.07812.
+* Bank for International Settlements, _Yield curve modelling and a conceptual framework for stress
+  testing_, 2024.
+* Kevin Sheppard et al., documentation for the [`arch`](https://github.com/bashtage/arch) Python package.
+* QuantLib documentation and SWIG bindings ([quantlib.org](https://www.quantlib.org)).
+* Vine Copula Library documentation ([vinecopulib.github.io](https://vinecopulib.github.io/pyvinecopulib)).
+
+## Putting it into production
+
+Build a reference implementation that stitches together the pieces:
+
+1. **Calibration notebooks** (Quarto/Jupyter) to estimate equity and rate model parameters.
+2. **Reusable simulation modules** packaged with `poetry` or `uv`. Aim for deterministic builds via
+   lockfiles.
+3. **Scenario store** in object storage (e.g., S3) with Parquet outputs tagged by scenario ID, version,
+   and calibration timestamp.
+4. **Continuous validation**: nightly coverage tests on summary statistics, K-S distances, and economic
+   capital outputs. Alert when drifts exceed pre-approved bands.
+
+With these building blocks, your economic capital engine can span the breadth of 2025 market volatility
+without sacrificing transparency—or burning the actuarial team with ad hoc reconciliations.
