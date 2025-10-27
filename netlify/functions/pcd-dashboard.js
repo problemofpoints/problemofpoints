@@ -35,15 +35,15 @@ const TICKERS = {
 
 const BENCHMARK_SYMBOLS = ["BRK-B"];
 
-const RETURN_WINDOWS = {
-  "1d": 1,
-  "1w": 5,
-  "1m": 21,
-  "3m": 63,
-  "6m": 126,
-  ytd: null,
-  "12m": 252,
-  "24m": 504
+const RETURN_DEFINITIONS = {
+  "1d": { days: 1 },
+  "1w": { days: 7 },
+  "1m": { months: 1 },
+  "3m": { months: 3 },
+  "6m": { months: 6 },
+  ytd: { yearStart: true },
+  "12m": { months: 12 },
+  "24m": { months: 24 }
 };
 
 const TRADING_DAYS_PER_YEAR = 252;
@@ -53,25 +53,54 @@ function toISODate(date) {
   return date.toISOString().slice(0, 10);
 }
 
-function computePeriodReturn(series, periods) {
-  if (!Array.isArray(series) || series.length <= periods || periods == null) {
-    return null;
-  }
-  const latest = series[series.length - 1];
-  const prior = series[series.length - (periods + 1)];
-  if (latest == null || prior == null || prior === 0) return null;
-  return latest / prior - 1;
+function shiftDateByMonthsUTC(date, months) {
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth();
+  const day = date.getUTCDate();
+  const target = new Date(Date.UTC(year, month - months, 1));
+  const daysInMonth = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
+  target.setUTCDate(Math.min(day, daysInMonth));
+  return target;
 }
 
-function computeYtdReturn(history) {
-  if (!Array.isArray(history) || history.length === 0) return null;
-  const last = history[history.length - 1];
-  const currentYear = new Date(last.date).getFullYear();
-  const idx = history.findIndex((point) => new Date(point.date).getFullYear() === currentYear);
-  if (idx === -1) return null;
-  const first = history[idx];
-  if (!first || first.adjClose == null || first.adjClose === 0) return null;
-  return last.adjClose / first.adjClose - 1;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function shiftDateByDaysUTC(date, days) {
+  return new Date(date.getTime() - days * MS_PER_DAY);
+}
+
+function startOfUTCYear(date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+}
+
+function findPointOnOrBefore(series, targetDate) {
+  for (let i = series.length - 1; i >= 0; i -= 1) {
+    if (series[i].dateObj <= targetDate) {
+      return series[i];
+    }
+  }
+  return null;
+}
+
+function getTargetDate(latestDate, definition) {
+  if (!definition) return null;
+  if (definition.yearStart) return startOfUTCYear(latestDate);
+  if (definition.months) return shiftDateByMonthsUTC(latestDate, definition.months);
+  if (definition.days) return shiftDateByDaysUTC(latestDate, definition.days);
+  return null;
+}
+
+function computeCalendarReturn(series, definition) {
+  if (!Array.isArray(series) || series.length < 2) return null;
+  const latest = series[series.length - 1];
+  if (!latest || latest.adjClose == null) return null;
+  const targetDate = getTargetDate(latest.dateObj, definition);
+  if (!targetDate) return null;
+  const startPoint = findPointOnOrBefore(series, targetDate);
+  if (!startPoint || startPoint === latest || startPoint.adjClose == null || startPoint.adjClose === 0) {
+    return null;
+  }
+  return latest.adjClose / startPoint.adjClose - 1;
 }
 
 function computeMaxDrawdown(values) {
@@ -129,30 +158,44 @@ async function fetchTickerData(ticker) {
 
   const series = quotes
     .filter((entry) => entry && entry.adjclose != null)
-    .map((entry) => ({
-      date: toISODate(new Date(entry.date)),
-      adjClose: entry.adjclose,
-      close: entry.close ?? entry.adjclose,
-      volume: entry.volume ?? null
-    }));
+    .map((entry) => {
+      const dateObj = entry.date instanceof Date ? new Date(entry.date.getTime()) : new Date(entry.date);
+      return {
+        date: toISODate(dateObj),
+        dateObj,
+        adjClose: entry.adjclose,
+        close: entry.close ?? entry.adjclose,
+        volume: entry.volume ?? null
+      };
+    });
 
   if (!series.length) {
     throw new Error(`No adjusted closes for ${ticker}`);
   }
 
   const closes = series.map((entry) => entry.adjClose);
-  const lastPrice = closes[closes.length - 1];
-  const previousClose = closes.length > 1 ? closes[closes.length - 2] : lastPrice;
-  const lastDate = series[series.length - 1].date;
+  const latestPoint = series[series.length - 1];
+  const lastPrice = latestPoint.adjClose;
+  const previousClose = series.length > 1 ? series[series.length - 2].adjClose : lastPrice;
+  const lastDate = latestPoint.date;
+  const latestDateObj = latestPoint.dateObj;
 
-  const lastYearSeries = series.slice(-RETURN_WINDOWS["12m"]);
-  const yearHigh = Math.max(...lastYearSeries.map((entry) => entry.adjClose).filter((v) => v != null));
-  const yearLow = Math.min(...lastYearSeries.map((entry) => entry.adjClose).filter((v) => v != null));
+  const twelveMonthsAgo = shiftDateByMonthsUTC(latestDateObj, 12);
+  const lastYearSeries = series.filter((entry) => entry.dateObj >= twelveMonthsAgo);
+  const windowSeries = lastYearSeries.length ? lastYearSeries : series;
+  const windowPrices = windowSeries.map((entry) => entry.adjClose).filter((value) => value != null);
+  const yearHigh = windowPrices.length ? Math.max(...windowPrices) : null;
+  const yearLow = windowPrices.length ? Math.min(...windowPrices) : null;
 
   const returns = {};
-  for (const [window, periods] of Object.entries(RETURN_WINDOWS)) {
-    returns[window] =
-      window === "ytd" ? computeYtdReturn(series) : computePeriodReturn(closes, periods);
+  for (const [window, definition] of Object.entries(RETURN_DEFINITIONS)) {
+    returns[window] = computeCalendarReturn(series, definition);
+  }
+
+  const rawSeries = series.map((entry) => ({ dateObj: entry.dateObj, adjClose: entry.close ?? entry.adjClose }));
+  const rawReturns = {};
+  for (const [window, definition] of Object.entries(RETURN_DEFINITIONS)) {
+    rawReturns[window] = computeCalendarReturn(rawSeries, definition);
   }
 
   const priceInfo = summary.price || {};
@@ -170,7 +213,9 @@ async function fetchTickerData(ticker) {
     name: priceInfo.longName || priceInfo.shortName || TICKERS[ticker] || ticker,
     industry: profile.industry || profile.sector || "Insurance",
     last_price: lastPrice ?? null,
+    last_price_unadjusted: latestPoint.close ?? null,
     previous_close: previousClose ?? null,
+    previous_close_unadjusted: series.length > 1 ? series[series.length - 2].close ?? series[series.length - 2].adjClose : latestPoint.close ?? lastPrice,
     market_cap:
       priceInfo.marketCap ??
       financialData.marketCap ??
@@ -184,8 +229,9 @@ async function fetchTickerData(ticker) {
       null,
     pb_ratio:
       keyStats.priceToBook ??
-      financialData.priceToBook ??
       summaryDetail.priceToBook ??
+      financialData.priceToBook ??
+      priceInfo.priceToBook ??
       null,
     beta:
       summaryDetail.beta ??
@@ -216,7 +262,8 @@ async function fetchTickerData(ticker) {
     year_low: Number.isFinite(yearLow) ? yearLow : priceInfo.fiftyTwoWeekLow ?? null,
     volatility: computeAnnualizedVolatility(closes),
     max_drawdown: computeMaxDrawdown(closes),
-    returns
+    returns,
+    raw_returns: rawReturns
   };
 
   if (metadata.year_high != null && lastPrice != null && metadata.year_high !== 0) {
@@ -235,7 +282,8 @@ async function fetchTickerData(ticker) {
     metadata,
     priceSeries: series.map((entry) => ({
       date: entry.date,
-      adj_close: entry.adjClose
+      adj_close: entry.adjClose,
+      close: entry.close ?? entry.adjClose
     })),
     lastDate
   };
