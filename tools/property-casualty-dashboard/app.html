@@ -1,0 +1,1004 @@
+<!--html_preserve-->
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2"></script>
+<style>
+  :root {
+    color-scheme: light dark;
+    --pcd-bg: #0f172a;
+    --pcd-panel: rgba(15, 23, 42, 0.42);
+    --pcd-card: rgba(15, 23, 42, 0.66);
+    --pcd-text: #e2e8f0;
+    --pcd-muted: rgba(148, 163, 184, 0.85);
+    --pcd-accent: #38bdf8;
+    --pcd-positive: #34d399;
+    --pcd-negative: #f87171;
+    --pcd-border: rgba(148, 163, 184, 0.22);
+    font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .pcd-dashboard {
+    background: radial-gradient(circle at top, rgba(56, 189, 248, 0.15), transparent 50%),
+      radial-gradient(circle at 20% 80%, rgba(129, 140, 248, 0.1), transparent 40%), var(--pcd-bg);
+    color: var(--pcd-text);
+    padding: clamp(2rem, 4vw, 3rem);
+    border-radius: 28px;
+    box-shadow: 0 35px 60px -40px rgba(14, 116, 144, 0.65);
+    display: grid;
+    gap: clamp(1.8rem, 3vw, 2.4rem);
+  }
+
+  .pcd-header {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .pcd-title {
+    margin: 0;
+    font-weight: 700;
+    font-size: clamp(2.1rem, 2vw + 1.6rem, 2.8rem);
+    letter-spacing: -0.015em;
+  }
+
+  .pcd-subtitle {
+    margin: 0;
+    color: var(--pcd-muted);
+    max-width: 70ch;
+    line-height: 1.6;
+    font-size: 1.05rem;
+  }
+
+  .pcd-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    color: var(--pcd-muted);
+    font-size: 0.95rem;
+  }
+
+  .pcd-meta p,
+  .pcd-control p {
+    margin: 0;
+    display: contents;
+  }
+
+  .pcd-chip {
+    background: rgba(56, 189, 248, 0.12);
+    color: var(--pcd-accent);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 999px;
+    padding: 0.35rem 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  .pcd-metric-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  }
+
+  .pcd-card {
+    background: var(--pcd-card);
+    border-radius: 20px;
+    padding: 1.35rem 1.5rem;
+    border: 1px solid var(--pcd-border);
+    display: grid;
+    gap: 0.4rem;
+    box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.22), 0 18px 30px -28px rgba(15, 23, 42, 0.9);
+  }
+
+  .pcd-card-title {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--pcd-muted);
+  }
+
+  .pcd-card-value {
+    font-size: clamp(1.6rem, 1.3vw + 1.1rem, 2.1rem);
+    font-weight: 700;
+  }
+
+  .pcd-card-context {
+    font-size: 0.85rem;
+    color: var(--pcd-muted);
+  }
+
+  .pcd-card-split {
+    display: grid;
+    gap: 0.3rem;
+  }
+
+  .pcd-card-split-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+  }
+
+  .pcd-card-split-row span {
+    font-weight: 600;
+  }
+
+  .pcd-card-split-row span.pcd-top {
+    color: var(--pcd-positive);
+  }
+
+  .pcd-card-split-row span.pcd-lag {
+    color: var(--pcd-negative);
+  }
+
+  .pcd-control-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    align-items: flex-end;
+  }
+
+  .pcd-control {
+    display: grid;
+    gap: 0.4rem;
+    font-size: 0.95rem;
+  }
+
+  .pcd-select,
+  .pcd-input {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid var(--pcd-border);
+    border-radius: 12px;
+    color: var(--pcd-text);
+    padding: 0.55rem 1rem;
+    font-size: 1rem;
+    min-width: 200px;
+    appearance: none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .pcd-chart-card {
+    background: var(--pcd-panel);
+    border-radius: 24px;
+    border: 1px solid var(--pcd-border);
+    padding: clamp(1.5rem, 3vw, 2.2rem);
+    display: grid;
+    gap: 1.2rem;
+    box-shadow: 0 26px 48px -38px rgba(0, 0, 0, 0.75);
+  }
+
+  .pcd-chart-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .pcd-chart-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .pcd-chart-metric {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.2rem;
+    padding: 0.5rem 0.8rem;
+    border-radius: 10px;
+    background: rgba(30, 41, 59, 0.75);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    text-align: right;
+    min-width: 140px;
+  }
+
+  .pcd-chart-price {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--pcd-text);
+  }
+
+  .pcd-chart-return {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--pcd-muted);
+  }
+
+  .pcd-chart-return span {
+    display: inline-block;
+    margin-left: 0.3rem;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--pcd-muted);
+  }
+
+  .pcd-chart-header h2 {
+    margin: 0;
+    font-size: 1.35rem;
+  }
+
+  .pcd-chart-header p {
+    margin: 0;
+    color: var(--pcd-muted);
+    font-size: 0.95rem;
+  }
+
+  #pcd-price-chart {
+    width: 100%;
+    min-height: 360px;
+  }
+
+  .pcd-grid-2 {
+    display: grid;
+    gap: 1.4rem;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    align-items: start;
+  }
+
+  .pcd-table-card {
+    background: var(--pcd-panel);
+    border-radius: 22px;
+    border: 1px solid var(--pcd-border);
+    padding: 1rem 1.4rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .pcd-table-card h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    line-height: 1.15;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-height: 34px;
+    max-height: 34px;
+  }
+
+  .pcd-table-card h2 .anchorjs-link {
+    font-size: 0.85em !important;
+    line-height: 1;
+    padding: 0 !important;
+  }
+
+  .pcd-table-card h2 .anchorjs-link::before {
+    vertical-align: middle;
+  }
+
+  .pcd-table-card table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+    background: rgba(11, 17, 32, 0.96) !important;
+    color: var(--pcd-text) !important;
+    margin: 0;
+  }
+
+  .pcd-table-card th,
+  .pcd-table-card td {
+    text-align: left;
+    padding: 0.55rem 0.45rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    background: transparent !important;
+  }
+
+  .pcd-table-card th {
+    color: rgba(226, 232, 240, 0.88) !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+  }
+
+  .pcd-table-card tbody tr:nth-child(even) {
+    background: rgba(30, 41, 59, 0.6) !important;
+  }
+
+  .pcd-table-card tbody tr:hover {
+    background: rgba(56, 189, 248, 0.12) !important;
+  }
+
+  .pcd-table-card tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .pcd-percent-positive {
+    color: var(--pcd-positive);
+  }
+
+  .pcd-percent-negative {
+    color: var(--pcd-negative);
+  }
+
+  .pcd-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    background: rgba(148, 163, 184, 0.14);
+    border-radius: 999px;
+    padding: 0.2rem 0.7rem;
+  }
+
+  .pcd-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .pcd-footnotes {
+    color: var(--pcd-muted);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 640px) {
+    .pcd-dashboard {
+      padding: 1.5rem;
+    }
+
+    .pcd-select,
+    .pcd-input {
+      min-width: unset;
+      width: 100%;
+    }
+  }
+</style>
+
+<div class="pcd-dashboard" id="pcd-dashboard" markdown="0">
+<header class="pcd-header">
+<h1 class="pcd-title">P&amp;C (Re)Insurance Stocks Monitor</h1>
+<p class="pcd-subtitle">
+      Intraday snapshot of U.S.-listed property &amp; casualty carriers and reinsurers. Track market breadth,
+      performance momentum, valuation trends, and risk metrics across a curated universe of listed writers.
+</p>
+<div class="pcd-meta">
+<span class="pcd-chip" id="pcd-refresh-chip">Loading...</span>
+<span id="pcd-summary"></span>
+</div>
+</header>
+
+<section class="pcd-metric-grid" id="pcd-metric-grid"></section>
+
+<section class="pcd-control-bar">
+<div class="pcd-control">
+<label for="pcd-ticker-select">Focus company</label>
+<select class="pcd-select" id="pcd-ticker-select"></select>
+</div>
+<div class="pcd-control">
+<label for="pcd-return-select">Horizon</label>
+<select class="pcd-select" id="pcd-return-select">
+<option value="1m">1 month</option>
+<option value="3m">3 months</option>
+<option value="6m">6 months</option>
+<option value="ytd" selected>YTD</option>
+<option value="12m">12 months</option>
+<option value="24m">24 months</option>
+</select>
+</div>
+</section>
+
+<section class="pcd-chart-card">
+<div class="pcd-chart-header">
+<div class="pcd-chart-title-group">
+<h2 id="pcd-chart-title">Price history</h2>
+<p id="pcd-chart-context">Close and Adjusted close (reflects dividends) through the selected horizon.</p>
+</div>
+<div class="pcd-chart-metric" id="pcd-chart-metric">
+<span class="pcd-chart-price" id="pcd-chart-price">—</span>
+<span class="pcd-chart-return" id="pcd-chart-return">—</span>
+</div>
+</div>
+<div id="pcd-price-chart"></div>
+</section>
+
+<section class="pcd-grid-2">
+<div class="pcd-table-card">
+<h2>Return matrix (incl dividends)</h2>
+<table id="pcd-return-table"></table>
+</div>
+<div class="pcd-table-card">
+<h2>Market Caps</h2>
+<table id="pcd-market-table"></table>
+</div>
+</section>
+
+<section class="pcd-grid-2">
+<div class="pcd-table-card">
+<h2>Valuation &amp; yield</h2>
+<table id="pcd-valuation-table"></table>
+</div>
+<div class="pcd-table-card">
+<h2>Risk diagnostics</h2>
+<table id="pcd-risk-table"></table>
+</div>
+</section>
+
+<footer class="pcd-footnotes">
+    Data sourced from Yahoo Finance via a Netlify serverless function. Prices reflect close and adjusted close. Returns are total return proxies
+    calculated from adjusted pricing. Figures refresh on demand when the endpoint is invoked.
+</footer>
+</div>
+
+<script>
+  function resolveDashboardEndpoints() {
+    const endpoints = [];
+    if (typeof window !== "undefined" && window.location && window.location.port === "8888") {
+      endpoints.push("http://localhost:8889/.netlify/functions/pcd-dashboard");
+    }
+    endpoints.push("/.netlify/functions/pcd-dashboard");
+    endpoints.push("https://www.problemofpoints.com/.netlify/functions/pcd-dashboard");
+    return [...new Set(endpoints)];
+  }
+
+  const metricOrder = [
+    { key: "1m", label: "1m" },
+    { key: "3m", label: "3m" },
+    { key: "6m", label: "6m" },
+    { key: "ytd", label: "YTD" },
+    { key: "12m", label: "12m" },
+    { key: "24m", label: "24m" },
+  ];
+
+  const chartHorizonDefinitions = {
+    "1m": { months: 1 },
+    "3m": { months: 3 },
+    "6m": { months: 6 },
+    ytd: { yearStart: true },
+    "12m": { months: 12 },
+    "24m": { months: 24 },
+  };
+
+  const chartAxisSettings = {
+    "1m": { tickformat: "%b %d", dtick: 24 * 60 * 60 * 1000 },
+    "3m": { tickformat: "%b %d", dtick: 7 * 24 * 60 * 60 * 1000 },
+    "6m": { tickformat: "%b %Y", dtick: 30 * 24 * 60 * 60 * 1000 },
+    ytd: { tickformat: "%b %Y", dtick: 30 * 24 * 60 * 60 * 1000 },
+    "12m": { tickformat: "%b %Y", dtick: 30 * 24 * 60 * 60 * 1000 },
+    "24m": { tickformat: "%b %Y", dtick: 60 * 24 * 60 * 60 * 1000 },
+  };
+
+  const formatter = {
+    currency: (value) =>
+      value === null || value === undefined
+        ? "—"
+        : Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value),
+    currencyCompact: (value) =>
+      value === null || value === undefined
+        ? "—"
+        : Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency: "USD",
+            maximumFractionDigits: 1,
+            notation: "compact",
+          }).format(value),
+    number: (value, digits = 0) =>
+      value === null || value === undefined
+        ? "—"
+        : Intl.NumberFormat("en-US", { maximumFractionDigits: digits, minimumFractionDigits: digits }).format(value),
+    percent: (value, digits = 1) =>
+      value === null || value === undefined
+        ? "—"
+        : `${(value * 100).toFixed(digits)}%`,
+  };
+
+  const priceFormatterTwo = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+  function parseSeriesWithDates(series) {
+    return (series || []).map((point) => ({
+      ...point,
+      dateObj: new Date(`${point.date}T00:00:00Z`),
+      adjClose: point.adj_close,
+    }));
+  }
+
+  function shiftUtcDateByMonths(date, months) {
+    const year = date.getUTCFullYear();
+    const month = date.getUTCMonth();
+    const day = date.getUTCDate();
+    const target = new Date(Date.UTC(year, month - months, 1));
+    const daysInMonth = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
+    target.setUTCDate(Math.min(day, daysInMonth));
+    return target;
+  }
+
+  function shiftUtcDateByDays(date, days) {
+    return new Date(date.getTime() - days * MS_PER_DAY);
+  }
+
+  function startOfUtcYear(date) {
+    return new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  }
+
+  function getHorizonStartDate(latestDate, definition) {
+    if (!latestDate || !definition) return null;
+    if (definition.yearStart) return startOfUtcYear(latestDate);
+    if (definition.months) return shiftUtcDateByMonths(latestDate, definition.months);
+    if (definition.days) return shiftUtcDateByDays(latestDate, definition.days);
+    return null;
+  }
+
+  function filterSeriesByStart(series, startDate) {
+    if (!startDate) return series;
+    return series.filter((point) => point.dateObj >= startDate);
+  }
+
+
+  function classifyPercent(value) {
+    if (value === null || value === undefined) return "";
+    if (value > 0) return "pcd-percent-positive";
+    if (value < 0) return "pcd-percent-negative";
+    return "";
+  }
+
+  function computeAggregateMetrics(companies) {
+    const coverage = companies.length;
+    const totalMarketCap = companies.reduce((acc, row) => acc + (row.market_cap || 0), 0);
+    const betaSeries = companies.filter((row) => row.beta !== null && row.beta !== undefined);
+    const avgBeta = betaSeries.length
+      ? betaSeries.reduce((acc, row) => acc + row.beta, 0) / betaSeries.length
+      : null;
+    const advancers = companies.filter((row) => (row.returns?.["1d"] || 0) > 0).length;
+    const decliners = companies.filter((row) => (row.returns?.["1d"] || 0) < 0).length;
+    const breadth1d = coverage ? advancers / coverage : null;
+
+    return {
+      coverage,
+      totalMarketCap,
+      avgBeta,
+      advancers,
+      decliners,
+      breadth1d,
+    };
+  }
+
+  function buildMetricCards(container, companies, aggregates) {
+    const sorted = [...companies]
+      .filter((row) => row.returns?.["1d"] !== null && row.returns?.["1d"] !== undefined)
+      .sort((a, b) => (b.returns?.["1d"] || 0) - (a.returns?.["1d"] || 0));
+
+    const advancers = sorted.slice(0, Math.min(3, sorted.length));
+    const decliners = sorted.slice(-Math.min(3, sorted.length)).reverse();
+
+    const cards = [
+      {
+        title: "Aggregate market cap",
+        value: formatter.currencyCompact(aggregates.totalMarketCap),
+        context: `Across ${aggregates.coverage} listed (re)insurers`,
+      },
+      {
+        title: "Average beta",
+        value: formatter.number(aggregates.avgBeta, 2),
+        context: "Equal-weighted market sensitivity",
+      },
+      {
+        title: "1-day breadth",
+        value: formatter.percent(aggregates.breadth1d, 0),
+        context: `${aggregates.advancers} advancers · ${aggregates.decliners} decliners`,
+      },
+      {
+        title: "Top & lagging (1d)",
+        value:
+          advancers.length || decliners.length
+            ? `
+            <div class="pcd-card-split">
+              <div class="pcd-card-split-row">
+                <strong>Top:</strong>
+                ${advancers
+                  .map(
+                    (row) =>
+                      `<span class="pcd-top">${row.ticker} ${formatter.percent(row.returns?.["1d"], 2)}</span>`
+                  )
+                  .join(" · ")}
+              </div>
+              <div class="pcd-card-split-row">
+                <strong>Lagging:</strong>
+                ${decliners
+                  .map(
+                    (row) =>
+                      `<span class="pcd-lag">${row.ticker} ${formatter.percent(row.returns?.["1d"], 2)}</span>`
+                  )
+                  .join(" · ")}
+              </div>
+            </div>`
+            : "—",
+        context: "",
+      },
+    ];
+
+    container.innerHTML = cards
+      .map((card, index) => {
+        const valueContent = index === 3 && card.value !== "—" ? card.value : `<span class="pcd-card-value">${card.value}</span>`;
+        return `
+<div class="pcd-card">
+<span class="pcd-card-title">${card.title}</span>
+${index === 3 && card.value !== "—" ? valueContent : `<span class="pcd-card-value">${card.value}</span>`}
+${card.context ? `<span class="pcd-card-context">${card.context}</span>` : ""}
+</div>
+        `;
+      })
+      .join("");
+  }
+
+  function buildMovers(badgeContainer, companies) {
+    if (badgeContainer) {
+      badgeContainer.innerHTML = "";
+    }
+  }
+
+  function buildReturnTable(container, companies) {
+    const sorted = [...companies].sort((a, b) => (b.returns?.ytd || -Infinity) - (a.returns?.ytd || -Infinity));
+    container.innerHTML = `
+      <thead>
+        <tr>
+          <th>Ticker</th>
+          ${metricOrder.map((m) => `<th>${m.label}</th>`).join("")}
+        </tr>
+      </thead>
+      <tbody>
+        ${sorted
+          .map((row) => {
+            const cells = metricOrder
+              .map((m) => {
+                const value = row.returns?.[m.key];
+                const cls = classifyPercent(value);
+                return `<td class="${cls}">${formatter.percent(value, 1)}</td>`;
+              })
+              .join("");
+            return `<tr><td><strong>${row.ticker}</strong></td>${cells}</tr>`;
+          })
+          .join("")}
+      </tbody>
+    `;
+  }
+
+  function buildMarketTable(container, companies) {
+    const sorted = [...companies].sort((a, b) => (b.market_cap || 0) - (a.market_cap || 0));
+    container.innerHTML = `
+<thead>
+<tr>
+<th>Company</th>
+<th>Market cap</th>
+<th>1d</th>
+<th>YTD</th>
+</tr>
+</thead>
+<tbody>
+        ${sorted
+          .map((row) => {
+            const oneDay = row.returns?.["1d"];
+            const ytd = row.returns?.ytd;
+            return `
+<tr>
+<td><strong>${row.ticker}</strong></td>
+<td>${formatter.currencyCompact(row.market_cap)}</td>
+<td class="${classifyPercent(oneDay)}">${formatter.percent(oneDay, 2)}</td>
+<td class="${classifyPercent(ytd)}">${formatter.percent(ytd, 1)}</td>
+</tr>
+            `;
+          })
+          .join("")}
+</tbody>
+    `;
+  }
+
+  function buildValuationTable(container, companies) {
+    const sorted = [...companies].sort((a, b) => (b.pb_ratio || -Infinity) - (a.pb_ratio || -Infinity));
+    container.innerHTML = `
+<thead>
+<tr>
+<th>Ticker</th>
+<th>P/E</th>
+<th>P/B</th>
+<th>Dividend</th>
+</tr>
+</thead>
+<tbody>
+        ${sorted
+          .map((row) => `
+<tr>
+<td><strong>${row.ticker}</strong></td>
+<td>${formatter.number(row.pe_ratio, 1)}</td>
+<td>${formatter.number(row.pb_ratio, 2)}</td>
+<td class="${classifyPercent(row.dividend_yield)}">${formatter.percent(row.dividend_yield, 1)}</td>
+</tr>
+          `)
+          .join("")}
+</tbody>
+    `;
+  }
+
+  function buildRiskTable(container, companies) {
+    const sorted = [...companies].sort((a, b) => (b.volatility || 0) - (a.volatility || 0));
+    container.innerHTML = `
+<thead>
+<tr>
+<th>Ticker</th>
+<th>Beta</th>
+<th>Volatility</th>
+<th>Max drawdown</th>
+<th>52w % to high</th>
+</tr>
+</thead>
+<tbody>
+        ${sorted
+          .map((row) => `
+<tr>
+<td><strong>${row.ticker}</strong></td>
+<td>${formatter.number(row.beta, 2)}</td>
+<td>${formatter.percent(row.volatility, 1)}</td>
+<td class="${classifyPercent(row.max_drawdown)}">${formatter.percent(row.max_drawdown, 1)}</td>
+<td class="${classifyPercent(row.year_high_pct)}">${formatter.percent(row.year_high_pct, 1)}</td>
+</tr>
+          `)
+          .join("")}
+</tbody>
+    `;
+  }
+
+  function populateSelect(selectEl, options, defaultValue) {
+    if (!selectEl) return;
+    selectEl.innerHTML = options.map((option) => `<option value="${option.value}">${option.label}</option>`).join("");
+    if (defaultValue !== undefined && defaultValue !== null) {
+      selectEl.value = defaultValue;
+    }
+  }
+
+  function buildChart(prices, ticker, horizonKey) {
+    const chartContainer = document.getElementById("pcd-price-chart");
+    if (!chartContainer || !window.Plotly) {
+      if (chartContainer) {
+        chartContainer.innerHTML =
+          '<p style="color:#f87171;">Interactive chart unavailable (Plotly failed to load).</p>';
+      }
+      return;
+    }
+
+    const focusSeriesParsed = parseSeriesWithDates(prices[ticker] || []);
+
+    if (!focusSeriesParsed.length) {
+      chartContainer.innerHTML = '<p style="color:#f87171;">No price history available.</p>';
+      return;
+    }
+
+    const definition = chartHorizonDefinitions[horizonKey] || chartHorizonDefinitions["12m"];
+    const latestDate = focusSeriesParsed[focusSeriesParsed.length - 1].dateObj;
+    const startDate = latestDate ? getHorizonStartDate(latestDate, definition) : null;
+
+    const trimmedFocus = startDate ? filterSeriesByStart(focusSeriesParsed, startDate) : focusSeriesParsed;
+    const focusSeries = trimmedFocus.length ? trimmedFocus : focusSeriesParsed;
+    const focusUnadjusted = startDate ? filterSeriesByStart(focusSeriesParsed, startDate) : focusSeriesParsed;
+
+    const data = [
+      {
+        type: "scatter",
+        mode: "lines",
+        name: `${ticker} adj close`,
+        line: { color: "#38bdf8", width: 3 },
+        hovertemplate: `<b>${ticker}</b><br>%{x}<br>$%{y:.2f}`,
+        x: focusSeries.map((point) => point.date),
+        y: focusSeries.map((point) => point.adjClose),
+      },
+      {
+        type: "scatter",
+        mode: "lines",
+        name: `${ticker} close`,
+        line: { color: "#f87171", width: 2, dash: "dot" },
+        hovertemplate: `<b>${ticker}</b><br>%{x}<br>$%{y:.2f}`,
+        x: focusUnadjusted.map((point) => point.date),
+        y: focusUnadjusted.map((point) => point.close ?? point.adjClose),
+      },
+    ];
+
+    const axisSetting = chartAxisSettings[horizonKey] || chartAxisSettings["12m"];
+
+    const layout = {
+      margin: { l: 50, r: 30, t: 10, b: 40 },
+      paper_bgcolor: "rgba(0,0,0,0)",
+      plot_bgcolor: "rgba(0,0,0,0)",
+      font: { color: "#e2e8f0" },
+      legend: { orientation: "h", y: -0.2, x: 0 },
+      yaxis: {
+        title: "Close and Adjusted close (USD)",
+        gridcolor: "rgba(148, 163, 184, 0.2)",
+        tickprefix: "$",
+        tickformat: ",.0f",
+      },
+      xaxis: {
+        gridcolor: "rgba(148, 163, 184, 0.1)",
+        tickformat: axisSetting?.tickformat,
+        dtick: axisSetting?.dtick,
+      },
+    };
+
+    const config = { responsive: true, displaylogo: false };
+
+    Plotly.newPlot(chartContainer, data, layout, config);
+  }
+
+  async function initDashboard() {
+    try {
+      let payload = null;
+      let responseStatus = null;
+      let lastError = null;
+
+      for (const endpoint of resolveDashboardEndpoints()) {
+        try {
+          const response = await fetch(endpoint, { cache: "no-store" });
+          responseStatus = response.status;
+          if (!response.ok) {
+            throw new Error(`Status ${response.status}`);
+          }
+          payload = await response.json();
+          break;
+        } catch (err) {
+          lastError = err;
+        }
+      }
+
+      if (!payload) {
+        throw new Error(
+          lastError?.message
+            ? `Failed to load dashboard data (${lastError.message})`
+            : `Failed to load dashboard data (status ${responseStatus ?? "unknown"})`
+        );
+      }
+
+      const {
+        companies: companyList,
+        prices,
+        generated_at: generatedAt,
+        last_trade_date: lastTradeDate,
+        aggregates: serverAggregates,
+        errors = [],
+      } = payload || {};
+
+      if (!Array.isArray(companyList) || !companyList.length || !prices || typeof prices !== "object") {
+        throw new Error("Dashboard payload is missing required fields.");
+      }
+
+      if (Array.isArray(errors) && errors.length) {
+        console.warn("pcd-dashboard partial errors", errors);
+      }
+
+      const companyMap = new Map(companyList.map((row) => [row.ticker, row]));
+
+      const fallbackKey = companyList
+        .map((row) => row.ticker)
+        .find((ticker) => Array.isArray(prices[ticker]) && prices[ticker].length);
+      const fallbackSeries = fallbackKey ? prices[fallbackKey] : null;
+      const metrics = {
+        generated_at: generatedAt || new Date().toISOString(),
+        last_trade_date:
+          lastTradeDate ||
+          (fallbackSeries ? fallbackSeries[fallbackSeries.length - 1]?.date || null : null),
+        companies: companyList,
+      };
+
+      const aggregates =
+        serverAggregates && typeof serverAggregates === "object" && Object.keys(serverAggregates).length
+          ? serverAggregates
+          : computeAggregateMetrics(companyList);
+
+      const refreshChip = document.getElementById("pcd-refresh-chip");
+      if (refreshChip) {
+        refreshChip.textContent = `Refreshed ${new Date(metrics.generated_at).toLocaleString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })} UTC`;
+      }
+
+      const summaryEl = document.getElementById("pcd-summary");
+      if (summaryEl) {
+        summaryEl.textContent = `Universe coverage: ${aggregates.coverage} names across ${formatter.currencyCompact(
+          aggregates.totalMarketCap
+        )} in float.`;
+      }
+
+      const metricGrid = document.getElementById("pcd-metric-grid");
+      const movers = document.getElementById("pcd-movers");
+      const returnTable = document.getElementById("pcd-return-table");
+      const marketTable = document.getElementById("pcd-market-table");
+      const valuationTable = document.getElementById("pcd-valuation-table");
+      const riskTable = document.getElementById("pcd-risk-table");
+
+      if (metricGrid) buildMetricCards(metricGrid, companyList, aggregates, metrics.last_trade_date);
+      if (movers) buildMovers(movers, companyList);
+      if (returnTable) buildReturnTable(returnTable, companyList);
+      if (marketTable) buildMarketTable(marketTable, companyList);
+      if (valuationTable) buildValuationTable(valuationTable, companyList);
+      if (riskTable) buildRiskTable(riskTable, companyList);
+
+      const tickerSelect = document.getElementById("pcd-ticker-select");
+      const returnSelect = document.getElementById("pcd-return-select");
+      const chartTitle = document.getElementById("pcd-chart-title");
+      const chartPriceEl = document.getElementById("pcd-chart-price");
+      const chartReturnEl = document.getElementById("pcd-chart-return");
+
+      const companyOptions = companyList.map((row) => ({
+        value: row.ticker,
+        label: `${row.ticker} · ${row.name}`,
+      }));
+
+      if (tickerSelect) {
+        populateSelect(tickerSelect, companyOptions, companyOptions[0]?.value);
+      }
+
+      if (returnSelect) {
+        returnSelect.value = "ytd";
+      }
+
+      const updateMetricDisplay = (ticker, horizon) => {
+        if (!chartPriceEl || !chartReturnEl) return;
+        const company = companyMap.get(ticker);
+        if (!company) {
+          chartPriceEl.textContent = "—";
+          chartReturnEl.textContent = "—";
+          chartReturnEl.classList.remove("pcd-percent-positive", "pcd-percent-negative");
+          return;
+        }
+        const lastPrice = parseFloat(company.last_price_unadjusted ?? company.last_price);
+        chartPriceEl.textContent = Number.isFinite(lastPrice) ? priceFormatterTwo.format(lastPrice) : "—";
+        const returnRaw = company.raw_returns?.[horizon];
+        const returnAdj = company.returns?.[horizon];
+
+        const percentRaw = formatter.percent(returnRaw, 2);
+        const percentAdj = formatter.percent(returnAdj, 2);
+
+        chartReturnEl.innerHTML =
+          `${percentRaw} <span>price</span><br>${percentAdj} <span>incl div</span>`;
+        chartReturnEl.classList.remove("pcd-percent-positive", "pcd-percent-negative");
+        const classification = classifyPercent(returnRaw);
+        if (classification) {
+          chartReturnEl.classList.add(classification);
+        }
+      };
+
+      const redraw = () => {
+        if (!tickerSelect || !returnSelect) return;
+        const ticker = tickerSelect.value;
+        const horizon = returnSelect.value || "ytd";
+        if (chartTitle) {
+          chartTitle.textContent = `${ticker} Stock Price History`;
+        }
+        updateMetricDisplay(ticker, horizon);
+        buildChart(prices, ticker, horizon);
+      };
+
+      if (tickerSelect) tickerSelect.addEventListener("change", redraw);
+      if (returnSelect) returnSelect.addEventListener("change", redraw);
+
+      redraw();
+    } catch (error) {
+      console.error(error);
+      const dashboard = document.getElementById("pcd-dashboard");
+      if (dashboard) {
+        dashboard.innerHTML = `<p style="color: #f87171;">${error.message}</p>`;
+      }
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initDashboard, { once: true });
+  } else {
+    initDashboard();
+  }
+</script>
+
+<!--/html_preserve-->
