@@ -1,0 +1,131 @@
+---
+title: "How Big Banks See the Next Decade: Comparing 2025 Capital Market Assumptions"
+date: 2025-10-27
+categories: [analysis, markets]
+subtitle: "What J.P. Morgan, Goldman Sachs, and Morgan Stanley are baking into their long-range forecasts"
+freeze: false
+execute:
+  echo: false
+---
+
+## Why capital market assumptions matter
+
+Long-term capital market assumptions (CMAs) turn the sprawling narratives of investment outlooks into numbers that drive asset allocation models. They translate macro views about inflation, policy, and valuations into expected returns, volatilities, and correlations. In 2025, the largest U.S. investment banks refreshed their CMA playbooks with notably different takes on how the post-shock economy will evolve. This review distills their methodologies, highlights the headline figures, and then stress-tests the implications in a simple 60/40 portfolio simulation.
+
+## J.P. Morgan: Broad opportunity set, higher nominal returns
+
+J.P. Morgan Asset Management’s 29th annual Long-Term Capital Market Assumptions release spans more than 60 assets, publishing arithmetic and compound return estimates alongside volatilities and pairwise correlations. The 2025 U.S. dollar matrix, dated September 30, 2024, lifts expected returns across both public and private markets on the back of higher starting yields and a reset in equity valuations.[^jpm-matrix]
+
+Key highlights from the matrix include:
+
+- U.S. large-cap equities carry a 7.91% arithmetic return with 16.26% expected volatility, paired with a 0.26 correlation to U.S. aggregate bonds.[^jpm-matrix]
+- The Bloomberg U.S. Aggregate Bond proxy rises to a 4.70% arithmetic return and 4.52% volatility, reflecting the repricing of yields through 2023–24.[^jpm-matrix]
+- Private-market estimates stay elevated: U.S. core real estate is penciled in at 8.68% with 11.32% volatility, while direct lending posts 9.04% expected returns at 13.60% volatility.[^jpm-matrix]
+
+The team emphasizes that these are passive, nominal projections and stresses the need for judgment because the opportunity set spans assets without investable benchmarks such as private equity and hedge funds.[^jpm-matrix]
+
+## Morgan Stanley: Regime-aware adjustments and a steeper frontier
+
+Morgan Stanley Wealth Management’s Global Investment Committee (GIC) revisits its seven-year strategic assumptions each spring. The 2025 update responds to a sharp first-quarter equity correction by “marking to market” as of March 13, 2025, which steepens the efficient frontier and lifts the expected return on global equities to roughly 7.1%. Their narrative leans heavily on regime shifts: higher neutral rates, post-secular-stagnation productivity, and policy uncertainty under a new U.S. administration.[^ms-outlook]
+
+The GIC publishes category-level building blocks instead of a granular asset grid:
+
+- Strategic (geometric) returns: cash at 3.7%, global equities 7.1%, U.S. fixed income 4.8%, real assets 6.5%, hedged strategies 6.4%, private investments 8.6%.[^ms-outlook]
+- Corresponding volatilities span 0.8% for cash, 13.4% for global equities, and 5.9% for U.S. fixed income, with correlations that stay positive but below one (0.3 between fixed income and equities).[^ms-outlook]
+- A moderate-risk model benchmarked to 50/30/20 across equities, bonds, and alternatives is expected to compound at 6.3% annually.[^ms-outlook]
+
+Their fixed-income framework starts with prevailing yields, adds roll-down, and subtracts losses from spread mean reversion—producing a 4.8% estimate for the Bloomberg U.S. Aggregate Index and 6.3% for emerging-market credit.[^ms-outlook]
+
+## Goldman Sachs: Concentration risk caps long-run equity returns
+
+Goldman Sachs Global Investment Research focuses its 2024 Global Strategy Paper on the S&P 500, arguing that the index’s extreme concentration materially lowers 10-year forward returns. Their model layers five drivers—valuations, concentration, recession frequency, profitability, and interest rates—and lands on a 3% nominal annualized return through 2034, with a 95% confidence interval stretching from -1% to +7%.[^gs-paper]
+
+The team highlights several implications:
+
+- Removing the concentration penalty would raise the forecast to 7%, underscoring how the “Magnificent Seven” skew the outlook.[^gs-paper]
+- Based on the 3% baseline, Goldman sees a 72% probability that equities underperform bonds and a 33% chance of lagging inflation over the next decade, given a 10-year Treasury yield near 4%.[^gs-paper]
+- The report frames equity competition from income assets as the central allocation challenge for diversified investors.[^gs-paper]
+
+## Where the banks agree—and diverge
+
+Together, the three frameworks show consensus on higher bond carry and the need to diversify beyond U.S. large-cap growth, but they differ on how much upside equities still offer. J.P. Morgan’s and Morgan Stanley’s top-down matrices both cluster equity returns in the high single digits, whereas Goldman’s bottom-up focus on concentration slashes S&P 500 expectations to low single digits. The spread reflects methodology as much as outlook: one set extrapolates broad market means, the other calibrates a valuation and concentration-driven regression model.
+
+## Portfolio simulation: What happens to a 60/40 mix?
+
+To translate the assumptions into portfolio terms, we simulate a 60% equity / 40% core bond mix under each bank’s outlook. For J.P. Morgan, we use the U.S. large-cap equity and U.S. aggregate bond statistics from the 2025 matrix. For Morgan Stanley, we pair the GIC’s global equity and U.S. fixed-income building blocks. Goldman Sachs does not publish volatility targets, so we combine their 3% equity return with J.P. Morgan’s 16.26% equity volatility and 0.26 stock/bond correlation as a proxy, noting that this likely understates Goldman’s downside skew but keeps the comparison focused on expected return differentials. Bond assumptions for Goldman reuse the 4% Treasury yield embedded in their probability calculations and the 4.52% bond volatility from J.P. Morgan’s dataset to anchor the income side.[^jpm-matrix][^gs-paper]
+
+```{python}
+import numpy as np
+import pandas as pd
+
+np.random.seed(27)
+
+scenarios = {
+    "JPM": {
+        "equity_mean": 0.0791,
+        "equity_vol": 0.1626,
+        "bond_mean": 0.0470,
+        "bond_vol": 0.0452,
+        "corr": 0.26,
+    },
+    "MS": {
+        "equity_mean": 0.0710,
+        "equity_vol": 0.1340,
+        "bond_mean": 0.0480,
+        "bond_vol": 0.0590,
+        "corr": 0.30,
+    },
+    "GS": {
+        "equity_mean": 0.0300,
+        "equity_vol": 0.1626,
+        "bond_mean": 0.0400,
+        "bond_vol": 0.0452,
+        "corr": 0.26,
+    },
+}
+
+weights = np.array([0.6, 0.4])
+
+results = []
+years = 10
+sims = 10000
+
+for label, params in scenarios.items():
+    cov = np.array([
+        [params["equity_vol"] ** 2, params["corr"] * params["equity_vol"] * params["bond_vol"]],
+        [params["corr"] * params["equity_vol"] * params["bond_vol"], params["bond_vol"] ** 2],
+    ])
+    mean = np.array([params["equity_mean"], params["bond_mean"]])
+    draws = np.random.multivariate_normal(mean, cov, size=(years, sims))
+    portfolio_returns = (draws @ weights.reshape(2, 1)).squeeze()
+    growth_paths = (1 + portfolio_returns).cumprod(axis=0)
+    terminal_values = growth_paths[-1]
+    results.append(
+        {
+            "Scenario": label,
+            "Median 10Y Growth": np.median(terminal_values),
+            "10th Percentile": np.percentile(terminal_values, 10),
+            "90th Percentile": np.percentile(terminal_values, 90),
+            "Average Ann. Return": np.mean(portfolio_returns),
+        }
+    )
+
+summary = pd.DataFrame(results).set_index("Scenario")
+summary.round(3)
+```
+
+### Simulation takeaways
+
+The Monte Carlo summary shows how much Goldman’s lower equity return drags on balanced portfolios relative to the more sanguine J.P. Morgan and Morgan Stanley views. Under J.P. Morgan’s assumptions, a 60/40 investor roughly doubles capital over 10 years at the median, while Morgan Stanley’s regime-aware outlook delivers a similar but slightly lower path. Goldman’s concentration-aware scenario barely clears 1.3× over the decade in the median run, and its left tail brushes breakeven—underscoring the allocation tension Goldman highlights.
+
+## Bottom line
+
+- **Asset allocation inputs are diverging.** J.P. Morgan and Morgan Stanley expect high-single-digit equity returns, but Goldman’s valuation-centric lens cuts the S&P 500 outlook to 3%, implying a much flatter equity risk premium.[^jpm-matrix][^ms-outlook][^gs-paper]
+- **Income assets matter again.** All three banks point to bond markets delivering 4%–5% nominal returns, restoring fixed income as a competitive allocation sleeve after a decade of financial repression.[^jpm-matrix][^ms-outlook][^gs-paper]
+- **Diversification remains the safety valve.** Whether it is J.P. Morgan’s wide matrix, Morgan Stanley’s multi-sleeve frontier, or Goldman’s caution on equity concentration, the consistent recommendation is to diversify away from a single U.S. large-cap growth bet.[^jpm-matrix][^ms-outlook][^gs-paper]
+
+Investors and allocators can use these diverging CMAs as scenario guards: one lens emphasizes mean reversion and higher carry, another warns that concentration risk may cap long-run upside. Blending the insights—and updating assumptions as markets evolve—remains the prudent play.
+
+[^jpm-matrix]: J.P. Morgan Asset Management, *2025 Long-Term Capital Market Assumptions: Assumption Matrix (USD)*, September 30, 2024. [PDF](https://am.jpmorgan.com/content/dam/jpm-am-aem/global/en/insights/ltcma-2025-us-matrix_usd.pdf).
+[^ms-outlook]: Morgan Stanley Wealth Management Global Investment Committee, *Annual Update of GIC Capital Market Assumptions*, March 27, 2025. [PDF](https://www.morganstanley.com/assets/pdfs/2d9493c3-822f-4f18-8c28-ba3ad25e8473.pdf).
+[^gs-paper]: Goldman Sachs Global Investment Research, *Updating our long-term return forecast for US equities to incorporate the current high level of market concentration*, October 18, 2024. [PDF](https://www.gspublishing.com/content/research/en/reports/2024/10/18/29e68989-0d2c-4960-bd4b-010a101f711e.pdf).
