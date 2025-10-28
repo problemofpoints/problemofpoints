@@ -1,6 +1,6 @@
 ---
 title: "P&C Stocks Monitor"
-description: "Performance, valuation, and risk dashboard for U.S.-listed P&C (re)insurers"
+description: "Performance, valuation, and risk dashboard for publicly traded P&C (re)insurers"
 page-layout: full
 image: thumbnail.svg
 image-alt: "Dashboard card with insurer skyline, valuation line, and orange factor bars"

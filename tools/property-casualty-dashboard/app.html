@@ -304,6 +304,15 @@
     background: rgba(56, 189, 248, 0.12) !important;
   }
 
+  .pcd-benchmark-row td {
+    font-weight: 600;
+    background: rgba(239, 83, 153, 0.12) !important;
+  }
+
+  .pcd-benchmark-row td:first-child {
+    color: #ef5399;
+  }
+
   .pcd-table-card tbody tr:last-child td {
     border-bottom: none;
   }
@@ -388,7 +397,7 @@
 <div class="pcd-chart-header">
 <div class="pcd-chart-title-group">
 <h2 id="pcd-chart-title">Price history</h2>
-<p id="pcd-chart-context">Close and Adjusted close (reflects dividends) through the selected horizon.</p>
+<p id="pcd-chart-context">Close and adjusted close (incl dividends) with S&amp;P 500 adj close on the right axis.</p>
 </div>
 <div class="pcd-chart-metric" id="pcd-chart-metric">
 <span class="pcd-chart-price" id="pcd-chart-price">—</span>
@@ -495,6 +504,8 @@
   });
 
   const MS_PER_DAY = 24 * 60 * 60 * 1000;
+  const BENCHMARK_TICKER = "^GSPC";
+  const BENCHMARK_LABEL_FALLBACK = "S&P 500";
 
   function parseSeriesWithDates(series) {
     return (series || []).map((point) => ({
@@ -553,6 +564,8 @@
     const advancers = companies.filter((row) => (row.returns?.["1d"] || 0) > 0).length;
     const decliners = companies.filter((row) => (row.returns?.["1d"] || 0) < 0).length;
     const breadth1d = coverage ? advancers / coverage : null;
+    const above200Count = companies.filter((row) => row.above_ma200 === true).length;
+    const above200Ratio = coverage ? above200Count / coverage : null;
 
     return {
       coverage,
@@ -561,6 +574,8 @@
       advancers,
       decliners,
       breadth1d,
+      above200Count,
+      above200Ratio,
     };
   }
 
@@ -579,9 +594,12 @@
         context: `Across ${aggregates.coverage} listed (re)insurers`,
       },
       {
-        title: "Average beta",
-        value: formatter.number(aggregates.avgBeta, 2),
-        context: "Equal-weighted market sensitivity",
+        title: "Above 200-day MA",
+        value: formatter.percent(aggregates.above200Ratio, 0),
+        context:
+          aggregates.coverage
+            ? `${aggregates.above200Count} of ${aggregates.coverage} names trading above the 200-day average`
+            : "Insufficient price history",
       },
       {
         title: "1-day breadth",
@@ -638,8 +656,36 @@ ${card.context ? `<span class="pcd-card-context">${card.context}</span>` : ""}
     }
   }
 
-  function buildReturnTable(container, companies) {
+  function buildReturnTable(container, companies, benchmarks = []) {
     const sorted = [...companies].sort((a, b) => (b.returns?.ytd || -Infinity) - (a.returns?.ytd || -Infinity));
+    const companyRows = sorted
+      .map((row) => {
+        const cells = metricOrder
+          .map((m) => {
+            const value = row.returns?.[m.key];
+            const cls = classifyPercent(value);
+            return `<td class="${cls}">${formatter.percent(value, 1)}</td>`;
+          })
+          .join("");
+        return `<tr><td><strong>${row.ticker}</strong></td>${cells}</tr>`;
+      })
+      .join("");
+
+    const benchmarkRows = (benchmarks || [])
+      .filter((entry) => entry && entry.returns)
+      .map((entry) => {
+        const label = entry.name || entry.ticker || BENCHMARK_LABEL_FALLBACK;
+        const cells = metricOrder
+          .map((m) => {
+            const value = entry.returns?.[m.key];
+            const cls = classifyPercent(value);
+            return `<td class="${cls}">${formatter.percent(value, 1)}</td>`;
+          })
+          .join("");
+        return `<tr class="pcd-benchmark-row"><td><strong>${label}</strong></td>${cells}</tr>`;
+      })
+      .join("");
+
     container.innerHTML = `
       <thead>
         <tr>
@@ -648,18 +694,7 @@ ${card.context ? `<span class="pcd-card-context">${card.context}</span>` : ""}
         </tr>
       </thead>
       <tbody>
-        ${sorted
-          .map((row) => {
-            const cells = metricOrder
-              .map((m) => {
-                const value = row.returns?.[m.key];
-                const cls = classifyPercent(value);
-                return `<td class="${cls}">${formatter.percent(value, 1)}</td>`;
-              })
-              .join("");
-            return `<tr><td><strong>${row.ticker}</strong></td>${cells}</tr>`;
-          })
-          .join("")}
+        ${benchmarkRows}${companyRows}
       </tbody>
     `;
   }
@@ -756,7 +791,7 @@ ${card.context ? `<span class="pcd-card-context">${card.context}</span>` : ""}
     }
   }
 
-  function buildChart(prices, ticker, horizonKey) {
+  function buildChart(prices, ticker, horizonKey, benchmark) {
     const chartContainer = document.getElementById("pcd-price-chart");
     if (!chartContainer || !window.Plotly) {
       if (chartContainer) {
@@ -767,6 +802,8 @@ ${card.context ? `<span class="pcd-card-context">${card.context}</span>` : ""}
     }
 
     const focusSeriesParsed = parseSeriesWithDates(prices[ticker] || []);
+    const benchmarkSeriesParsed =
+      benchmark && benchmark.ticker ? parseSeriesWithDates(prices[benchmark.ticker] || []) : [];
 
     if (!focusSeriesParsed.length) {
       chartContainer.innerHTML = '<p style="color:#f87171;">No price history available.</p>';
@@ -779,7 +816,10 @@ ${card.context ? `<span class="pcd-card-context">${card.context}</span>` : ""}
 
     const trimmedFocus = startDate ? filterSeriesByStart(focusSeriesParsed, startDate) : focusSeriesParsed;
     const focusSeries = trimmedFocus.length ? trimmedFocus : focusSeriesParsed;
-    const focusUnadjusted = startDate ? filterSeriesByStart(focusSeriesParsed, startDate) : focusSeriesParsed;
+    const focusUnadjusted = focusSeriesParsed;
+    const benchmarkTrimmed = startDate ? filterSeriesByStart(benchmarkSeriesParsed, startDate) : benchmarkSeriesParsed;
+    const benchmarkSeries = benchmarkTrimmed.length ? benchmarkTrimmed : benchmarkSeriesParsed;
+    const benchmarkLabel = benchmark?.name || BENCHMARK_LABEL_FALLBACK;
 
     const data = [
       {
@@ -791,21 +831,38 @@ ${card.context ? `<span class="pcd-card-context">${card.context}</span>` : ""}
         x: focusSeries.map((point) => point.date),
         y: focusSeries.map((point) => point.adjClose),
       },
-      {
+    ];
+
+    const unadjustedSeries = startDate ? filterSeriesByStart(focusUnadjusted, startDate) : focusUnadjusted;
+    const focusUnadjustedSeries = unadjustedSeries.length ? unadjustedSeries : focusUnadjusted;
+
+    data.push({
+      type: "scatter",
+      mode: "lines",
+      name: `${ticker} close`,
+      line: { color: "#f87171", width: 2, dash: "dot" },
+      hovertemplate: `<b>${ticker}</b><br>%{x}<br>$%{y:.2f}`,
+      x: focusUnadjustedSeries.map((point) => point.date),
+      y: focusUnadjustedSeries.map((point) => point.close ?? point.adjClose),
+    });
+
+    if (benchmarkSeries.length) {
+      data.push({
         type: "scatter",
         mode: "lines",
-        name: `${ticker} close`,
-        line: { color: "#f87171", width: 2, dash: "dot" },
-        hovertemplate: `<b>${ticker}</b><br>%{x}<br>$%{y:.2f}`,
-        x: focusUnadjusted.map((point) => point.date),
-        y: focusUnadjusted.map((point) => point.close ?? point.adjClose),
-      },
-    ];
+        name: `${benchmarkLabel} adj close`,
+        line: { color: "#EF5399", width: 2 },
+        hovertemplate: `<b>${benchmarkLabel}</b><br>%{x}<br>$%{y:.2f}`,
+        x: benchmarkSeries.map((point) => point.date),
+        y: benchmarkSeries.map((point) => point.adjClose),
+        yaxis: "y2",
+      });
+    }
 
     const axisSetting = chartAxisSettings[horizonKey] || chartAxisSettings["12m"];
 
     const layout = {
-      margin: { l: 50, r: 30, t: 10, b: 40 },
+      margin: { l: 50, r: benchmarkSeries.length ? 70 : 40, t: 10, b: 40 },
       paper_bgcolor: "rgba(0,0,0,0)",
       plot_bgcolor: "rgba(0,0,0,0)",
       font: { color: "#e2e8f0" },
@@ -822,6 +879,19 @@ ${card.context ? `<span class="pcd-card-context">${card.context}</span>` : ""}
         dtick: axisSetting?.dtick,
       },
     };
+
+    if (benchmarkSeries.length) {
+      layout.yaxis2 = {
+        title: `${benchmarkLabel} Adj Close`,
+        overlaying: "y",
+        side: "right",
+        tickprefix: "$",
+        tickformat: ",.0f",
+        titlefont: { color: "#EF5399" },
+        tickfont: { color: "#EF5399" },
+        showgrid: false,
+      };
+    }
 
     const config = { responsive: true, displaylogo: false };
 
@@ -863,6 +933,7 @@ ${card.context ? `<span class="pcd-card-context">${card.context}</span>` : ""}
         last_trade_date: lastTradeDate,
         aggregates: serverAggregates,
         errors = [],
+        benchmarks: benchmarkList = [],
       } = payload || {};
 
       if (!Array.isArray(companyList) || !companyList.length || !prices || typeof prices !== "object") {
@@ -872,6 +943,10 @@ ${card.context ? `<span class="pcd-card-context">${card.context}</span>` : ""}
       if (Array.isArray(errors) && errors.length) {
         console.warn("pcd-dashboard partial errors", errors);
       }
+
+      const benchmarkLookup = new Map((benchmarkList || []).map((entry) => [entry.ticker, entry]));
+      const spBenchmark = benchmarkLookup.get(BENCHMARK_TICKER) || null;
+      const benchmarksForTables = spBenchmark ? [spBenchmark] : [];
 
       const companyMap = new Map(companyList.map((row) => [row.ticker, row]));
 
@@ -919,7 +994,7 @@ ${card.context ? `<span class="pcd-card-context">${card.context}</span>` : ""}
 
       if (metricGrid) buildMetricCards(metricGrid, companyList, aggregates, metrics.last_trade_date);
       if (movers) buildMovers(movers, companyList);
-      if (returnTable) buildReturnTable(returnTable, companyList);
+      if (returnTable) buildReturnTable(returnTable, companyList, benchmarksForTables);
       if (marketTable) buildMarketTable(marketTable, companyList);
       if (valuationTable) buildValuationTable(valuationTable, companyList);
       if (riskTable) buildRiskTable(riskTable, companyList);
@@ -977,7 +1052,7 @@ ${card.context ? `<span class="pcd-card-context">${card.context}</span>` : ""}
           chartTitle.textContent = `${ticker} Stock Price History`;
         }
         updateMetricDisplay(ticker, horizon);
-        buildChart(prices, ticker, horizon);
+        buildChart(prices, ticker, horizon, spBenchmark);
       };
 
       if (tickerSelect) tickerSelect.addEventListener("change", redraw);

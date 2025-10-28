@@ -49,7 +49,7 @@ const TICKERS = {
   BOW: "Bowhead Specialty Holdings"
 };
 
-const BENCHMARK_SYMBOLS = ["BRK-B"];
+const BENCHMARK_SYMBOLS = ["BRK-B", "^GSPC"];
 
 const RETURN_DEFINITIONS = {
   "1d": { days: 1 },
@@ -212,6 +212,9 @@ async function fetchTickerData(ticker) {
   const windowPrices = windowSeries.map((entry) => entry.adjClose).filter((value) => value != null);
   const yearHigh = windowPrices.length ? Math.max(...windowPrices) : null;
   const yearLow = windowPrices.length ? Math.min(...windowPrices) : null;
+  const maWindow = series.slice(-200).map((entry) => entry.adjClose).filter((value) => value != null);
+  const ma200 = maWindow.length ? average(maWindow) : null;
+  const aboveMa200 = ma200 != null && lastPrice != null ? lastPrice >= ma200 : null;
 
   const returns = {};
   for (const [window, definition] of Object.entries(RETURN_DEFINITIONS)) {
@@ -288,6 +291,8 @@ async function fetchTickerData(ticker) {
     year_low: Number.isFinite(yearLow) ? yearLow : priceInfo.fiftyTwoWeekLow ?? null,
     volatility: computeAnnualizedVolatility(closes),
     max_drawdown: computeMaxDrawdown(closes),
+    ma200,
+    above_ma200: aboveMa200,
     returns,
     raw_returns: rawReturns
   };
@@ -323,6 +328,7 @@ function computeAggregates(companies) {
   const betas = companies.map((company) => company.beta).filter((value) => Number.isFinite(value));
   const advancers = companies.filter((company) => (company.returns?.["1d"] || 0) > 0).length;
   const decliners = companies.filter((company) => (company.returns?.["1d"] || 0) < 0).length;
+  const above200Count = companies.filter((company) => company.above_ma200 === true).length;
 
   return {
     coverage,
@@ -330,7 +336,9 @@ function computeAggregates(companies) {
     avgBeta: betas.length ? betas.reduce((acc, value) => acc + value, 0) / betas.length : null,
     advancers,
     decliners,
-    breadth1d: coverage ? advancers / coverage : null
+    breadth1d: coverage ? advancers / coverage : null,
+    above200Count,
+    above200Ratio: coverage ? above200Count / coverage : null
   };
 }
 
@@ -364,7 +372,11 @@ exports.handler = async () => {
         if (result.status === "fulfilled") {
           const { metadata, priceSeries, lastDate } = result.data;
           if (BENCHMARK_SYMBOLS.includes(result.ticker)) {
-            benchmarks.push({ ticker: metadata.ticker, name: metadata.name });
+            benchmarks.push({
+              ticker: metadata.ticker,
+              name: metadata.name,
+              returns: metadata.returns || null
+            });
           } else {
             results.push(metadata);
           }
