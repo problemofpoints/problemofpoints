@@ -1,0 +1,16 @@
+---
+title: "Insurer Buyback Analyzer"
+description: "Interactive tool for calculating stock buyback payback and red-zone buyback valuation framework for P&C (re)insurers."
+page-layout: full
+image: thumbnail.svg
+image-alt: "Dashboard with insurer buyback payback metrics and valuation guardrails"
+---
+
+{{< include app.html >}}
+
+### About this tool
+
+- **Data source:** Live fundamentals pulled through a Netlify function that queries Yahoo Finance. Tangible book is approximated with stated book value when balance sheet detail is unavailable.
+- **Payback logic:** Implied return equals ROE divided by the price-to-tangible book multiple; the Rule of 72 converts that return into a dilution payback period.
+- **Red-zone tiers:** Default required return hurdles mirror IBNR Weekly #36 (2025) groupings — 7–10%, 10–12%, 12–14%, and 14%+. Adjust the sliders to test custom assumptions.
+- **Interpretation:** Use the classification badges to quickly identify companies where incremental buybacks risk eroding long-term tangible book value compounding.

@@ -1,0 +1,1072 @@
+<!--html_preserve-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"
+  rel="stylesheet"
+>
+<style>
+  :root {
+    color-scheme: only light;
+  }
+
+  .ibt-root {
+    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f7f8fc;
+    color: #0f172a;
+    padding: 36px 36px 96px;
+    border-radius: 20px;
+    box-shadow: 0 30px 70px -40px rgba(15, 23, 42, 0.45);
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: min(100%, 1180px);
+    margin: 0 auto 48px;
+  }
+
+  .ibt-root * {
+    box-sizing: border-box;
+  }
+
+  .ibt-header {
+    display: grid;
+    gap: 12px;
+  }
+
+  .ibt-header h1 {
+    margin: 0;
+    font-size: clamp(1.8rem, 2vw + 1.2rem, 2.6rem);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .ibt-header p {
+    margin: 0;
+    color: #475569;
+    max-width: 70ch;
+    line-height: 1.55;
+  }
+
+  .ibt-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .ibt-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #1d4ed8;
+    background: rgba(29, 78, 216, 0.12);
+  }
+
+  .ibt-controls {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    background: rgba(15, 23, 42, 0.04);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 18px;
+    padding: 18px 20px;
+  }
+
+  .ibt-control {
+    display: grid;
+    gap: 6px;
+  }
+
+  .ibt-control label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1f2937;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .ibt-input,
+  .ibt-select {
+    appearance: none;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: #fff;
+    font-size: 0.95rem;
+    color: #0f172a;
+  }
+
+  .ibt-input:focus,
+  .ibt-select:focus,
+  .ibt-range:focus-visible {
+    outline: 2px solid rgba(79, 70, 229, 0.5);
+    border-color: rgba(79, 70, 229, 0.6);
+  }
+
+  .ibt-range {
+    width: 100%;
+    accent-color: #0f172a;
+  }
+
+  .ibt-inset {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 0.9rem;
+    color: #334155;
+  }
+
+  .ibt-summary {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+
+  .ibt-card {
+    display: grid;
+    gap: 4px;
+    padding: 16px 18px;
+    border-radius: 16px;
+    background: #ffffff;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    box-shadow: 0 10px 30px -25px rgba(15, 23, 42, 0.45);
+  }
+
+  .ibt-card h3 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #475569;
+  }
+
+  .ibt-card strong {
+    font-size: 1.85rem;
+    font-weight: 600;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+  }
+
+  .ibt-card span {
+    font-size: 0.85rem;
+    color: #64748b;
+  }
+
+  .ibt-grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 1100px) {
+    .ibt-grid {
+      grid-template-columns: minmax(560px, 2fr) minmax(360px, 1fr);
+      align-items: start;
+    }
+  }
+
+  .ibt-table-card,
+  .ibt-detail-card {
+    background: #ffffff;
+    border-radius: 18px;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    box-shadow: 0 18px 45px -30px rgba(15, 23, 42, 0.5);
+    padding: 18px 20px;
+    display: grid;
+    gap: 14px;
+  }
+
+  .ibt-table-wrap {
+    position: relative;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+  }
+
+  .ibt-table-card {
+    overflow: hidden;
+  }
+
+  .ibt-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 620px;
+    background: #fff;
+  }
+
+  .ibt-table thead {
+    background: rgba(15, 23, 42, 0.04);
+  }
+
+  .ibt-table th,
+  .ibt-table td {
+    text-align: left;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+    font-size: 0.9rem;
+  }
+
+  .ibt-table th {
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #475569;
+    cursor: pointer;
+    position: sticky;
+    top: 0;
+    backdrop-filter: blur(6px);
+  }
+
+  .ibt-table tbody tr:hover {
+    background: rgba(79, 70, 229, 0.05);
+  }
+
+  .ibt-table tbody tr.is-selected {
+    background: rgba(79, 70, 229, 0.12);
+  }
+
+  .ibt-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .badge-positive {
+    background: rgba(34, 197, 94, 0.14);
+    color: #15803d;
+  }
+
+  .badge-watch {
+    background: rgba(234, 179, 8, 0.18);
+    color: #b45309;
+  }
+
+  .badge-negative {
+    background: rgba(239, 68, 68, 0.18);
+    color: #b91c1c;
+  }
+
+  .badge-neutral {
+    background: rgba(148, 163, 184, 0.16);
+    color: #475569;
+  }
+
+  .ibt-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .ibt-detail-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .ibt-detail-grid {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .ibt-metric {
+    display: grid;
+    gap: 2px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.04);
+  }
+
+  .ibt-metric span {
+    font-size: 0.8rem;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+
+  .ibt-metric strong {
+    font-size: 1.1rem;
+    color: #0f172a;
+    font-weight: 600;
+  }
+
+  .ibt-divider {
+    height: 1px;
+    background: rgba(148, 163, 184, 0.2);
+    margin: 6px 0;
+  }
+
+  .ibt-scenario {
+    display: grid;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: rgba(79, 70, 229, 0.06);
+  }
+
+  .ibt-scenario h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #4338ca;
+  }
+
+  .ibt-scenario-controls {
+    display: grid;
+    gap: 10px;
+  }
+
+  .ibt-scenario-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .ibt-scenario-row label {
+    flex: 0 0 120px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #1f2937;
+  }
+
+  .ibt-scenario-row input[type="range"] {
+    flex: 1;
+  }
+
+  .ibt-scenario-row output {
+    flex: 0 0 60px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  .ibt-scenario-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    padding-top: 8px;
+  }
+
+  .ibt-scenario-box {
+    display: grid;
+    gap: 2px;
+    background: #fff;
+    border-radius: 10px;
+    padding: 10px 12px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+  }
+
+  .ibt-scenario-box span {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #475569;
+  }
+
+  .ibt-scenario-box strong {
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+
+  .ibt-methodology {
+    display: grid;
+    gap: 14px;
+    background: rgba(15, 23, 42, 0.02);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 16px;
+    padding: 18px 20px;
+    color: #334155;
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+
+  .ibt-methodology h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #0f172a;
+  }
+
+  .ibt-methodology ul {
+    margin: 0;
+    padding-left: 20px;
+  }
+
+  .ibt-methodology li + li {
+    margin-top: 6px;
+  }
+
+  .ibt-empty {
+    padding: 18px;
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(15, 23, 42, 0.02);
+    color: #475569;
+    font-size: 0.95rem;
+  }
+
+  .ibt-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .status-red {
+    background: rgba(239, 68, 68, 0.16);
+    color: #b91c1c;
+  }
+
+  .status-watch {
+    background: rgba(234, 179, 8, 0.16);
+    color: #b45309;
+  }
+
+  .status-safe {
+    background: rgba(34, 197, 94, 0.16);
+    color: #15803d;
+  }
+
+  .ibt-note {
+    font-size: 0.85rem;
+    color: #64748b;
+  }
+</style>
+
+<div class="ibt-root" id="insurer-buybacks-tool" data-state="loading" markdown="0">
+<header class="ibt-header">
+<h1>Insurer Buyback Analyzer</h1>
+<p>
+Evaluate share repurchase attractiveness for property &amp; casualty underwriters using the payback
+and “red zone” frameworks from IBNR Weekly #36 (2025). Compare implied returns, dilution payback periods,
+and valuation guardrails calibrated to risk tolerances.
+</p>
+<div class="ibt-meta">
+<span class="ibt-chip" id="ibt-refresh-chip">Loading data…</span>
+<span class="ibt-note" id="ibt-error-note" hidden>Some tickers could not be loaded.</span>
+</div>
+</header>
+
+<section class="ibt-controls">
+<div class="ibt-control">
+<label for="ibt-search">Search ticker or name</label>
+<input type="text" id="ibt-search" class="ibt-input" placeholder="e.g. ALL, Chubb" autocomplete="off">
+</div>
+<div class="ibt-control">
+<label for="ibt-status-filter">Red-zone posture</label>
+<select id="ibt-status-filter" class="ibt-select">
+<option value="all">All companies</option>
+<option value="safe">Outside red zone</option>
+<option value="watch">Within 20% of red zone</option>
+<option value="red">Inside red zone</option>
+</select>
+</div>
+<div class="ibt-control">
+<label for="ibt-payback-filter">Rule-of-72 payback ceiling</label>
+<input type="range" id="ibt-payback-filter" class="ibt-range" min="3" max="15" step="0.5" value="9">
+<div class="ibt-inset">
+<strong id="ibt-payback-value">≤ 9.0 years</strong>
+<span>(higher = return &lt; 8%)</span>
+</div>
+</div>
+</section>
+
+<section class="ibt-summary" id="ibt-summary-cards">
+<!-- dynamic summary cards -->
+</section>
+
+<section class="ibt-grid">
+<div class="ibt-table-card">
+<div class="ibt-table-wrap">
+<table class="ibt-table" id="ibt-table">
+<thead>
+<tr>
+<th data-key="ticker">Ticker</th>
+<th data-key="price">Price</th>
+<th data-key="ptbv">P/TBV</th>
+<th data-key="roe">ROE</th>
+<th data-key="impliedReturn">Implied return</th>
+<th data-key="payback">Rule-72 payback</th>
+<th data-key="premiumPayback">BV premium payback</th>
+<th data-key="redZoneDelta">Red-zone distance</th>
+<th data-key="requiredReturn">Required return</th>
+<th data-key="goodwillRatio">Goodwill %</th>
+</tr>
+</thead>
+<tbody id="ibt-table-body">
+<tr>
+<td colspan="10">Loading…</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="ibt-note" id="ibt-table-note">
+Click a row to view scenario analysis and customize assumptions.
+</div>
+</div>
+
+<aside class="ibt-detail-card" id="ibt-detail" hidden>
+<div class="ibt-detail-header">
+<div>
+<h2 id="ibt-detail-title">—</h2>
+<div class="ibt-status-pill status-safe" id="ibt-detail-status">—</div>
+</div>
+<div class="ibt-note" id="ibt-detail-updated">Updated —</div>
+</div>
+
+<div class="ibt-detail-grid" id="ibt-detail-metrics">
+<!-- dynamic metrics -->
+</div>
+
+<div class="ibt-scenario">
+<h3>Scenario adjustments</h3>
+<p class="ibt-note">
+Adjust the expected ROE and minimum buyback return hurdle to stress-test valuation headroom.
+</p>
+<div class="ibt-scenario-controls">
+<div class="ibt-scenario-row">
+<label for="ibt-scenario-roe">ROE assumption</label>
+<input type="range" id="ibt-scenario-roe" min="4" max="24" step="0.25">
+<output id="ibt-scenario-roe-value">—</output>
+</div>
+<div class="ibt-scenario-row">
+<label for="ibt-scenario-required">Required return</label>
+<input type="range" id="ibt-scenario-required" min="6" max="18" step="0.25">
+<output id="ibt-scenario-required-value">—</output>
+</div>
+</div>
+<div class="ibt-scenario-summary" id="ibt-scenario-summary">
+<!-- dynamic scenario metrics -->
+</div>
+</div>
+</aside>
+</section>
+
+<section class="ibt-methodology">
+<h2>Framework highlights</h2>
+<ul>
+<li>
+<strong>Payback analysis:</strong> The implied return on buybacks is approximated as ROE divided by the
+price-to-tangible book multiple. Applying the Rule of 72 converts that return into a dilution payback period.
+Buybacks executed at or below tangible book are assumed immediately accretive.
+</li>
+<li>
+<strong>Red-zone thresholds:</strong> Required return hurdles vary with balance sheet strength, underwriting
+volatility, catastrophe exposure, ratings reliance, and intangible load. We seed defaults using the report’s
+tiers (7–10%, 10–12%, 12–14%, 14%+), but the sliders allow bespoke scenarios.
+</li>
+<li>
+<strong>Distance to guardrail:</strong> Companies trading above their red-zone P/TBV threshold are flagged in
+red; those within 20% land in the “watch” bucket. These designations contextualize whether incremental
+buybacks risk eroding long-term tangible book value growth.
+</li>
+<li>
+<strong>Data notes:</strong> Fundamentals are sourced live via Yahoo Finance. Some cross-listed underwriters
+provide limited balance sheet detail; when tangible book data are unavailable, stated book is used as a
+placeholder. Treat results as directional and pair with internal modeling before allocating capital.
+</li>
+</ul>
+</section>
+</div>
+
+<script>
+  function initInsurerBuybacks() {
+    const state = {
+      raw: [],
+      filtered: [],
+      selected: null,
+      sortKey: "redZoneDelta",
+      sortAsc: true,
+      searchTerm: "",
+      statusFilter: "all",
+      maxPayback: 9
+    };
+
+    const dom = {
+      root: document.getElementById("insurer-buybacks-tool"),
+      refreshChip: document.getElementById("ibt-refresh-chip"),
+      errorNote: document.getElementById("ibt-error-note"),
+      summary: document.getElementById("ibt-summary-cards"),
+      tableBody: document.getElementById("ibt-table-body"),
+      tableNote: document.getElementById("ibt-table-note"),
+      detail: document.getElementById("ibt-detail"),
+      detailTitle: document.getElementById("ibt-detail-title"),
+      detailStatus: document.getElementById("ibt-detail-status"),
+      detailUpdated: document.getElementById("ibt-detail-updated"),
+      detailMetrics: document.getElementById("ibt-detail-metrics"),
+      scenario: {
+        roe: document.getElementById("ibt-scenario-roe"),
+        roeValue: document.getElementById("ibt-scenario-roe-value"),
+        required: document.getElementById("ibt-scenario-required"),
+        requiredValue: document.getElementById("ibt-scenario-required-value"),
+        summary: document.getElementById("ibt-scenario-summary")
+      },
+      inputs: {
+        search: document.getElementById("ibt-search"),
+        status: document.getElementById("ibt-status-filter"),
+        payback: document.getElementById("ibt-payback-filter"),
+        paybackValue: document.getElementById("ibt-payback-value")
+      }
+    };
+
+    if (!dom.root) {
+      // Page does not include the buyback tool; abort initialization.
+      return;
+    }
+
+    const formatters = {
+      currency: new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }),
+      compact: new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }),
+      percent(d, digits = 1) {
+        if (d == null || Number.isNaN(d)) return "—";
+        return `${(d * 100).toFixed(digits)}%`;
+      },
+      fixed(value, digits = 2) {
+        if (value == null || Number.isNaN(value)) return "—";
+        return Number(value).toFixed(digits);
+      },
+      years(value, digits = 1) {
+        if (value == null || !Number.isFinite(value)) return "—";
+        return `${value.toFixed(digits)} yrs`;
+      }
+    };
+
+    function getStatus(entry) {
+      if (entry.priceToTangibleBook == null || entry.redZoneThresholdPTBV == null) {
+        return "unknown";
+      }
+      if (entry.redZoneDelta != null && entry.redZoneDelta >= 0) {
+        return "red";
+      }
+      if (entry.redZoneDelta != null && entry.redZoneDelta >= -0.2) {
+        return "watch";
+      }
+      return "safe";
+    }
+
+    function getStatusLabel(status) {
+      switch (status) {
+        case "red":
+          return { label: "In red zone", className: "status-red" };
+        case "watch":
+          return { label: "Within 20% guardrail", className: "status-watch" };
+        case "safe":
+          return { label: "Headroom available", className: "status-safe" };
+        default:
+          return { label: "Data limited", className: "status-safe" };
+      }
+    }
+
+    function decorate(entry) {
+      const status = getStatus(entry);
+      const impliedReturn = entry.impliedBuybackReturn;
+      const payback = entry.rule72PaybackYears;
+      const premiumPayback = entry.premiumPaybackYears;
+      const goodwillPct = entry.goodwillRatio != null ? entry.goodwillRatio : null;
+
+      return {
+        ...entry,
+        status,
+        impliedReturn,
+        payback,
+        premiumPayback,
+        goodwillPct,
+        statusRank: status === "red" ? 2 : status === "watch" ? 1 : status === "safe" ? 0 : 3
+      };
+    }
+
+    function applyFilters() {
+      const term = state.searchTerm.trim().toLowerCase();
+      state.filtered = state.raw.filter((entry) => {
+        const matchesTerm =
+          !term ||
+          entry.ticker.toLowerCase().includes(term) ||
+          (entry.name || "").toLowerCase().includes(term);
+        if (!matchesTerm) return false;
+
+        if (state.statusFilter !== "all") {
+          if (entry.status !== state.statusFilter) return false;
+        }
+
+        if (state.maxPayback) {
+          if (entry.payback != null && entry.payback > state.maxPayback) return false;
+        }
+
+        return true;
+      });
+      applySort();
+      renderTable();
+      renderSummary();
+    }
+
+    function applySort(key = state.sortKey, asc = state.sortAsc) {
+      state.sortKey = key;
+      state.sortAsc = asc;
+      const factor = asc ? 1 : -1;
+      state.filtered.sort((a, b) => {
+        const av = a[key];
+        const bv = b[key];
+        if (av == null && bv == null) return 0;
+        if (av == null) return 1;
+        if (bv == null) return -1;
+        if (typeof av === "string") {
+          return av.localeCompare(bv) * factor;
+        }
+        return (av - bv) * factor;
+      });
+    }
+
+    function renderSummary() {
+      if (!state.filtered.length) {
+        dom.summary.innerHTML = `
+          <div class="ibt-card">
+            <h3>No matches</h3>
+            <strong>—</strong>
+            <span>Adjust filters to see buyback metrics.</span>
+          </div>
+        `;
+        return;
+      }
+
+      const coverage = state.filtered.length;
+      const paybacks = state.filtered.map((d) => d.payback).filter((d) => Number.isFinite(d));
+      const medianPayback = paybacks.length
+        ? paybacks.slice().sort((a, b) => a - b)[Math.floor(paybacks.length / 2)]
+        : null;
+
+      const reds = state.filtered.filter((d) => d.status === "red").length;
+      const watches = state.filtered.filter((d) => d.status === "watch").length;
+
+      const medianReturn = (() => {
+        const returns = state.filtered.map((d) => d.impliedReturn).filter((d) => Number.isFinite(d));
+        if (!returns.length) return null;
+        const sorted = returns.slice().sort((a, b) => a - b);
+        return sorted[Math.floor(sorted.length / 2)];
+      })();
+
+      dom.summary.innerHTML = `
+        <div class="ibt-card">
+          <h3>Coverage</h3>
+          <strong>${coverage}</strong>
+          <span>Filtered insurers</span>
+        </div>
+        <div class="ibt-card">
+          <h3>Median payback</h3>
+          <strong>${formatters.years(medianPayback)}</strong>
+          <span>Rule-of-72 payoff horizon</span>
+        </div>
+        <div class="ibt-card">
+          <h3>Implied return</h3>
+          <strong>${formatters.percent(medianReturn)}</strong>
+          <span>Median ROE ÷ P/TBV</span>
+        </div>
+        <div class="ibt-card">
+          <h3>Red-zone flags</h3>
+          <strong>${reds}</strong>
+          <span>${watches} within 20% buffer</span>
+        </div>
+      `;
+    }
+
+    function renderTable() {
+      if (!state.filtered.length) {
+        dom.tableBody.innerHTML = `
+          <tr><td colspan="10" style="text-align:center;padding:18px;">No companies match the current filters.</td></tr>
+        `;
+        return;
+      }
+
+      const rows = state.filtered.map((entry) => {
+        const status = getStatusLabel(entry.status);
+        const goodwillText =
+          entry.goodwillPct != null ? `${(entry.goodwillPct * 100).toFixed(1)}%` : "—";
+        const requiredText =
+          entry.requiredReturn != null ? `${(entry.requiredReturn * 100).toFixed(1)}%` : "—";
+        const paybackText = formatters.years(entry.payback);
+        const premiumPaybackText = entry.priceToTangibleBook != null && entry.priceToTangibleBook <= 1
+          ? "N/A (≤1x TBV)"
+          : formatters.years(entry.premiumPayback);
+
+        let deltaText = "—";
+        if (entry.redZoneDelta != null && entry.redZoneThresholdPTBV != null) {
+          const percentage = entry.redZoneDelta * 100;
+          deltaText = `${percentage >= 0 ? "+" : ""}${percentage.toFixed(1)}% vs ${formatters.fixed(entry.redZoneThresholdPTBV, 2)}x`;
+        }
+
+        const rowClass = entry.ticker === state.selected?.ticker ? "is-selected" : "";
+
+        return `
+          <tr class="${rowClass}" data-ticker="${entry.ticker}">
+            <td>
+              <strong>${entry.ticker}</strong><br>
+              <span style="font-size:0.78rem;color:#64748b;">${entry.name || "—"}</span>
+            </td>
+            <td>${entry.price != null ? formatters.currency.format(entry.price) : "—"}</td>
+            <td>${entry.priceToTangibleBook != null ? `${entry.priceToTangibleBook.toFixed(2)}x` : "—"}</td>
+            <td>${formatters.percent(entry.returnOnEquity)}</td>
+            <td>${formatters.percent(entry.impliedReturn)}</td>
+            <td>${paybackText}</td>
+            <td>${premiumPaybackText}</td>
+            <td>
+              <span class="ibt-badge ${
+                entry.status === "red"
+                  ? "badge-negative"
+                  : entry.status === "watch"
+                  ? "badge-watch"
+                  : entry.status === "safe"
+                  ? "badge-positive"
+                  : "badge-neutral"
+              }">${deltaText}</span>
+            </td>
+            <td>${requiredText}</td>
+            <td>${goodwillText}</td>
+          </tr>
+        `;
+      });
+
+      dom.tableBody.innerHTML = rows.join("");
+    }
+
+    function renderDetail(entry) {
+      if (!entry) {
+        dom.detail.hidden = true;
+        return;
+      }
+      dom.detail.hidden = false;
+      dom.detailTitle.textContent = `${entry.ticker} · ${entry.name || "—"}`;
+
+      const statusInfo = getStatusLabel(entry.status);
+      dom.detailStatus.textContent = statusInfo.label;
+      dom.detailStatus.className = `ibt-status-pill ${statusInfo.className}`;
+      dom.detailUpdated.textContent = `Snapshot ${new Date(state.generatedAt).toLocaleString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      })}`;
+
+      dom.detailMetrics.innerHTML = `
+        ${renderMetric("Share price", entry.price != null ? formatters.currency.format(entry.price) : "—")}
+        ${renderMetric("P/Tangible BV", entry.priceToTangibleBook != null ? `${entry.priceToTangibleBook.toFixed(2)}x` : "—")}
+        ${renderMetric("ROE assumption", formatters.percent(entry.returnOnEquity))}
+        ${renderMetric("Implied buyback return", formatters.percent(entry.impliedReturn))}
+        ${renderMetric("Rule-72 payback", formatters.years(entry.payback))}
+        ${renderMetric(
+          "BV premium payback",
+          entry.priceToTangibleBook != null && entry.priceToTangibleBook <= 1
+            ? "Immediate (≤1x TBV)"
+            : formatters.years(entry.premiumPayback)
+        )}
+        ${renderMetric(
+          "Required return",
+          entry.requiredReturn != null ? `${(entry.requiredReturn * 100).toFixed(1)}% (${entry.requiredReturnLabel})` : "—"
+        )}
+        ${renderMetric(
+          "Red-zone guardrail",
+          entry.redZoneThresholdPTBV != null ? `${entry.redZoneThresholdPTBV.toFixed(2)}x P/TBV` : "—"
+        )}
+        ${renderMetric(
+          "Headroom vs guardrail",
+          entry.redZoneDelta != null
+            ? `${entry.redZoneDelta >= 0 ? "+" : ""}${(entry.redZoneDelta * 100).toFixed(1)}%`
+            : "—"
+        )}
+        ${renderMetric(
+          "Goodwill + intangibles",
+          entry.goodwillPct != null ? `${(entry.goodwillPct * 100).toFixed(1)}% of equity` : "Data limited"
+        )}
+      `;
+
+      // Scenario controls default values
+      const roePct = entry.returnOnEquity != null ? entry.returnOnEquity * 100 : 10;
+      const requiredPct = entry.requiredReturn != null ? entry.requiredReturn * 100 : 12;
+      dom.scenario.roe.value = roePct;
+      dom.scenario.required.value = requiredPct;
+      dom.scenario.roeValue.textContent = `${roePct.toFixed(1)}%`;
+      dom.scenario.requiredValue.textContent = `${requiredPct.toFixed(1)}%`;
+      updateScenario(entry);
+    }
+
+    function renderMetric(label, value) {
+      return `
+        <div class="ibt-metric">
+          <span>${label}</span>
+          <strong>${value}</strong>
+        </div>
+      `;
+    }
+
+    function updateScenario(entry) {
+      const roe = Number(dom.scenario.roe.value) / 100;
+      const required = Number(dom.scenario.required.value) / 100;
+      dom.scenario.roeValue.textContent = `${(roe * 100).toFixed(1)}%`;
+      dom.scenario.requiredValue.textContent = `${(required * 100).toFixed(1)}%`;
+
+      const ptbv = entry.priceToTangibleBook;
+      const impliedReturn = ptbv != null && ptbv > 0 ? roe / ptbv : null;
+      const rulePayback = impliedReturn != null && impliedReturn > 0 ? 72 / (impliedReturn * 100) : null;
+      const premiumPayback =
+        ptbv != null && ptbv > 1 && roe > 0 ? (ptbv - 1) / roe : ptbv != null && ptbv <= 1 ? 0 : null;
+      const redThreshold = required > 0 && roe != null ? roe / required : null;
+      const delta = redThreshold != null && ptbv != null ? ptbv / redThreshold - 1 : null;
+
+      dom.scenario.summary.innerHTML = `
+        <div class="ibt-scenario-box">
+          <span>Implied return</span>
+          <strong>${formatters.percent(impliedReturn)}</strong>
+        </div>
+        <div class="ibt-scenario-box">
+          <span>Rule-72 payback</span>
+          <strong>${formatters.years(rulePayback)}</strong>
+        </div>
+        <div class="ibt-scenario-box">
+          <span>BV premium payback</span>
+          <strong>${
+            ptbv != null && ptbv <= 1
+              ? "Immediate"
+              : premiumPayback != null
+              ? `${premiumPayback.toFixed(1)} yrs`
+              : "—"
+          }</strong>
+        </div>
+        <div class="ibt-scenario-box">
+          <span>Red-zone threshold</span>
+          <strong>${redThreshold != null ? `${redThreshold.toFixed(2)}x` : "—"}</strong>
+        </div>
+        <div class="ibt-scenario-box">
+          <span>Distance to guardrail</span>
+          <strong>${
+            delta != null
+              ? `${delta >= 0 ? "+" : ""}${(delta * 100).toFixed(1)}%`
+              : "—"
+          }</strong>
+        </div>
+      `;
+    }
+
+    async function fetchData() {
+      try {
+        dom.root.dataset.state = "loading";
+        const response = await fetch("/.netlify/functions/insurer-buybacks");
+        if (!response.ok) throw new Error(`Status ${response.status}`);
+        const payload = await response.json();
+        state.generatedAt = payload.generated_at;
+        const errors = payload.errors || [];
+        dom.errorNote.hidden = !errors.length;
+        if (errors.length) {
+          dom.errorNote.textContent = `Some tickers were skipped (${errors.length}).`;
+        }
+
+        state.raw = (payload.tickers || []).map(decorate);
+        applyFilters();
+        dom.refreshChip.textContent = `Refreshed ${new Date(state.generatedAt).toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit"
+        })}`;
+        dom.tableNote.hidden = false;
+        dom.root.dataset.state = "ready";
+      } catch (error) {
+        dom.root.dataset.state = "error";
+        dom.tableBody.innerHTML = `<tr><td colspan="10" style="padding:20px;color:#b91c1c;">Failed to load data (${error.message}).</td></tr>`;
+        dom.refreshChip.textContent = "Failed to refresh";
+        console.error(error);
+      }
+    }
+
+    function bindEvents() {
+      if (dom.inputs.search) {
+        dom.inputs.search.addEventListener("input", (event) => {
+          state.searchTerm = event.target.value || "";
+          applyFilters();
+        });
+      }
+
+      if (dom.inputs.status) {
+        dom.inputs.status.addEventListener("change", (event) => {
+          state.statusFilter = event.target.value;
+          applyFilters();
+        });
+      }
+
+      if (dom.inputs.payback) {
+        dom.inputs.payback.addEventListener("input", (event) => {
+          const value = Number(event.target.value);
+          state.maxPayback = value;
+          if (dom.inputs.paybackValue) {
+            dom.inputs.paybackValue.textContent = `≤ ${value.toFixed(1)} years`;
+          }
+          applyFilters();
+        });
+      }
+
+      dom.tableBody.addEventListener("click", (event) => {
+        const row = event.target.closest("tr[data-ticker]");
+        if (!row) return;
+        const ticker = row.getAttribute("data-ticker");
+        const entry = state.raw.find((d) => d.ticker === ticker);
+        state.selected = entry || null;
+        renderTable();
+        renderDetail(state.selected);
+      });
+
+      if (dom.scenario.roe) {
+        dom.scenario.roe.addEventListener("input", () => {
+          if (state.selected) updateScenario(state.selected);
+        });
+      }
+
+      if (dom.scenario.required) {
+        dom.scenario.required.addEventListener("input", () => {
+          if (state.selected) updateScenario(state.selected);
+        });
+      }
+
+      document.querySelectorAll(".ibt-table th[data-key]").forEach((header) => {
+        header.addEventListener("click", () => {
+          const key = header.getAttribute("data-key");
+          if (state.sortKey === key) {
+            state.sortAsc = !state.sortAsc;
+          } else {
+            state.sortKey = key;
+            state.sortAsc = key === "ticker" || key === "name";
+          }
+          applySort(state.sortKey, state.sortAsc);
+          renderTable();
+        });
+      });
+    }
+
+    bindEvents();
+    fetchData();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initInsurerBuybacks, { once: true });
+  } else {
+    initInsurerBuybacks();
+  }
+</script>
+<!--/html_preserve-->

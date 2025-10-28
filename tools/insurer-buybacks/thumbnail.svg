@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Insurer Buyback Analyzer thumbnail</title>
+  <desc id="desc">Dashboard preview illustrating buyback payback metrics and valuation guardrails.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f5f7ff"/>
+      <stop offset="100%" stop-color="#e6ecff"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.92"/>
+      <stop offset="100%" stop-color="#eef2ff" stop-opacity="0.96"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" rx="36" fill="url(#bg)"/>
+  <g transform="translate(120 120)">
+    <rect x="0" y="0" width="960" height="420" rx="32" fill="url(#panel)" stroke="#d7ddff" stroke-width="2"/>
+    <text x="40" y="70" font-family="Inter, Arial, sans-serif" font-size="52" font-weight="600" fill="#1a2742">Insurer Buyback Analyzer</text>
+    <text x="40" y="110" font-family="Inter, Arial, sans-serif" font-size="22" fill="#445166">Payback horizon • Implied return • Red-zone guardrails</text>
+
+    <g transform="translate(40 160)">
+      <rect width="285" height="150" rx="24" fill="#eef0ff"/>
+      <text x="22" y="40" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="600" fill="#4853e4">Rule-72 Payback</text>
+      <text x="22" y="106" font-family="Inter, Arial, sans-serif" font-size="46" font-weight="600" fill="#131c32">6.8 yrs</text>
+    </g>
+    <g transform="translate(355 160)">
+      <rect width="285" height="150" rx="24" fill="#e6f7ff"/>
+      <text x="22" y="40" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="600" fill="#0d7abf">Implied Return</text>
+      <text x="22" y="106" font-family="Inter, Arial, sans-serif" font-size="46" font-weight="600" fill="#131c32">11.2%</text>
+    </g>
+    <g transform="translate(670 160)">
+      <rect width="250" height="150" rx="24" fill="#ffeaea"/>
+      <text x="20" y="40" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="600" fill="#d93c3c">Guardrail Buffer</text>
+      <text x="20" y="106" font-family="Inter, Arial, sans-serif" font-size="46" font-weight="600" fill="#131c32">+15%</text>
+    </g>
+
+    <g transform="translate(40 338)">
+      <rect width="880" height="72" rx="22" fill="#f0f2ff"/>
+      <text x="30" y="46" font-family="Inter, Arial, sans-serif" font-size="24" fill="#3b475f">
+        PB Ratio 1.58 • Required return 10.5% • Status: Outside red zone
+      </text>
+    </g>
+  </g>
+</svg>
