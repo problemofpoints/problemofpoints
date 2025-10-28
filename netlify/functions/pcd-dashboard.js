@@ -89,6 +89,16 @@ function startOfUTCYear(date) {
   return new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
 }
 
+function normalizePriceToBook(value) {
+  if (value == null) return null;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  if (numeric > 40 && numeric < 1000) {
+    return numeric / 100;
+  }
+  return numeric;
+}
+
 function findPointOnOrBefore(series, targetDate) {
   for (let i = series.length - 1; i >= 0; i -= 1) {
     if (series[i].dateObj <= targetDate) {
@@ -293,6 +303,8 @@ async function fetchTickerData(ticker) {
   } else {
     metadata.year_low_pct = null;
   }
+
+  metadata.pb_ratio = normalizePriceToBook(metadata.pb_ratio);
 
   return {
     metadata,
