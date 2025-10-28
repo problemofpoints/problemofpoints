@@ -8,29 +8,45 @@ const TICKERS = {
   ACGL: "Arch Capital Group",
   AXS: "AXIS Capital Holdings",
   CB: "Chubb Limited",
+  "CS.PA": "AXA SA",
   CINF: "Cincinnati Financial Corporation",
   EG: "Everest Group",
   EIG: "Employers Holdings",
+  "HNR1.DE": "Hannover Rück SE",
   HCI: "HCI Group",
+  HRTG: "Heritage Insurance Holdings",
   HIG: "The Hartford Financial Services Group",
+  "HSX.L": "Hiscox Ltd",
+  "IFC.TO": "Intact Financial Corporation",
   JRVR: "James River Group Holdings",
   KMPR: "Kemper Corporation",
   KNSL: "Kinsale Capital Group",
+  "LRE.L": "Lancashire Holdings",
   MCY: "Mercury General Corporation",
   MKL: "Markel Group",
+  "MUV2.DE": "Munich Re",
+  "ALV.DE": "Allianz SE",
+  "MAP.MC": "Mapfre, S.A.",
   ORI: "Old Republic International Corporation",
   PGR: "The Progressive Corporation",
   PLMR: "Palomar Holdings",
+  "QBE.AX": "QBE Insurance Group",
   RLI: "RLI Corp.",
   RNR: "RenaissanceRe Holdings",
+  "SCR.PA": "SCOR SE",
   SAFT: "Safety Insurance Group",
+  SKWD: "Skyward Specialty Insurance Group",
   SIGI: "Selective Insurance Group",
   THG: "The Hanover Insurance Group",
   TRV: "The Travelers Companies",
+  "SREN.SW": "Swiss Re AG",
   UFCS: "United Fire Group",
   UVE: "Universal Insurance Holdings",
+  UIHC: "United Insurance Holdings",
   WRB: "W. R. Berkley Corporation",
-  WTM: "White Mountains Insurance Group"
+  WTM: "White Mountains Insurance Group",
+  "ZURN.SW": "Zurich Insurance Group",
+  BOW: "Bowhead Specialty Holdings"
 };
 
 const BENCHMARK_SYMBOLS = ["BRK-B"];
@@ -71,6 +87,16 @@ function shiftDateByDaysUTC(date, days) {
 
 function startOfUTCYear(date) {
   return new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+}
+
+function normalizePriceToBook(value) {
+  if (value == null) return null;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  if (numeric > 40 && numeric < 1000) {
+    return numeric / 100;
+  }
+  return numeric;
 }
 
 function findPointOnOrBefore(series, targetDate) {
@@ -277,6 +303,8 @@ async function fetchTickerData(ticker) {
   } else {
     metadata.year_low_pct = null;
   }
+
+  metadata.pb_ratio = normalizePriceToBook(metadata.pb_ratio);
 
   return {
     metadata,
