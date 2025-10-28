@@ -1,14 +1,11 @@
 ---
 title: "Blog Posts"
+page-layout: full
 listing:
   contents:
-    - posts/*/index.qmd
+    - "./*/index.qmd"
   sort: "date desc"
   type: default
   categories: true
-  sort-ui: false
   filter-ui: false
-  max-description-length: 125
-page-layout: full
-title-block-banner: false
 ---

@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">P&amp;C Stocks Monitor thumbnail</title>
+  <desc id="desc">Stylized dashboard card with insurer skyline and valuation charts.</desc>
+  <defs>
+    <linearGradient id="pcd-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#dbeafe"/>
+    </linearGradient>
+    <linearGradient id="pcd-line" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#14b8a6"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" rx="32" fill="url(#pcd-bg)"/>
+  <g transform="translate(120 70)">
+    <!-- Removed headline text per request -->
+    <g transform="translate(0 60)">
+      <rect x="0" y="0" width="960" height="320" rx="28" fill="#0f172a" opacity="0.04"/>
+      <rect x="0" y="0" width="960" height="320" rx="28" fill="none" stroke="#0ea5e9" stroke-opacity="0.35" stroke-width="3"/>
+      <g transform="translate(60 40)">
+        <path d="M0 220L100 180L190 210L280 150L360 180L460 120L550 160L660 110L780 180L880 140" fill="none" stroke="url(#pcd-line)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+        <g fill="#f97316">
+          <rect x="80" y="80" width="28" height="140" rx="10" opacity="0.75"/>
+          <rect x="170" y="110" width="28" height="110" rx="10" opacity="0.75"/>
+          <rect x="260" y="70" width="28" height="150" rx="10" opacity="0.75"/>
+          <rect x="350" y="135" width="28" height="85" rx="10" opacity="0.75"/>
+          <rect x="440" y="65" width="28" height="155" rx="10" opacity="0.75"/>
+          <rect x="530" y="95" width="28" height="125" rx="10" opacity="0.75"/>
+          <rect x="620" y="120" width="28" height="100" rx="10" opacity="0.75"/>
+          <rect x="710" y="90" width="28" height="130" rx="10" opacity="0.75"/>
+        </g>
+      </g>
+      <g transform="translate(60 240)">
+        <rect x="0" y="0" width="240" height="64" rx="18" fill="#0f172a" opacity="0.08"/>
+        <text x="20" y="42" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="30" font-weight="600" fill="#0284c7">Sector +18.4%</text>
+      </g>
+      <g transform="translate(340 240)">
+        <rect x="0" y="0" width="280" height="64" rx="18" fill="#0f172a" opacity="0.08"/>
+        <text x="20" y="42" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="30" font-weight="600" fill="#14b8a6">Combined Ratio 98.7</text>
+      </g>
+    </g>
+    <g transform="translate(660 0)">
+      <rect x="0" y="0" width="280" height="160" rx="20" fill="#0f172a" opacity="0.06"/>
+      <g transform="translate(30 30)">
+        <path d="M0 120V40L50 20L100 60L150 0L200 40V120Z" fill="#1d4ed8" opacity="0.18"/>
+        <path d="M10 120V50L50 34L90 66L130 28L170 54V120Z" fill="#1d4ed8" opacity="0.35"/>
+        <path d="M24 120V70L50 56L76 74L110 48L146 68V120Z" fill="#1d4ed8" opacity="0.55"/>
+      </g>
+      <text x="36" y="200" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="24" fill="#0f172a">Global reinsurers</text>
+    </g>
+  </g>
+</svg>

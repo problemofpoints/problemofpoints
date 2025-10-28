@@ -2,6 +2,8 @@
 title: "Inflation Monitor"
 description: "Interactive CPI dashboard for property & casualty exposures with category filters, trend charts, and snapshot tables."
 page-layout: full
+image: thumbnail.svg
+image-alt: "Stylized CPI dashboard with dual line charts highlighting inflation metrics"
 execute: 
   echo: false
 ---

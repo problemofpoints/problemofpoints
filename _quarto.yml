@@ -9,6 +9,8 @@ website:
     right:
       - about.qmd
       - disclaimer.qmd
+      - text: Posts
+        href: posts/
       - text: Tools
         href: tools/
       - icon: github

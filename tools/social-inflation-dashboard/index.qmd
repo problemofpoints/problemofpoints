@@ -2,6 +2,8 @@
 title: "Social Inflation Dashboard"
 description: "Interactive dashboard tracking litigation trends, judicial hellholes, and reserve pressure for P&C carriers."
 page-layout: full
+image: thumbnail.svg
+image-alt: "Dashboard card with U.S. heat map and litigation trend statistics"
 ---
 
 {{< include app.html >}}

@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Social Inflation Dashboard thumbnail</title>
+  <desc id="desc">Stylized dashboard card with U.S. heat map and litigation metrics.</desc>
+  <defs>
+    <linearGradient id="sid-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e0f2fe"/>
+    </linearGradient>
+    <linearGradient id="sid-heat" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" rx="32" fill="url(#sid-bg)"/>
+  <g transform="translate(120 70)">
+    <!-- Headline text removed per instructions -->
+    <g transform="translate(0 60)">
+      <rect x="0" y="0" width="960" height="320" rx="28" fill="#0f172a" opacity="0.04"/>
+      <rect x="0" y="0" width="960" height="320" rx="28" fill="none" stroke="#38bdf8" stroke-opacity="0.4" stroke-width="3"/>
+      <g transform="translate(60 40)">
+        <path d="M40 260L140 200L210 230L300 160L380 210L470 150L560 180L650 130L740 200L840 140" fill="none" stroke="url(#sid-heat)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+        <g fill="#f97316" opacity="0.9">
+          <circle cx="140" cy="200" r="14"/>
+          <circle cx="300" cy="160" r="16"/>
+          <circle cx="470" cy="150" r="18"/>
+          <circle cx="650" cy="130" r="14"/>
+          <circle cx="740" cy="200" r="16"/>
+        </g>
+      </g>
+      <g transform="translate(560 -10)">
+        <path d="M0 0h220c12 0 20 8 20 20v120l-130 70-130-70V20c0-12 8-20 20-20Z" fill="#0e7490" opacity="0.18"/>
+        <path d="M30 20h160c8 0 14 6 14 14v84l-94 52-94-52V34c0-8 6-14 14-14Z" fill="#0e7490" opacity="0.32"/>
+        <path d="M56 42h108c6 0 10 4 10 10v58l-64 36-64-36V52c0-6 4-10 10-10Z" fill="#0e7490" opacity="0.55"/>
+      </g>
+      <g transform="translate(80 200)">
+        <rect x="0" y="0" width="240" height="64" rx="18" fill="#0f172a" opacity="0.08"/>
+        <text x="20" y="42" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="30" font-weight="600" fill="#f97316">Verdicts +22%</text>
+      </g>
+      <g transform="translate(360 200)">
+        <rect x="0" y="0" width="260" height="64" rx="18" fill="#0f172a" opacity="0.08"/>
+        <text x="20" y="42" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="30" font-weight="600" fill="#38bdf8">Reserve pressure ↑</text>
+      </g>
+    </g>
+    <g transform="translate(40 468)">
+      <rect x="0" y="0" width="240" height="90" rx="22" fill="#111827" opacity="0.08"/>
+      <text x="24" y="36" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="26" fill="#0ea5e9">Top risk states</text>
+      <text x="24" y="68" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="20" fill="#475569">FL · CA · NY · IL</text>
+    </g>
+    <g transform="translate(340 468)">
+      <rect x="0" y="0" width="240" height="90" rx="22" fill="#111827" opacity="0.08"/>
+      <text x="24" y="36" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="26" fill="#f97316">Litigation funding</text>
+      <text x="24" y="68" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="20" fill="#475569">Record inflows · 2024</text>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Inflation Monitor thumbnail</title>
+  <desc id="desc">Stylized CPI dashboard card with line charts and headline text.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f6f6f9"/>
+      <stop offset="100%" stop-color="#dfe4f5"/>
+    </linearGradient>
+    <linearGradient id="chart" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+    </linearGradient>
+    <mask id="grid-mask">
+      <rect width="1200" height="630" fill="#fff"/>
+      <g stroke="#fff" stroke-width="8" opacity="0.6">
+        <path d="M250 220h640M250 340h640M250 460h640"/>
+        <path d="M350 150v420M470 150v420M590 150v420M710 150v420M830 150v420"/>
+      </g>
+    </mask>
+  </defs>
+  <rect width="1200" height="630" rx="32" fill="url(#bg)"/>
+  <g transform="translate(120 70)">
+    <rect x="60" y="0" width="880" height="360" rx="24" fill="#1f2933" opacity="0.05"/>
+    <rect x="60" y="0" width="880" height="360" rx="24" fill="none" stroke="#c7d2fe" stroke-width="2"/>
+    <g transform="translate(60 0)" mask="url(#grid-mask)">
+      <rect width="880" height="360" fill="url(#bg)"/>
+      <path d="M20 290L140 260L220 305L310 240L400 260L490 210L560 250L640 200L760 280L840 210" stroke="url(#chart)" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M20 320L100 300L180 320L260 270L340 285L420 250L500 260L580 240L660 310L740 300L820 280" stroke="#f97316" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+      <circle cx="560" cy="250" r="16" fill="#22d3ee" stroke="#1f2933" stroke-width="4" opacity="0.9"/>
+      <circle cx="760" cy="280" r="16" fill="#f97316" stroke="#1f2933" stroke-width="4" opacity="0.85"/>
+    </g>
+    <!-- Title text intentionally omitted to keep thumbnail copy minimal -->
+    <g transform="translate(80 380)">
+      <rect x="0" y="0" width="200" height="72" rx="18" fill="#1f2933" opacity="0.08"/>
+      <text x="24" y="46" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="32" font-weight="600" fill="#4f46e5">YoY +3.2%</text>
+    </g>
+    <g transform="translate(320 380)">
+      <rect x="0" y="0" width="230" height="72" rx="18" fill="#1f2933" opacity="0.08"/>
+      <text x="24" y="46" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="30" font-weight="600" fill="#0ea5e9">Core Services ↑</text>
+    </g>
+  </g>
+</svg>

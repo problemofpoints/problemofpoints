@@ -11,5 +11,8 @@
 node_modules/
 netlify/functions/node_modules/
 
+.DS_Store
+tools/.DS_Store
+
 # Local Netlify folder
 .netlify
