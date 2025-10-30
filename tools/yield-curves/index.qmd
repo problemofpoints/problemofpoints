@@ -1,0 +1,15 @@
+---
+title: "Yield Curve & Credit Spread Monitor"
+description: "Live US Treasury par yields with corporate spread context for insurance portfolio strategy."
+page-layout: full
+---
+
+{{< include app.html >}}
+
+## Preview Gallery
+
+Light and dark previews illustrate the design without executing the Netlify function.
+
+![Light mode preview of the Yield Curve & Credit Spread Monitor](preview-light.svg)
+
+![Dark mode preview of the Yield Curve & Credit Spread Monitor](preview-dark.svg)

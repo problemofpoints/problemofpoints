@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
+  <title id="title">Yield Curve &amp; Credit Spread Monitor preview (light mode)</title>
+  <desc id="desc">A stylized mock-up of the tool showing summary cards and two charts on a light background.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f6f8fc" />
+      <stop offset="100%" stop-color="#eef1f7" />
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#f7f7ff" />
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#f0f4ff" />
+    </linearGradient>
+  </defs>
+  <rect width="1440" height="900" fill="url(#bg)" rx="46" />
+  <g transform="translate(120 120)">
+    <rect x="0" y="0" width="280" height="42" rx="21" fill="#eef2ff" />
+    <text x="140" y="28" text-anchor="middle" font-family="Inter" font-size="20" fill="#4338ca">Fixed-Income Intelligence</text>
+    <text x="0" y="110" font-family="Inter" font-size="56" fill="#0b1736" font-weight="700">Yield Curve &amp; Credit Spread Monitor</text>
+    <text x="0" y="160" font-family="Inter" font-size="22" fill="#4b5563">Live Treasury yields with corporate spread context.</text>
+    <g transform="translate(0, 210)" font-family="Inter">
+      <g>
+        <rect x="0" y="0" width="240" height="160" rx="24" fill="url(#card)" />
+        <text x="28" y="48" font-size="16" fill="#6366f1" letter-spacing="6">10Y TREASURY</text>
+        <text x="28" y="110" font-size="48" fill="#0b1736" font-weight="700">4.38%</text>
+        <text x="28" y="146" font-size="20" fill="#2563eb">▲ 12 bps</text>
+      </g>
+      <g transform="translate(260, 0)">
+        <rect x="0" y="0" width="240" height="160" rx="24" fill="url(#card)" />
+        <text x="28" y="48" font-size="16" fill="#6366f1" letter-spacing="6">2Y TREASURY</text>
+        <text x="28" y="110" font-size="48" fill="#0b1736" font-weight="700">4.56%</text>
+        <text x="28" y="146" font-size="20" fill="#dc2626">▼ 6 bps</text>
+      </g>
+      <g transform="translate(520, 0)">
+        <rect x="0" y="0" width="240" height="160" rx="24" fill="url(#card)" />
+        <text x="28" y="48" font-size="16" fill="#6366f1" letter-spacing="6">10Y − 2Y</text>
+        <text x="28" y="110" font-size="48" fill="#0b1736" font-weight="700">−18 bps</text>
+        <text x="28" y="146" font-size="20" fill="#2563eb">▲ 4 bps</text>
+      </g>
+      <g transform="translate(780, 0)">
+        <rect x="0" y="0" width="240" height="160" rx="24" fill="url(#card)" />
+        <text x="28" y="48" font-size="16" fill="#6366f1" letter-spacing="6">IG OAS</text>
+        <text x="28" y="110" font-size="48" fill="#0b1736" font-weight="700">131 bps</text>
+        <text x="28" y="146" font-size="20" fill="#2563eb">▲ 3 bps</text>
+      </g>
+      <g transform="translate(1040, 0)">
+        <rect x="0" y="0" width="240" height="160" rx="24" fill="url(#card)" />
+        <text x="28" y="48" font-size="16" fill="#6366f1" letter-spacing="6">HY OAS</text>
+        <text x="28" y="110" font-size="48" fill="#0b1736" font-weight="700">342 bps</text>
+        <text x="28" y="146" font-size="20" fill="#dc2626">▼ 8 bps</text>
+      </g>
+    </g>
+    <g transform="translate(0, 420)">
+      <rect width="820" height="320" rx="28" fill="url(#panel)" />
+      <text x="36" y="52" font-family="Inter" font-size="28" fill="#0b1736" font-weight="600">Yield Curve Profiles</text>
+      <polyline fill="none" stroke="#94a3b8" stroke-width="4" points="100,250 220,220 340,210 460,205 580,198 700,190" stroke-linecap="round" stroke-linejoin="round" />
+      <polyline fill="none" stroke="#6366f1" stroke-width="4" points="100,260 220,230 340,220 460,210 580,200 700,192" stroke-linecap="round" stroke-linejoin="round" />
+      <polyline fill="none" stroke="#2563eb" stroke-width="4" points="100,270 220,240 340,225 460,215 580,205 700,198" stroke-linecap="round" stroke-linejoin="round" />
+    </g>
+    <g transform="translate(860, 420)">
+      <rect width="460" height="320" rx="28" fill="url(#panel)" />
+      <text x="36" y="52" font-family="Inter" font-size="28" fill="#0b1736" font-weight="600">Credit &amp; Curve Spreads</text>
+      <polyline fill="none" stroke="#6366f1" stroke-width="4" points="80,260 160,230 240,250 320,220 400,240" stroke-linecap="round" stroke-linejoin="round" />
+      <polyline fill="none" stroke="#ec4899" stroke-width="4" points="80,280 160,300 240,270 320,310 400,290" stroke-linecap="round" stroke-linejoin="round" />
+      <polyline fill="none" stroke="#14b8a6" stroke-width="4" points="80,290 160,280 240,270 320,260 400,250" stroke-dasharray="10 10" stroke-linecap="round" stroke-linejoin="round" />
+    </g>
+  </g>
+</svg>

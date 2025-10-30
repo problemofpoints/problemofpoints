@@ -1,0 +1,800 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
+<style>
+  :root {
+    color-scheme: light dark;
+  }
+
+  .yield-curves-app {
+    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: linear-gradient(180deg, rgba(246, 248, 252, 0.92) 0%, rgba(239, 241, 247, 0.92) 100%);
+    color: #111827;
+    padding: clamp(20px, 6vw, 48px);
+    border-radius: 22px;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .yield-curves-app::before {
+    content: "";
+    position: absolute;
+    inset: -140px -180px auto auto;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle at top right, rgba(79, 70, 229, 0.12), transparent 65%);
+    pointer-events: none;
+  }
+
+  .yield-curves-app * {
+    box-sizing: border-box;
+  }
+
+  .yield-curves-app h1 {
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    font-weight: 700;
+    margin: 0;
+    color: #0b1736;
+  }
+
+  .yield-curves-app .subhead {
+    margin-top: 12px;
+    color: #4b5563;
+    font-size: 1rem;
+    max-width: 720px;
+    line-height: 1.55;
+  }
+
+  .yc-meta {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    font-size: 0.95rem;
+    color: #52606d;
+  }
+
+  .yc-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .yc-meta .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 9px;
+    background: #eef2ff;
+    color: #4338ca;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .yc-status {
+    margin-top: 18px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: rgba(59, 130, 246, 0.08);
+    color: #1d4ed8;
+    font-weight: 500;
+    display: none;
+  }
+
+  .yc-status.error {
+    background: rgba(248, 113, 113, 0.14);
+    color: #b91c1c;
+  }
+
+  .yc-summary-grid {
+    margin-top: 28px;
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .yc-summary-card {
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 18px;
+    padding: 18px 20px;
+    box-shadow: 0 16px 38px rgba(15, 23, 42, 0.08);
+    border: 1px solid rgba(99, 102, 241, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .yc-summary-card::after {
+    content: "";
+    position: absolute;
+    inset: auto -40px -60px auto;
+    width: 110px;
+    height: 110px;
+    background: radial-gradient(circle at bottom right, rgba(99, 102, 241, 0.14), transparent 70%);
+  }
+
+  .yc-summary-card span {
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    color: #6366f1;
+    font-weight: 600;
+  }
+
+  .yc-summary-card strong {
+    font-size: 1.65rem;
+    font-weight: 700;
+    color: #0b1736;
+  }
+
+  .yc-summary-card .delta {
+    font-size: 0.92rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #2563eb;
+  }
+
+  .yc-summary-card .delta.negative {
+    color: #dc2626;
+  }
+
+  .yc-layout {
+    margin-top: 36px;
+    display: grid;
+    gap: 24px;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+
+  .yc-panel {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 22px;
+    padding: 22px 24px 28px;
+    box-shadow: 0 14px 42px rgba(15, 23, 42, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .yc-panel h2 {
+    font-size: 1.12rem;
+    margin: 0;
+    font-weight: 600;
+    color: #111827;
+  }
+
+  .yc-panel p {
+    margin: 0;
+    color: #5b6573;
+    font-size: 0.95rem;
+    line-height: 1.55;
+  }
+
+  .yc-panel canvas {
+    width: 100% !important;
+  }
+
+  .yc-panel .panel-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    font-size: 0.85rem;
+    color: #6b7280;
+  }
+
+  .yc-panel .legend-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .yc-panel .legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+  }
+
+  .yc-panel table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .yc-panel thead th {
+    text-align: left;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: #6b7280;
+    padding-bottom: 10px;
+  }
+
+  .yc-panel tbody td {
+    padding: 9px 0;
+    border-top: 1px solid rgba(148, 163, 184, 0.18);
+    font-size: 0.95rem;
+    color: #1f2933;
+  }
+
+  .yc-panel tbody tr:first-of-type td {
+    border-top: none;
+    padding-top: 0;
+  }
+
+  .yc-panel tbody tr:last-of-type td {
+    padding-bottom: 0;
+  }
+
+  .yc-yield-table {
+    margin-top: 12px;
+    overflow-x: auto;
+  }
+
+  .yc-yield-table table {
+    min-width: 520px;
+  }
+
+  .yc-empty {
+    text-align: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, 0.04);
+    border-radius: 16px;
+    color: #475569;
+  }
+
+  @media (max-width: 1100px) {
+    .yc-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .yield-curves-app {
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.94) 100%);
+      color: #f8fafc;
+      box-shadow: none;
+    }
+
+    .yield-curves-app h1 {
+      color: #e2e8f0;
+    }
+
+    .yield-curves-app .subhead {
+      color: #cbd5f5;
+    }
+
+    .yc-meta {
+      color: #a5b4fc;
+    }
+
+    .yc-meta .badge {
+      background: rgba(99, 102, 241, 0.18);
+      color: #c7d2fe;
+    }
+
+    .yc-summary-card {
+      background: rgba(30, 41, 59, 0.9);
+      border-color: rgba(99, 102, 241, 0.32);
+      box-shadow: none;
+    }
+
+    .yc-summary-card span {
+      color: #a5b4fc;
+    }
+
+    .yc-summary-card strong {
+      color: #f8fafc;
+    }
+
+    .yc-panel {
+      background: rgba(30, 41, 59, 0.88);
+      border-color: rgba(99, 102, 241, 0.22);
+      box-shadow: none;
+    }
+
+    .yc-panel h2 {
+      color: #e2e8f0;
+    }
+
+    .yc-panel p {
+      color: #cbd5f5;
+    }
+
+    .yc-panel thead th {
+      color: #cbd5f5;
+    }
+
+    .yc-panel tbody td {
+      color: #e2e8f0;
+      border-color: rgba(148, 163, 184, 0.22);
+    }
+
+    .yc-yield-table {
+      background: rgba(15, 23, 42, 0.35);
+      border-radius: 14px;
+      padding: 8px 14px;
+    }
+
+    .yc-empty {
+      background: rgba(148, 163, 184, 0.12);
+      color: #cbd5f5;
+    }
+  }
+</style>
+
+<div class="yield-curves-app" id="yield-curves-app">
+  <header>
+    <div class="badge">Fixed-Income Intelligence</div>
+    <h1>Yield Curve & Credit Spread Monitor</h1>
+    <p class="subhead">
+      Live US Treasury par yields alongside key corporate bond spreads to support asset-liability management and tactical asset allocation.
+      Trends are refreshed directly from the US Treasury and Federal Reserve (FRED).
+    </p>
+    <div class="yc-meta" data-role="meta">
+      <span><strong>Last refreshed:</strong> <time data-field="refreshed">—</time></span>
+      <span><strong>Data window:</strong> <span data-field="range">—</span></span>
+      <span class="badge">Netlify Functions</span>
+    </div>
+    <div class="yc-status" data-role="status">Loading market data…</div>
+  </header>
+
+  <section class="yc-summary-grid" data-section="summary">
+    <!-- Summary cards injected by script -->
+  </section>
+
+  <section class="yc-layout">
+    <article class="yc-panel">
+      <div>
+        <h2>Yield Curve Profiles</h2>
+        <p>Compare the latest Treasury curve with levels a month and a year ago to understand shifts in term premium and slope.</p>
+      </div>
+      <canvas id="yield-curve-chart" height="320"></canvas>
+      <div class="panel-meta" data-role="curve-meta"></div>
+    </article>
+
+    <article class="yc-panel">
+      <div>
+        <h2>Credit & Curve Spreads</h2>
+        <p>Track benchmark corporate bond spreads and the 10Y–2Y curve to gauge recession risk and relative value.</p>
+      </div>
+      <canvas id="spread-chart" height="320"></canvas>
+      <div class="panel-meta" data-role="spread-meta"></div>
+    </article>
+  </section>
+
+  <section class="yc-panel" style="margin-top: 28px;">
+    <div>
+      <h2>Recent Daily Treasury Par Yields</h2>
+      <p>An extract of the latest observations for quick reference across the curve.</p>
+    </div>
+    <div class="yc-yield-table" data-role="yield-table"></div>
+  </section>
+</div>
+
+<script>
+  (function () {
+    const state = {
+      data: null,
+      charts: {}
+    };
+
+    function hexToRgba(hex, alpha) {
+      if (!hex) return `rgba(99, 102, 241, ${alpha})`;
+      const sanitized = hex.replace('#', '');
+      const bigint = parseInt(sanitized.length === 3
+        ? sanitized.split('').map((c) => c + c).join('')
+        : sanitized, 16);
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    const app = document.getElementById("yield-curves-app");
+    const summarySection = app.querySelector('[data-section="summary"]');
+    const statusBanner = app.querySelector('[data-role="status"]');
+    const metaFields = {
+      refreshed: app.querySelector('[data-field="refreshed"]'),
+      range: app.querySelector('[data-field="range"]')
+    };
+    const curveMeta = app.querySelector('[data-role="curve-meta"]');
+    const spreadMeta = app.querySelector('[data-role="spread-meta"]');
+    const tableContainer = app.querySelector('[data-role="yield-table"]');
+
+    function setStatus(message, type = "info") {
+      if (!statusBanner) return;
+      if (!message) {
+        statusBanner.style.display = "none";
+        return;
+      }
+      statusBanner.textContent = message;
+      statusBanner.classList.toggle("error", type === "error");
+      statusBanner.style.display = "block";
+    }
+
+    function formatPercent(value, decimals = 2) {
+      if (value === null || value === undefined || Number.isNaN(value)) return "—";
+      return `${value.toFixed(decimals)}%`;
+    }
+
+    function formatBps(value, decimals = 0) {
+      if (value === null || value === undefined || Number.isNaN(value)) return "—";
+      return `${value.toFixed(decimals)} bps`;
+    }
+
+    function calculateDelta(current, previous, unit = "percent") {
+      if (current === null || current === undefined || previous === null || previous === undefined) {
+        return { text: "", direction: "neutral" };
+      }
+      const change = current - previous;
+      if (Math.abs(change) < (unit === "bps" ? 1 : 0.01)) {
+        return { text: "Unchanged", direction: "neutral" };
+      }
+      const formatter = unit === "bps" ? formatBps : formatPercent;
+      return {
+        text: `${change > 0 ? "▲" : "▼"} ${formatter(Math.abs(change), unit === "bps" ? 0 : 2)}`,
+        direction: change > 0 ? "positive" : "negative"
+      };
+    }
+
+    function parseISO(dateStr) {
+      return dateStr ? new Date(`${dateStr}T00:00:00Z`) : null;
+    }
+
+    function findHistoricalPoint(series, lookbackDays) {
+      if (!Array.isArray(series) || !series.length) return null;
+      const latestDate = parseISO(series[series.length - 1].date);
+      if (!latestDate) return null;
+      const target = new Date(latestDate);
+      target.setUTCDate(target.getUTCDate() - lookbackDays);
+
+      for (let i = series.length - 1; i >= 0; i -= 1) {
+        const pointDate = parseISO(series[i].date);
+        if (!pointDate) continue;
+        const diffDays = (latestDate - pointDate) / (1000 * 60 * 60 * 24);
+        if (diffDays >= lookbackDays - 3) {
+          return series[i];
+        }
+      }
+      return series[0];
+    }
+
+    function buildSummaryCards(data) {
+      if (!summarySection) return;
+      summarySection.innerHTML = "";
+      const latest = data.treasury.series[data.treasury.series.length - 1];
+      const monthAgo = findHistoricalPoint(data.treasury.series, 30);
+      const yearAgo = findHistoricalPoint(data.treasury.series, 365);
+
+      const spreads = data.fred.reduce((acc, series) => {
+        acc[series.category] = series.data[series.data.length - 1]?.value ?? null;
+        acc[`${series.category}Prev`] = findHistoricalPoint(series.data, series.category === "tenTwoSpread" ? 30 : 30)?.value ?? null;
+        return acc;
+      }, {});
+
+      const cards = [
+        {
+          label: "10Y Treasury",
+          value: latest?.values?.["10y"],
+          previous: monthAgo?.values?.["10y"],
+          formatter: (value) => formatPercent(value ?? null, 2),
+          unit: "percent"
+        },
+        {
+          label: "2Y Treasury",
+          value: latest?.values?.["2y"],
+          previous: monthAgo?.values?.["2y"],
+          formatter: (value) => formatPercent(value ?? null, 2),
+          unit: "percent"
+        },
+        {
+          label: "10Y − 2Y Spread",
+          value: latest?.values?.["10y"] !== null && latest?.values?.["2y"] !== null
+            ? Math.round((latest.values["10y"] - latest.values["2y"]) * 100)
+            : null,
+          previous: monthAgo?.values?.["10y"] !== null && monthAgo?.values?.["2y"] !== null
+            ? Math.round((monthAgo.values["10y"] - monthAgo.values["2y"]) * 100)
+            : null,
+          formatter: (value) => formatBps(value ?? null, 0),
+          unit: "bps"
+        },
+        {
+          label: "IG Corporate OAS",
+          value: spreads.investmentGradeOas,
+          previous: spreads.investmentGradeOasPrev,
+          formatter: (value) => formatBps(value ?? null, 0),
+          unit: "bps"
+        },
+        {
+          label: "High Yield OAS",
+          value: spreads.highYieldOas,
+          previous: spreads.highYieldOasPrev,
+          formatter: (value) => formatBps(value ?? null, 0),
+          unit: "bps"
+        }
+      ];
+
+      cards.forEach((card) => {
+        const delta = calculateDelta(card.value, card.previous, card.unit === "bps" ? "bps" : "percent");
+        const cardEl = document.createElement("div");
+        cardEl.className = "yc-summary-card";
+
+        const labelEl = document.createElement("span");
+        labelEl.textContent = card.label;
+        cardEl.appendChild(labelEl);
+
+        const valueEl = document.createElement("strong");
+        valueEl.textContent = card.formatter(card.value);
+        cardEl.appendChild(valueEl);
+
+        if (delta.text) {
+          const deltaEl = document.createElement("div");
+          deltaEl.className = `delta${delta.direction === "negative" ? " negative" : ""}`;
+          deltaEl.textContent = delta.text;
+          cardEl.appendChild(deltaEl);
+        }
+
+        summarySection.appendChild(cardEl);
+      });
+    }
+
+    function buildCurveChart(data) {
+      const ctx = document.getElementById("yield-curve-chart");
+      if (!ctx) return;
+
+      const maturities = data.treasury.maturities.map((item) => item.label);
+      const latest = data.treasury.series[data.treasury.series.length - 1];
+      const monthAgo = findHistoricalPoint(data.treasury.series, 30);
+      const yearAgo = findHistoricalPoint(data.treasury.series, 365);
+
+      const datasetForPoint = (point, label, color) => ({
+        label,
+        data: data.treasury.maturities.map(({ key }) => point?.values?.[key] ?? null),
+        borderColor: color,
+        backgroundColor: hexToRgba(color, 0.18),
+        tension: 0.35,
+        fill: false,
+        spanGaps: true,
+        pointRadius: 4,
+        pointHoverRadius: 5,
+        borderWidth: 2
+      });
+
+      const chartData = {
+        labels: maturities,
+        datasets: [
+          datasetForPoint(yearAgo, `Year Ago (${yearAgo?.date ?? "—"})`, "#94a3b8"),
+          datasetForPoint(monthAgo, `30 Days Ago (${monthAgo?.date ?? "—"})`, "#6366f1"),
+          datasetForPoint(latest, `Latest (${latest?.date ?? "—"})`, "#2563eb")
+        ]
+      };
+
+      if (state.charts.curve) {
+        state.charts.curve.data = chartData;
+        state.charts.curve.update();
+      } else {
+        state.charts.curve = new Chart(ctx, {
+          type: "line",
+          data: chartData,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                title: {
+                  display: true,
+                  text: "Yield (%)"
+                },
+                ticks: {
+                  callback: (value) => `${value}%`
+                },
+                grid: {
+                  color: "rgba(148, 163, 184, 0.25)"
+                }
+              },
+              x: {
+                grid: {
+                  display: false
+                }
+              }
+            },
+            plugins: {
+              legend: {
+                position: "bottom"
+              },
+              tooltip: {
+                callbacks: {
+                  label: (context) => `${context.dataset.label}: ${formatPercent(context.parsed.y, 2)}`
+                }
+              }
+            }
+          }
+        });
+      }
+
+      if (curveMeta) {
+        curveMeta.innerHTML = `Curves plotted for <strong>${maturities.length}</strong> standard maturities. Data source: US Treasury.`;
+      }
+    }
+
+    function buildSpreadChart(data) {
+      const ctx = document.getElementById("spread-chart");
+      if (!ctx) return;
+      const colors = {
+        investmentGradeOas: "#6366f1",
+        highYieldOas: "#ec4899",
+        tenTwoSpread: "#14b8a6"
+      };
+
+      const datasets = data.fred.map((series) => ({
+        label: series.label,
+        data: series.data.map((point) => ({ x: point.date, y: point.value })),
+        borderColor: colors[series.category] || "#1f2937",
+        backgroundColor: hexToRgba(colors[series.category] || "#1f2937", 0.18),
+        tension: 0.3,
+        fill: false,
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 3
+      }));
+
+      const yLabel = (value, series) => {
+        if (series.category === "tenTwoSpread") {
+          return formatBps(value, 0);
+        }
+        return formatBps(value, 0);
+      };
+
+      if (state.charts.spread) {
+        state.charts.spread.data.datasets = datasets;
+        state.charts.spread.update();
+      } else {
+        state.charts.spread = new Chart(ctx, {
+          type: "line",
+          data: {
+            datasets
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                type: "time",
+                adapters: {
+                  date: {
+                    zone: "utc"
+                  }
+                },
+                time: {
+                  tooltipFormat: "LLL dd, yyyy"
+                },
+                ticks: {
+                  maxRotation: 0,
+                  autoSkipPadding: 24
+                },
+                grid: {
+                  display: false
+                }
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: "Basis Points"
+                },
+                ticks: {
+                  callback: (value) => `${value}`
+                },
+                grid: {
+                  color: "rgba(148, 163, 184, 0.24)"
+                }
+              }
+            },
+            plugins: {
+              legend: {
+                position: "bottom"
+              },
+              tooltip: {
+                callbacks: {
+                  label: (context) => {
+                    const series = data.fred[context.datasetIndex];
+                    return `${context.dataset.label}: ${yLabel(context.parsed.y, series)}`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      if (spreadMeta) {
+        spreadMeta.innerHTML = `Spreads expressed in basis points. Source: FRED (ICE BofA) & Treasury.`;
+      }
+    }
+
+    function buildTable(data) {
+      if (!tableContainer) return;
+      const recent = [...data.treasury.series].slice(-7).reverse();
+      if (!recent.length) {
+        tableContainer.innerHTML = '<div class="yc-empty">No recent observations available.</div>';
+        return;
+      }
+
+      const headers = ["Date", ...data.treasury.maturities.map((item) => item.label)];
+      const table = document.createElement("table");
+      const thead = document.createElement("thead");
+      const headRow = document.createElement("tr");
+      headers.forEach((header) => {
+        const th = document.createElement("th");
+        th.textContent = header;
+        headRow.appendChild(th);
+      });
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement("tbody");
+      recent.forEach((row) => {
+        const tr = document.createElement("tr");
+        const dateCell = document.createElement("td");
+        dateCell.textContent = row.date;
+        tr.appendChild(dateCell);
+
+        data.treasury.maturities.forEach(({ key }) => {
+          const td = document.createElement("td");
+          const value = row.values?.[key];
+          td.textContent = value === null || value === undefined ? "—" : value.toFixed(2);
+          tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      tableContainer.innerHTML = "";
+      tableContainer.appendChild(table);
+    }
+
+    function applyMeta(data) {
+      if (metaFields.refreshed) {
+        metaFields.refreshed.textContent = new Date(data.fetchedAt).toLocaleString(undefined, {
+          dateStyle: "medium",
+          timeStyle: "short"
+        });
+      }
+      if (metaFields.range) {
+        metaFields.range.textContent = `${data.rangeDays} calendar days`;
+      }
+    }
+
+    async function loadData() {
+      try {
+        setStatus("Loading market data…");
+        const response = await fetch("/.netlify/functions/yield-curves?range=720");
+        if (!response.ok) {
+          throw new Error(`Request failed: ${response.status}`);
+        }
+        const json = await response.json();
+        state.data = json;
+        applyMeta(json);
+        buildSummaryCards(json);
+        buildCurveChart(json);
+        buildSpreadChart(json);
+        buildTable(json);
+        setStatus("");
+      } catch (error) {
+        console.error(error);
+        setStatus("Unable to load live data. Please refresh or try again later.", "error");
+        tableContainer.innerHTML = '<div class="yc-empty">Live data unavailable. Check your connection or Netlify function logs.</div>';
+      }
+    }
+
+    loadData();
+  })();
+</script>
