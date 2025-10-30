@@ -42,6 +42,7 @@ const TICKERS = {
   "SREN.SW": "Swiss Re AG",
   UFCS: "United Fire Group",
   UVE: "Universal Insurance Holdings",
+  UIHC: "United Insurance Holdings",
   WRB: "W. R. Berkley Corporation",
   WTM: "White Mountains Insurance Group",
   "ZURN.SW": "Zurich Insurance Group",
@@ -101,6 +102,7 @@ const REQUIRED_RETURN_BUCKETS = {
   HG: { label: "14%+", requiredReturn: 0.15 },
   HCI: { label: "14%+", requiredReturn: 0.15 },
   IGIC: { label: "14%+", requiredReturn: 0.15 },
+  UIHC: { label: "14%+", requiredReturn: 0.15 },
   UVE: { label: "14%+", requiredReturn: 0.15 },
   GBLI: { label: "14%+", requiredReturn: 0.15 }
 };

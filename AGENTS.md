@@ -48,8 +48,8 @@
    description: "One-line summary"
    page-layout: full
    ---
-   
-   {{</* include app.html */>}}
+
+   {{&lt; include app.html &gt;}}
    ```
    - Add additional narrative sections or usage notes below the include as needed.
 4. Use Netlify Functions for any server-side API calls such as downloading data or making the tool dynamic. 

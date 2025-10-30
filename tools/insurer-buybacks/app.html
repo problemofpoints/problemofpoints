@@ -14,13 +14,14 @@
     font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background: #f7f8fc;
     color: #0f172a;
-    padding: 36px 36px 96px;
+    padding: clamp(28px, 4vw, 44px) clamp(18px, 2.2vw, 36px) clamp(60px, 7vw, 96px);
     border-radius: 20px;
     box-shadow: 0 30px 70px -40px rgba(15, 23, 42, 0.45);
     display: flex;
     flex-direction: column;
     gap: 24px;
-    width: min(100%, 1180px);
+    width: 100%;
+    max-width: 1340px;
     margin: 0 auto 48px;
   }
 
@@ -159,13 +160,34 @@
 
   .ibt-grid {
     display: grid;
-    gap: 18px;
+    gap: clamp(16px, 2vw, 24px);
     grid-template-columns: 1fr;
+  }
+
+  .ibt-root.page-columns {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 1340px;
+  }
+
+  .ibt-root.page-columns.page-full {
+    width: 100%;
+  }
+
+  .ibt-grid.page-columns,
+  .ibt-grid.page-columns.page-full {
+    display: grid !important;
+    margin-inline: 0;
+    max-width: 100%;
+    width: 100%;
   }
 
   @media (min-width: 1100px) {
     .ibt-grid {
-      grid-template-columns: minmax(560px, 2fr) minmax(360px, 1fr);
+      grid-template-columns: minmax(0, 1.85fr) minmax(0, 1.15fr);
       align-items: start;
     }
   }
@@ -176,9 +198,17 @@
     border-radius: 18px;
     border: 1px solid rgba(148, 163, 184, 0.25);
     box-shadow: 0 18px 45px -30px rgba(15, 23, 42, 0.5);
-    padding: 18px 20px;
     display: grid;
     gap: 14px;
+    min-width: 0;
+  }
+
+  .ibt-table-card {
+    padding: 16px 18px 18px 14px;
+  }
+
+  .ibt-detail-card {
+    padding: 18px 20px;
   }
 
   .ibt-table-wrap {
@@ -485,10 +515,10 @@ and valuation guardrails calibrated to risk tolerances.
 </div>
 <div class="ibt-control">
 <label for="ibt-payback-filter">Rule-of-72 payback ceiling</label>
-<input type="range" id="ibt-payback-filter" class="ibt-range" min="3" max="15" step="0.5" value="9">
+<input type="range" id="ibt-payback-filter" class="ibt-range" min="3" max="15" step="0.5" value="15">
 <div class="ibt-inset">
-<strong id="ibt-payback-value">≤ 9.0 years</strong>
-<span>(higher = return &lt; 8%)</span>
+<strong id="ibt-payback-value">No ceiling</strong>
+<span>(move slider to cap longer paybacks)</span>
 </div>
 </div>
 </section>
@@ -601,7 +631,7 @@ placeholder. Treat results as directional and pair with internal modeling before
       sortAsc: true,
       searchTerm: "",
       statusFilter: "all",
-      maxPayback: 9
+      maxPayback: null
     };
 
     const dom = {
@@ -652,6 +682,74 @@ placeholder. Treat results as directional and pair with internal modeling before
         return `${value.toFixed(digits)} yrs`;
       }
     };
+
+    function setPaybackCeiling(value) {
+      const slider = dom.inputs.payback;
+      const display = dom.inputs.paybackValue;
+      const sliderMax = slider ? Number(slider.max) : null;
+      const hasSliderMax = Number.isFinite(sliderMax);
+      if (slider && value == null) {
+        const fallbackValue = hasSliderMax ? sliderMax : Number(slider.value);
+        slider.value = Number.isFinite(fallbackValue) ? fallbackValue : slider.value;
+      }
+      if (value == null || (hasSliderMax && value >= sliderMax)) {
+        state.maxPayback = null;
+        if (display) display.textContent = "No ceiling";
+        return;
+      }
+      if (Number.isFinite(value)) {
+        state.maxPayback = value;
+        if (slider) slider.value = value;
+        if (display) display.textContent = `≤ ${value.toFixed(1)} years`;
+      }
+    }
+
+    const PROPERTY_DASHBOARD_TICKERS = new Set([
+      "AIG",
+      "ALL",
+      "ACGL",
+      "AXS",
+      "CB",
+      "CS.PA",
+      "CINF",
+      "EG",
+      "EIG",
+      "HNR1.DE",
+      "HCI",
+      "HRTG",
+      "HIG",
+      "HSX.L",
+      "IFC.TO",
+      "JRVR",
+      "KMPR",
+      "KNSL",
+      "LRE.L",
+      "MCY",
+      "MKL",
+      "MUV2.DE",
+      "ALV.DE",
+      "MAP.MC",
+      "ORI",
+      "PGR",
+      "PLMR",
+      "QBE.AX",
+      "RLI",
+      "RNR",
+      "SCR.PA",
+      "SAFT",
+      "SKWD",
+      "SIGI",
+      "THG",
+      "TRV",
+      "SREN.SW",
+      "UFCS",
+      "UVE",
+      "UIHC",
+      "WRB",
+      "WTM",
+      "ZURN.SW",
+      "BOW"
+    ]);
 
     function getStatus(entry) {
       if (entry.priceToTangibleBook == null || entry.redZoneThresholdPTBV == null) {
@@ -710,7 +808,7 @@ placeholder. Treat results as directional and pair with internal modeling before
           if (entry.status !== state.statusFilter) return false;
         }
 
-        if (state.maxPayback) {
+        if (Number.isFinite(state.maxPayback)) {
           if (entry.payback != null && entry.payback > state.maxPayback) return false;
         }
 
@@ -975,12 +1073,23 @@ placeholder. Treat results as directional and pair with internal modeling before
         const payload = await response.json();
         state.generatedAt = payload.generated_at;
         const errors = payload.errors || [];
-        dom.errorNote.hidden = !errors.length;
+        state.raw = (payload.tickers || []).map(decorate);
+        const universe = new Set(state.raw.map((entry) => entry.ticker));
+        const missing = [...PROPERTY_DASHBOARD_TICKERS].filter((ticker) => !universe.has(ticker));
+        const noteParts = [];
         if (errors.length) {
-          dom.errorNote.textContent = `Some tickers were skipped (${errors.length}).`;
+          noteParts.push(`Some tickers were skipped (${errors.length}).`);
+        }
+        if (missing.length) {
+          noteParts.push(`Missing P&C dashboard tickers: ${missing.join(", ")}.`);
+        }
+        if (dom.errorNote) {
+          dom.errorNote.hidden = noteParts.length === 0;
+          if (noteParts.length) {
+            dom.errorNote.textContent = noteParts.join(" ");
+          }
         }
 
-        state.raw = (payload.tickers || []).map(decorate);
         applyFilters();
         dom.refreshChip.textContent = `Refreshed ${new Date(state.generatedAt).toLocaleTimeString("en-US", {
           hour: "2-digit",
@@ -1012,11 +1121,13 @@ placeholder. Treat results as directional and pair with internal modeling before
       }
 
       if (dom.inputs.payback) {
+        const sliderMax = Number(dom.inputs.payback.max);
         dom.inputs.payback.addEventListener("input", (event) => {
           const value = Number(event.target.value);
-          state.maxPayback = value;
-          if (dom.inputs.paybackValue) {
-            dom.inputs.paybackValue.textContent = `≤ ${value.toFixed(1)} years`;
+          if (Number.isFinite(sliderMax) && value >= sliderMax) {
+            setPaybackCeiling(null);
+          } else {
+            setPaybackCeiling(Number.isFinite(value) ? value : null);
           }
           applyFilters();
         });
@@ -1057,6 +1168,10 @@ placeholder. Treat results as directional and pair with internal modeling before
           renderTable();
         });
       });
+    }
+
+    if (dom.inputs.payback) {
+      setPaybackCeiling(null);
     }
 
     bindEvents();
