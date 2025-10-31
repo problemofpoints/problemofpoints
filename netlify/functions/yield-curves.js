@@ -1,4 +1,4 @@
-const TREASURY_URL = "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-par-yield-curve-rates.csv";
+const TREASURY_BASE = "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv";
 const FRED_BASE = "https://fred.stlouisfed.org/graph/fredgraph.csv";
 
 const MATURITY_MAP = [
@@ -53,63 +53,120 @@ function parseCsv(text) {
   const lines = text.trim().split(/\r?\n/).filter(Boolean);
   if (!lines.length) return { header: [], rows: [] };
 
-  const header = lines[0].split(",").map((part) => part.trim());
+  const header = lines[0]
+    .split(",")
+    .map((part) => part.trim().replace(/^"|"$/g, ""));
   const rows = lines.slice(1).map((line) => line.split(","));
 
   return { header, rows };
 }
 
-function parseTreasuryData(csvText, rangeDays) {
-  const { header, rows } = parseCsv(csvText);
-  if (!header.length) {
+function parseTreasuryData(csvTexts, rangeDays) {
+  if (!csvTexts.length) {
     throw new Error("Treasury response was empty");
-  }
-
-  const dateIndex = header.findIndex((column) => /date/i.test(column));
-  if (dateIndex === -1) {
-    throw new Error("Treasury response missing Date column");
   }
 
   const cutoff = new Date();
   cutoff.setUTCDate(cutoff.getUTCDate() - rangeDays);
 
-  const maturities = MATURITY_MAP.filter((entry) => header.includes(entry.column));
-  const columnIndices = new Map();
-  maturities.forEach((entry) => {
-    columnIndices.set(entry.key, header.indexOf(entry.column));
-  });
-  const series = [];
+  const seriesByDate = new Map();
+  const maturitiesFound = new Map();
 
-  rows.forEach((columns) => {
-    const rawDate = columns[dateIndex];
-    const date = rawDate ? new Date(rawDate) : null;
-    if (!date || Number.isNaN(date.getTime())) {
+  csvTexts.forEach((csvText) => {
+    const { header, rows } = parseCsv(csvText);
+    if (!header.length) {
       return;
     }
 
-    if (date < cutoff) {
+    const dateIndex = header.findIndex((column) => /date/i.test(column));
+    if (dateIndex === -1) {
       return;
     }
 
-    const yields = {};
-    maturities.forEach(({ key }) => {
-      const columnIndex = columnIndices.get(key);
-      const value = columnIndex === -1 ? null : parseNumber(columns[columnIndex]);
-      yields[key] = value;
+    const availableMaturities = MATURITY_MAP.filter((entry) => header.includes(entry.column));
+    if (!availableMaturities.length) {
+      return;
+    }
+
+    const columnIndices = new Map();
+    availableMaturities.forEach((entry) => {
+      maturitiesFound.set(entry.key, entry);
+      columnIndices.set(entry.key, header.indexOf(entry.column));
     });
 
-    series.push({
-      date: date.toISOString().slice(0, 10),
-      values: yields
+    rows.forEach((columns) => {
+      const rawDate = columns[dateIndex];
+      const date = rawDate ? new Date(rawDate) : null;
+      if (!date || Number.isNaN(date.getTime())) {
+        return;
+      }
+
+      if (date < cutoff) {
+        return;
+      }
+
+      const isoDate = date.toISOString().slice(0, 10);
+      const existing = seriesByDate.get(isoDate) || { date: isoDate, values: {} };
+
+      availableMaturities.forEach(({ key }) => {
+        const columnIndex = columnIndices.get(key);
+        const value = columnIndex === -1 ? null : parseNumber(columns[columnIndex]);
+        existing.values[key] = value;
+      });
+
+      seriesByDate.set(isoDate, existing);
     });
   });
 
-  series.sort((a, b) => a.date.localeCompare(b.date));
+  if (!seriesByDate.size) {
+    throw new Error("Treasury response was empty");
+  }
+
+  const maturities = MATURITY_MAP.filter((entry) => maturitiesFound.has(entry.key));
+  const series = Array.from(seriesByDate.values()).sort((a, b) => a.date.localeCompare(b.date));
 
   return {
     maturities,
     series
   };
+}
+
+function buildTreasuryUrl(year) {
+  const base = `${TREASURY_BASE}/${year}/all`;
+  const params = new URLSearchParams({
+    type: "daily_treasury_yield_curve",
+    field_tdr_date_value: String(year),
+    _format: "csv"
+  });
+  return `${base}?${params.toString()}`;
+}
+
+async function fetchTreasuryCsv(year) {
+  const url = buildTreasuryUrl(year);
+  const response = await fetch(url, {
+    headers: {
+      "Accept": "text/csv, text/plain"
+    }
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Treasury request failed (${year}): ${response.status} ${text}`);
+  }
+
+  return response.text();
+}
+
+function resolveTreasuryYears(rangeDays) {
+  const today = new Date();
+  const start = new Date();
+  start.setUTCDate(start.getUTCDate() - rangeDays - 14);
+
+  const years = [];
+  for (let year = start.getUTCFullYear(); year <= today.getUTCFullYear(); year += 1) {
+    years.push(year);
+  }
+  return years;
 }
 
 async function fetchFredSeries(seriesId, rangeDays) {
@@ -153,18 +210,13 @@ async function fetchFredSeries(seriesId, rangeDays) {
 }
 
 async function buildResponse(rangeDays) {
-  const [treasuryRes, ...fredSeries] = await Promise.all([
-    fetch(TREASURY_URL),
+  const treasuryYears = resolveTreasuryYears(rangeDays);
+  const [treasuryCsvs, ...fredSeries] = await Promise.all([
+    Promise.all(treasuryYears.map((year) => fetchTreasuryCsv(year))),
     ...FRED_SERIES.map((series) => fetchFredSeries(series.id, rangeDays))
   ]);
 
-  if (!treasuryRes.ok) {
-    const text = await treasuryRes.text();
-    throw new Error(`Treasury request failed: ${treasuryRes.status} ${text}`);
-  }
-
-  const treasuryCsv = await treasuryRes.text();
-  const treasury = parseTreasuryData(treasuryCsv, rangeDays);
+  const treasury = parseTreasuryData(treasuryCsvs, rangeDays);
 
   const fred = FRED_SERIES.map((seriesMeta, index) => {
     const rawSeries = fredSeries[index];

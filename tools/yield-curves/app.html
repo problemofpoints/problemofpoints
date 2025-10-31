@@ -1,6 +1,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
@@ -62,18 +62,6 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-  }
-
-  .yc-meta .badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 9px;
-    background: #eef2ff;
-    color: #4338ca;
-    border-radius: 999px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
   }
 
   .yc-status {
@@ -181,6 +169,22 @@
 
   .yc-panel canvas {
     width: 100% !important;
+    height: clamp(240px, 38vh, 360px) !important;
+  }
+
+  .yc-panel-table {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.97) 100%);
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    box-shadow: none;
+    color: #e2e8f0;
+  }
+
+  .yc-panel-table h2 {
+    color: #f8fafc;
+  }
+
+  .yc-panel-table p {
+    color: #cbd5f5;
   }
 
   .yc-panel .panel-meta {
@@ -208,6 +212,18 @@
     border-collapse: collapse;
   }
 
+  .yc-panel-table .yc-yield-table {
+    background: rgba(30, 41, 59, 0.55);
+    border-radius: 16px;
+    padding: 12px 16px;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+  }
+
+  .yc-panel-table table {
+    min-width: 520px;
+    font-variant-numeric: tabular-nums;
+  }
+
   .yc-panel thead th {
     text-align: left;
     font-size: 0.8rem;
@@ -217,11 +233,35 @@
     padding-bottom: 10px;
   }
 
+  .yc-panel-table thead th {
+    color: rgba(226, 232, 240, 0.75);
+    padding: 0 12px 12px;
+  }
+
   .yc-panel tbody td {
     padding: 9px 0;
     border-top: 1px solid rgba(148, 163, 184, 0.18);
     font-size: 0.95rem;
     color: #1f2933;
+  }
+
+  .yc-panel-table tbody td {
+    padding: 10px 12px;
+    color: #f1f5f9;
+    border-top: 1px solid rgba(148, 163, 184, 0.28);
+  }
+
+  .yc-panel-table tbody tr:nth-child(even) td {
+    background: rgba(15, 23, 42, 0.55);
+  }
+
+  .yc-panel-table tbody tr:first-of-type td {
+    padding-top: 10px;
+    border-top: none;
+  }
+
+  .yc-panel-table tbody tr:last-of-type td {
+    padding-bottom: 10px;
   }
 
   .yc-panel tbody tr:first-of-type td {
@@ -234,12 +274,9 @@
   }
 
   .yc-yield-table {
+    background: rgba(30, 41, 59, 0.9);
     margin-top: 12px;
     overflow-x: auto;
-  }
-
-  .yc-yield-table table {
-    min-width: 520px;
   }
 
   .yc-empty {
@@ -273,11 +310,6 @@
 
     .yc-meta {
       color: #a5b4fc;
-    }
-
-    .yc-meta .badge {
-      background: rgba(99, 102, 241, 0.18);
-      color: #c7d2fe;
     }
 
     .yc-summary-card {
@@ -317,10 +349,9 @@
       border-color: rgba(148, 163, 184, 0.22);
     }
 
-    .yc-yield-table {
-      background: rgba(15, 23, 42, 0.35);
-      border-radius: 14px;
-      padding: 8px 14px;
+    .yc-panel-table {
+      background: linear-gradient(180deg, rgba(10, 17, 33, 0.95) 0%, rgba(8, 13, 27, 0.98) 100%);
+      border-color: rgba(99, 102, 241, 0.35);
     }
 
     .yc-empty {
@@ -330,54 +361,7 @@
   }
 </style>
 
-<div class="yield-curves-app" id="yield-curves-app">
-  <header>
-    <div class="badge">Fixed-Income Intelligence</div>
-    <h1>Yield Curve & Credit Spread Monitor</h1>
-    <p class="subhead">
-      Live US Treasury par yields alongside key corporate bond spreads to support asset-liability management and tactical asset allocation.
-      Trends are refreshed directly from the US Treasury and Federal Reserve (FRED).
-    </p>
-    <div class="yc-meta" data-role="meta">
-      <span><strong>Last refreshed:</strong> <time data-field="refreshed">—</time></span>
-      <span><strong>Data window:</strong> <span data-field="range">—</span></span>
-      <span class="badge">Netlify Functions</span>
-    </div>
-    <div class="yc-status" data-role="status">Loading market data…</div>
-  </header>
-
-  <section class="yc-summary-grid" data-section="summary">
-    <!-- Summary cards injected by script -->
-  </section>
-
-  <section class="yc-layout">
-    <article class="yc-panel">
-      <div>
-        <h2>Yield Curve Profiles</h2>
-        <p>Compare the latest Treasury curve with levels a month and a year ago to understand shifts in term premium and slope.</p>
-      </div>
-      <canvas id="yield-curve-chart" height="320"></canvas>
-      <div class="panel-meta" data-role="curve-meta"></div>
-    </article>
-
-    <article class="yc-panel">
-      <div>
-        <h2>Credit & Curve Spreads</h2>
-        <p>Track benchmark corporate bond spreads and the 10Y–2Y curve to gauge recession risk and relative value.</p>
-      </div>
-      <canvas id="spread-chart" height="320"></canvas>
-      <div class="panel-meta" data-role="spread-meta"></div>
-    </article>
-  </section>
-
-  <section class="yc-panel" style="margin-top: 28px;">
-    <div>
-      <h2>Recent Daily Treasury Par Yields</h2>
-      <p>An extract of the latest observations for quick reference across the curve.</p>
-    </div>
-    <div class="yc-yield-table" data-role="yield-table"></div>
-  </section>
-</div>
+<div class="yield-curves-app" id="yield-curves-app"></div>
 
 <script>
   (function () {
@@ -385,6 +369,70 @@
       data: null,
       charts: {}
     };
+
+    const dom = {
+      app: null,
+      summarySection: null,
+      statusBanner: null,
+      metaFields: {
+        refreshed: null,
+        range: null
+      },
+      curveMeta: null,
+      spreadMeta: null,
+      tableContainer: null
+    };
+    let initialized = false;
+
+    function renderShell(app) {
+      app.innerHTML = `
+<header class="yc-header">
+  <div class="badge">Fixed-Income Intelligence</div>
+  <h1>Yield Curve &amp; Credit Spread Monitor</h1>
+  <p class="subhead">
+    Live US Treasury par yields alongside key corporate bond spreads to support asset-liability management and tactical asset allocation.
+    Trends are refreshed directly from the US Treasury and Federal Reserve (FRED).
+  </p>
+  <div class="yc-meta" data-role="meta">
+    <span><strong>Last refreshed:</strong> <span data-field="refreshed">—</span></span>
+    <span><strong>Data window:</strong> <span data-field="range">—</span></span>
+  </div>
+  <div class="yc-status" data-role="status">Loading market data…</div>
+</header>
+
+<section class="yc-summary-grid" data-section="summary">
+  <!-- Summary cards injected by script -->
+</section>
+
+<section class="yc-layout">
+  <article class="yc-panel">
+    <div>
+      <h2>Yield Curve Profiles</h2>
+      <p>Compare the latest Treasury curve with levels a month and a year ago to understand shifts in term premium and slope.</p>
+    </div>
+    <canvas id="yield-curve-chart" height="320"></canvas>
+    <div class="panel-meta" data-role="curve-meta"></div>
+  </article>
+
+  <article class="yc-panel">
+    <div>
+      <h2>Credit &amp; Curve Spreads</h2>
+      <p>Track benchmark corporate bond spreads and the 10Y–2Y curve to gauge recession risk and relative value.</p>
+    </div>
+    <canvas id="spread-chart" height="320"></canvas>
+    <div class="panel-meta" data-role="spread-meta"></div>
+  </article>
+</section>
+
+<section class="yc-panel yc-panel-table" style="margin-top: 28px;">
+  <div>
+    <h2>Recent Daily Treasury Par Yields</h2>
+    <p>An extract of the latest observations for quick reference across the curve.</p>
+  </div>
+  <div class="yc-yield-table" data-role="yield-table"></div>
+</section>
+      `;
+    }
 
     function hexToRgba(hex, alpha) {
       if (!hex) return `rgba(99, 102, 241, ${alpha})`;
@@ -398,26 +446,44 @@
       return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
 
-    const app = document.getElementById("yield-curves-app");
-    const summarySection = app.querySelector('[data-section="summary"]');
-    const statusBanner = app.querySelector('[data-role="status"]');
-    const metaFields = {
-      refreshed: app.querySelector('[data-field="refreshed"]'),
-      range: app.querySelector('[data-field="range"]')
-    };
-    const curveMeta = app.querySelector('[data-role="curve-meta"]');
-    const spreadMeta = app.querySelector('[data-role="spread-meta"]');
-    const tableContainer = app.querySelector('[data-role="yield-table"]');
-
-    function setStatus(message, type = "info") {
-      if (!statusBanner) return;
-      if (!message) {
-        statusBanner.style.display = "none";
+    function init() {
+      if (initialized) {
         return;
       }
-      statusBanner.textContent = message;
-      statusBanner.classList.toggle("error", type === "error");
-      statusBanner.style.display = "block";
+
+      const app = document.getElementById("yield-curves-app");
+      if (!app) {
+        console.warn("Yield curves root element not found");
+        return;
+      }
+
+      renderShell(app);
+
+      dom.app = app;
+      dom.summarySection = app.querySelector('[data-section="summary"]');
+      dom.statusBanner = app.querySelector('[data-role="status"]');
+      dom.metaFields = {
+        refreshed: app.querySelector('[data-field="refreshed"]'),
+        range: app.querySelector('[data-field="range"]')
+      };
+      dom.curveMeta = app.querySelector('[data-role="curve-meta"]');
+      dom.spreadMeta = app.querySelector('[data-role="spread-meta"]');
+      dom.tableContainer = app.querySelector('[data-role="yield-table"]');
+
+      initialized = true;
+      loadData();
+    }
+
+    function setStatus(message, type = "info") {
+      const banner = dom.statusBanner;
+      if (!banner) return;
+      if (!message) {
+        banner.style.display = "none";
+        return;
+      }
+      banner.textContent = message;
+      banner.classList.toggle("error", type === "error");
+      banner.style.display = "block";
     }
 
     function formatPercent(value, decimals = 2) {
@@ -468,6 +534,7 @@
     }
 
     function buildSummaryCards(data) {
+      const summarySection = dom.summarySection;
       if (!summarySection) return;
       summarySection.innerHTML = "";
       const latest = data.treasury.series[data.treasury.series.length - 1];
@@ -555,6 +622,16 @@
       const monthAgo = findHistoricalPoint(data.treasury.series, 30);
       const yearAgo = findHistoricalPoint(data.treasury.series, 365);
 
+      const yieldValues = [latest, monthAgo, yearAgo]
+        .filter(Boolean)
+        .flatMap((point) => data.treasury.maturities.map(({ key }) => point?.values?.[key]))
+        .filter((value) => typeof value === "number" && Number.isFinite(value));
+      const maxYield = yieldValues.length ? Math.max(...yieldValues) : 5;
+      const bounds = {
+        min: 0,
+        max: Math.max(5, Math.ceil((maxYield + 0.25) * 2) / 2)
+      };
+
       const datasetForPoint = (point, label, color) => ({
         label,
         data: data.treasury.maturities.map(({ key }) => point?.values?.[key] ?? null),
@@ -579,6 +656,8 @@
 
       if (state.charts.curve) {
         state.charts.curve.data = chartData;
+        state.charts.curve.options.scales.y.min = bounds.min;
+        state.charts.curve.options.scales.y.max = bounds.max;
         state.charts.curve.update();
       } else {
         state.charts.curve = new Chart(ctx, {
@@ -586,13 +665,14 @@
           data: chartData,
           options: {
             responsive: true,
-            maintainAspectRatio: false,
             scales: {
               y: {
                 title: {
                   display: true,
                   text: "Yield (%)"
                 },
+                min: bounds.min,
+                max: bounds.max,
                 ticks: {
                   callback: (value) => `${value}%`
                 },
@@ -620,8 +700,9 @@
         });
       }
 
-      if (curveMeta) {
-        curveMeta.innerHTML = `Curves plotted for <strong>${maturities.length}</strong> standard maturities. Data source: US Treasury.`;
+      const meta = dom.curveMeta;
+      if (meta) {
+        meta.innerHTML = `Curves plotted for <strong>${maturities.length}</strong> standard maturities. Data source: US Treasury.`;
       }
     }
 
@@ -646,6 +727,16 @@
         pointHoverRadius: 3
       }));
 
+      const spreadValues = data.fred
+        .flatMap((series) => series.data.map((point) => point.value))
+        .filter((value) => typeof value === "number" && Number.isFinite(value));
+      const maxSpread = spreadValues.length ? Math.max(...spreadValues) : 400;
+      const minSpread = spreadValues.length ? Math.min(...spreadValues) : -200;
+      const spreadBounds = {
+        min: Math.min(-50, Math.floor((minSpread - 25) / 25) * 25),
+        max: Math.ceil((maxSpread + 25) / 25) * 25
+      };
+
       const yLabel = (value, series) => {
         if (series.category === "tenTwoSpread") {
           return formatBps(value, 0);
@@ -655,6 +746,8 @@
 
       if (state.charts.spread) {
         state.charts.spread.data.datasets = datasets;
+        state.charts.spread.options.scales.y.min = spreadBounds.min;
+        state.charts.spread.options.scales.y.max = spreadBounds.max;
         state.charts.spread.update();
       } else {
         state.charts.spread = new Chart(ctx, {
@@ -664,7 +757,6 @@
           },
           options: {
             responsive: true,
-            maintainAspectRatio: false,
             scales: {
               x: {
                 type: "time",
@@ -689,6 +781,8 @@
                   display: true,
                   text: "Basis Points"
                 },
+                min: spreadBounds.min,
+                max: spreadBounds.max,
                 ticks: {
                   callback: (value) => `${value}`
                 },
@@ -714,16 +808,18 @@
         });
       }
 
-      if (spreadMeta) {
-        spreadMeta.innerHTML = `Spreads expressed in basis points. Source: FRED (ICE BofA) & Treasury.`;
+      const meta = dom.spreadMeta;
+      if (meta) {
+        meta.innerHTML = `Spreads expressed in basis points. Source: FRED (ICE BofA) &amp; Treasury.`;
       }
     }
 
     function buildTable(data) {
-      if (!tableContainer) return;
+      const container = dom.tableContainer;
+      if (!container) return;
       const recent = [...data.treasury.series].slice(-7).reverse();
       if (!recent.length) {
-        tableContainer.innerHTML = '<div class="yc-empty">No recent observations available.</div>';
+        container.innerHTML = '<div class="yc-empty">No recent observations available.</div>';
         return;
       }
 
@@ -757,19 +853,20 @@
       });
 
       table.appendChild(tbody);
-      tableContainer.innerHTML = "";
-      tableContainer.appendChild(table);
+      container.innerHTML = "";
+      container.appendChild(table);
     }
 
     function applyMeta(data) {
-      if (metaFields.refreshed) {
-        metaFields.refreshed.textContent = new Date(data.fetchedAt).toLocaleString(undefined, {
+      const meta = dom.metaFields;
+      if (meta.refreshed) {
+        meta.refreshed.textContent = new Date(data.fetchedAt).toLocaleString(undefined, {
           dateStyle: "medium",
           timeStyle: "short"
         });
       }
-      if (metaFields.range) {
-        metaFields.range.textContent = `${data.rangeDays} calendar days`;
+      if (meta.range) {
+        meta.range.textContent = `${data.rangeDays} calendar days`;
       }
     }
 
@@ -791,10 +888,16 @@
       } catch (error) {
         console.error(error);
         setStatus("Unable to load live data. Please refresh or try again later.", "error");
-        tableContainer.innerHTML = '<div class="yc-empty">Live data unavailable. Check your connection or Netlify function logs.</div>';
+        if (dom.tableContainer) {
+          dom.tableContainer.innerHTML = '<div class="yc-empty">Live data unavailable. Check your connection or Netlify function logs.</div>';
+        }
       }
     }
 
-    loadData();
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", init, { once: true });
+    } else {
+      init();
+    }
   })();
 </script>
