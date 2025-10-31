@@ -139,7 +139,7 @@
     margin-top: 36px;
     display: grid;
     gap: 24px;
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .yc-panel {
@@ -213,7 +213,7 @@
   }
 
   .yc-panel-table .yc-yield-table {
-    background: rgba(30, 41, 59, 0.55);
+    background: rgba(15, 23, 42, 0.75);
     border-radius: 16px;
     padding: 12px 16px;
     border: 1px solid rgba(148, 163, 184, 0.25);
@@ -222,6 +222,38 @@
   .yc-panel-table table {
     min-width: 520px;
     font-variant-numeric: tabular-nums;
+    background: #122033;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    border: none;
+  }
+
+  .yc-panel-table thead th:first-child,
+  .yc-panel-table tbody td:first-child {
+    border-left: none;
+  }
+
+  .yc-panel-table thead {
+    background: #0b1727 !important;
+    background-color: #0b1727 !important;
+  }
+
+  .yc-panel-table tbody {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+
+  .yc-panel-table tr {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+
+  .yc-panel-table th,
+  .yc-panel-table td {
+    background: transparent !important;
+    background-color: transparent !important;
   }
 
   .yc-panel thead th {
@@ -234,8 +266,10 @@
   }
 
   .yc-panel-table thead th {
-    color: rgba(226, 232, 240, 0.75);
+    color: rgba(226, 232, 240, 0.85);
     padding: 0 12px 12px;
+    background: #0b1727 !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.32);
   }
 
   .yc-panel tbody td {
@@ -243,16 +277,28 @@
     border-top: 1px solid rgba(148, 163, 184, 0.18);
     font-size: 0.95rem;
     color: #1f2933;
+    background: transparent;
   }
 
   .yc-panel-table tbody td {
     padding: 10px 12px;
     color: #f1f5f9;
-    border-top: 1px solid rgba(148, 163, 184, 0.28);
+    border-top: 1px solid rgba(15, 23, 42, 0.2);
   }
 
+  .yc-panel-table tbody tr:nth-child(odd) {
+    background-color: #1b2a40 !important;
+  }
+
+  .yc-panel-table tbody tr:nth-child(even) {
+    background-color: #122033 !important;
+  }
+
+  .yc-panel-table tbody tr:nth-child(odd) td,
   .yc-panel-table tbody tr:nth-child(even) td {
-    background: rgba(15, 23, 42, 0.55);
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #f1f5f9;
   }
 
   .yc-panel-table tbody tr:first-of-type td {
