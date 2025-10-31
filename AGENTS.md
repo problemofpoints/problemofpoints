@@ -53,19 +53,17 @@
    ```
    - Add additional narrative sections or usage notes below the include as needed.
 4. Use Netlify Functions for any server-side API calls such as downloading data or making the tool dynamic. 
-5. **Test locally**: `quarto preview tools/index.qmd` ensures the tool loads and works in the generated site.
-6. **Confirm listing**: The gallery at `tools/index.qmd` automatically discovers `*/index.qmd`, so no manual registration is required. Ensure the title/description fit within the 160-character limit enforced by the listing configuration.
+5. **Confirm listing**: The gallery at `tools/index.qmd` automatically discovers `*/index.qmd`, so no manual registration is required. Ensure the title/description fit within the 160-character limit enforced by the listing configuration.
+
+### Tool Quality Checklist
+- Ensure `app.html` is **valid fragment HTML** (no `<!DOCTYPE>` or `<html>` wrapper) so Quarto does not escape it as code. If you use newer semantic tags (e.g., `<section>`, `<article>`), keep the structure valid and close every element; when in doubt, wrap the entire shell in a single root `<div>` and dynamically inject inner markup via JavaScript.
+- Keep the tool asset self-contained: load fonts, scripts, and styles inside `app.html`; avoid relying on global site CSS.
+- When hitting external APIs, create or update a Netlify Function under `netlify/functions/` and confirm it runs with `node netlify/functions/<name>.js` (or via `netlify dev`) before wiring it to the UI.
+- Run `quarto render tools/<slug>/index.qmd` after every major change. Fix any Pandoc warnings immediately—treat them as build failures.
+- Spot-check the listing card: confirm the tool’s title, description, and optional `image:` front-matter entry render as expected on `tools/index.qmd`.
 
 ## Operational Tips
 - Keep Markdown lint-friendly (wrap at ~100 characters, use heading hierarchies).
 - Run `quarto render` before publishing to catch build failures.
 - Update `requirements.txt` if you add new Python dependencies for posts or tools, and verify reproducibility by creating a fresh virtual environment.
 - Store sensitive information outside the repository; this site is fully static.
-
-### Netlify Functions & API Keys
-- The inflation monitor calls `/.netlify/functions/bls-proxy`, which forwards requests to the BLS API with the server-side `BLS_API_KEY`.
-- **Local development:**  
-  1. Install the Netlify CLI (`npm install -g netlify-cli`).  
-  2. Create a `.env` file with `BLS_API_KEY=<your key>` (the CLI loads it automatically).  
-  3. Run `netlify dev` to serve the Quarto preview and functions together (preview on `http://localhost:8889`, Quarto on 8888).
-- **Deployment:** Set `BLS_API_KEY` as an environment variable in the Netlify site settings (Site settings → Build & deploy → Environment). Netlify injects it into the function at build and runtime.

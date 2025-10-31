@@ -1,0 +1,12 @@
+---
+title: "Severe Weather Tracker"
+description: "Daily SPC preliminary storm reports on a Leaflet map plus tornado pace benchmark versus recent seasons."
+page-layout: full
+image: thumbnail.svg
+---
+
+{{< include app.html >}}
+
+## About This Tool
+
+The dashboard pulls the latest preliminary storm reports from the NOAA Storm Prediction Center (SPC) using a Netlify Function proxy. Report locations are plotted on an interactive Leaflet base layer so you can drill into tornado, severe wind, and large hail footprints for any day. A companion Netlify Function summarizes every tornado report since 2000 to benchmark the current season against last year and the broader historical distribution.

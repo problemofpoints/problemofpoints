@@ -1,0 +1,1492 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
+<style>
+  :root {
+    color-scheme: light dark;
+  }
+
+  .swt-app {
+    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: linear-gradient(180deg, rgba(243, 246, 255, 0.94) 0%, rgba(235, 240, 252, 0.92) 35%, rgba(241, 244, 249, 0.94) 100%);
+    color: #0f172a;
+    border-radius: 26px;
+    padding: clamp(22px, 6vw, 48px);
+    box-shadow: 0 28px 68px rgba(15, 23, 42, 0.12);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .swt-app::before,
+  .swt-app::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    mix-blend-mode: soft-light;
+  }
+
+  .swt-app::before {
+    inset: -160px auto auto -180px;
+    width: 360px;
+    height: 360px;
+    background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 70%);
+  }
+
+  .swt-app::after {
+    inset: auto -200px -140px auto;
+    width: 420px;
+    height: 420px;
+    background: radial-gradient(circle at bottom right, rgba(244, 114, 182, 0.14), transparent 72%);
+  }
+
+  .swt-app * {
+    box-sizing: border-box;
+  }
+
+  .swt-header {
+    position: relative;
+    z-index: 1;
+  }
+
+  .swt-header h1 {
+    margin: 0;
+    font-size: clamp(1.9rem, 3.6vw, 2.6rem);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #0b1220;
+  }
+
+  .swt-header .swt-subhead {
+    margin-top: 12px;
+    max-width: 760px;
+    font-size: clamp(1rem, 2.1vw, 1.08rem);
+    line-height: 1.6;
+    color: #475569;
+  }
+
+  .swt-controls {
+    margin-top: 28px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: flex-end;
+    position: relative;
+    z-index: 1;
+  }
+
+  .swt-control-card {
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 18px;
+    padding: 16px 18px;
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.12);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+  }
+
+  .swt-control-card label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6b7280;
+    margin-bottom: 8px;
+  }
+
+  .swt-input {
+    width: 220px;
+    font-size: 1rem;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.32);
+    background: rgba(250, 253, 255, 0.96);
+    color: #0f172a;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .swt-input:focus {
+    border-color: rgba(59, 130, 246, 0.6);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+  }
+
+  .swt-event-toggle-group {
+    display: flex;
+    gap: 10px;
+  }
+
+  .swt-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    border: 1px solid transparent;
+    font-size: 0.96rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+    background: rgba(15, 23, 42, 0.05);
+    color: #1f2937;
+  }
+
+  .swt-toggle::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.65;
+  }
+
+  .swt-toggle[data-type="tornado"] {
+    color: #ef4444;
+  }
+
+  .swt-toggle[data-type="wind"] {
+    color: #2563eb;
+  }
+
+  .swt-toggle[data-type="hail"] {
+    color: #0f766e;
+  }
+
+  .swt-toggle.is-active {
+    background: rgba(255, 255, 255, 0.96);
+    border-color: currentColor;
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+    transform: translateY(-1px);
+  }
+
+  .swt-toggle:not(.is-active) {
+    opacity: 0.7;
+  }
+
+  .swt-refresh-button {
+    padding: 12px 20px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+    color: white;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    box-shadow: 0 16px 36px rgba(37, 99, 235, 0.28);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .swt-refresh-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 44px rgba(37, 99, 235, 0.32);
+  }
+
+  .swt-status {
+    margin-top: 18px;
+    padding: 16px 18px;
+    border-radius: 16px;
+    background: rgba(59, 130, 246, 0.08);
+    color: #1d4ed8;
+    font-size: 0.95rem;
+    font-weight: 500;
+    display: none;
+  }
+
+  .swt-status.is-visible {
+    display: block;
+  }
+
+  .swt-status.is-error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #b91c1c;
+    border: 1px solid rgba(239, 68, 68, 0.24);
+  }
+
+  .swt-map-section {
+    position: relative;
+    z-index: 1;
+    margin-top: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .swt-map-panel,
+  .swt-side-panel,
+  .swt-summary-container {
+    background: rgba(255, 255, 255, 0.96);
+    border-radius: 24px;
+    padding: 20px 22px 26px;
+    box-shadow: 0 20px 54px rgba(15, 23, 42, 0.1);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+  }
+
+  .swt-map-panel h2,
+  .swt-side-panel h2,
+  .swt-chart-panel h2 {
+    margin: 0 0 12px;
+    font-size: 1.14rem;
+    font-weight: 600;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+  }
+
+  #swt-map {
+    width: 100%;
+    height: clamp(420px, 45vw, 540px);
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  .swt-map-footer {
+    margin-top: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: center;
+    font-size: 0.92rem;
+    color: #475569;
+  }
+
+  .swt-map-legend {
+    display: flex;
+    gap: 16px;
+  }
+
+  .swt-map-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .swt-map-legend span::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .swt-map-legend .tornado {
+    color: #ef4444;
+  }
+
+  .swt-map-legend .wind {
+    color: #2563eb;
+  }
+
+  .swt-map-legend .hail {
+    color: #0f766e;
+  }
+
+  .swt-summary-container {
+    padding-bottom: 24px;
+  }
+
+  .swt-summary-container header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .swt-summary-container header h2 {
+    margin: 0;
+    font-size: 1.12rem;
+    font-weight: 600;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+  }
+
+  .swt-summary-container header span {
+    font-size: 0.9rem;
+    color: #64748b;
+  }
+
+  .swt-map-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+  }
+
+  .swt-summary-card {
+    padding: 16px 18px;
+    border-radius: 18px;
+    background: rgba(245, 248, 255, 0.8);
+    border: 1px solid rgba(59, 130, 246, 0.12);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .swt-summary-card span {
+    font-size: 0.8rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #64748b;
+    font-weight: 600;
+  }
+
+  .swt-summary-card strong {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1e293b;
+    letter-spacing: -0.01em;
+  }
+
+  .swt-summary-card small {
+    font-size: 0.82rem;
+    color: #475569;
+  }
+
+  .swt-report-list {
+    margin-top: 6px;
+    display: grid;
+    gap: 14px;
+  }
+
+  .swt-report-scroll {
+    display: grid;
+    gap: 14px;
+    max-height: 420px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .swt-report-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .swt-report-scroll::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.4);
+    border-radius: 999px;
+  }
+
+  .swt-report-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .swt-report-item {
+    padding: 16px 18px;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: rgba(249, 251, 255, 0.88);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .swt-report-item::before {
+    content: attr(data-type-label);
+    position: absolute;
+    inset: 18px auto auto 18px;
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: currentColor;
+    opacity: 0.76;
+  }
+
+  .swt-report-item h3 {
+    margin: 24px 0 6px;
+    font-size: 1.08rem;
+    font-weight: 600;
+    color: #0f172a;
+  }
+
+  .swt-report-item p {
+    margin: 0;
+    font-size: 0.92rem;
+    color: #475569;
+    line-height: 1.5;
+  }
+
+  .swt-report-meta {
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    font-size: 0.85rem;
+    color: #1f2937;
+  }
+
+  .swt-report-empty {
+    padding: 16px 18px;
+    border-radius: 16px;
+    border: 1px dashed rgba(148, 163, 184, 0.4);
+    background: rgba(248, 250, 255, 0.78);
+    color: #475569;
+    font-size: 0.92rem;
+    line-height: 1.4;
+    text-align: center;
+  }
+
+  .swt-divider {
+    margin: 24px 0 18px;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(148, 163, 184, 0) 0%, rgba(148, 163, 184, 0.44) 50%, rgba(148, 163, 184, 0) 100%);
+  }
+
+  .swt-chart-panel {
+    margin-top: 28px;
+    background: rgba(255, 255, 255, 0.96);
+    border-radius: 24px;
+    padding: 22px 22px 26px;
+    box-shadow: 0 22px 60px rgba(15, 23, 42, 0.1);
+    border: 1px solid rgba(203, 213, 225, 0.28);
+    position: relative;
+    z-index: 1;
+  }
+
+  .swt-chart-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: baseline;
+    color: #475569;
+    font-size: 0.92rem;
+    margin-bottom: 18px;
+  }
+
+  .swt-chart-meta strong {
+    color: #0f172a;
+  }
+
+  .swt-chart-summary {
+    margin-top: 18px;
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .swt-chart-legend {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-top: 12px;
+    font-size: 0.92rem;
+    color: #475569;
+    flex-wrap: wrap;
+  }
+
+  .swt-chart-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+  }
+
+  .swt-chart-legend span::before {
+    content: "";
+    width: 16px;
+    height: 3px;
+    border-radius: 1.5px;
+    background: currentColor;
+    display: inline-block;
+  }
+
+  .swt-chart-legend .current {
+    color: #ef4444;
+  }
+
+  .swt-chart-legend .comparison {
+    color: #334155;
+  }
+
+  .swt-chart-legend .baseline {
+    color: rgba(148, 163, 184, 0.8);
+  }
+
+  .swt-chart-canvas {
+    height: 440px;
+    max-height: 440px;
+    position: relative;
+  }
+
+  .swt-chart-canvas canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .swt-chart-card {
+    padding: 16px 18px;
+    border-radius: 16px;
+    background: rgba(243, 244, 255, 0.88);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .swt-chart-card span {
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #6366f1;
+    font-weight: 600;
+  }
+
+  .swt-chart-card strong {
+    font-size: 1.46rem;
+    font-weight: 700;
+    color: #1e1b4b;
+    letter-spacing: -0.01em;
+  }
+
+  .swt-chart-card small {
+    font-size: 0.85rem;
+    color: #4338ca;
+  }
+
+  .swt-footnote {
+    margin-top: 22px;
+    font-size: 0.82rem;
+    color: #64748b;
+  }
+
+  .swt-footnote a {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+  }
+
+  .swt-loader {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
+    color: #2563eb;
+  }
+
+  .swt-loader::before {
+    content: "";
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 3px solid rgba(37, 99, 235, 0.2);
+    border-top-color: #2563eb;
+    animation: swt-spin 0.9s linear infinite;
+  }
+
+  @keyframes swt-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (max-width: 1100px) {
+    #swt-map {
+      height: clamp(360px, 52vw, 480px);
+    }
+  }
+
+  @media (max-width: 720px) {
+    .swt-controls {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .swt-control-card,
+    .swt-refresh-button {
+      width: 100%;
+    }
+
+    .swt-event-toggle-group {
+      justify-content: space-between;
+    }
+
+    .swt-toggle {
+      flex: 1;
+      justify-content: center;
+    }
+  }
+</style>
+<div id="swt-app-root"></div>
+<script>
+  (() => {
+    const state = {
+      map: null,
+      markers: [],
+      activeTypes: new Set(["tornado", "wind", "hail"]),
+      reportsResponse: null,
+      tornadoResponse: null,
+    chart: null
+  };
+    const CHART_ANCHOR_YEAR = 2000;
+    const Y_AXIS_MAX = 2000;
+
+    const API_ENDPOINTS = {
+      reports: "/.netlify/functions/spc-storm-reports",
+      tornado: "/.netlify/functions/spc-tornado-trends"
+    };
+
+    const EVENT_STYLES = {
+      tornado: { color: "#f43f5e", fillColor: "rgba(244,63,94,0.62)" },
+      wind: { color: "#2563eb", fillColor: "rgba(37,99,235,0.54)" },
+      hail: { color: "#0f766e", fillColor: "rgba(14,181,166,0.58)" }
+    };
+
+    const APP_TEMPLATE = `
+      <div class="swt-app" data-component="severe-weather-tracker">
+        <header class="swt-header">
+          <h1>Severe Weather Tracker</h1>
+          <p class="swt-subhead">
+            Monitor daily severe weather reports from the NOAA Storm Prediction Center, visualize storm footprints on an interactive map, and benchmark year-to-date tornado activity against the past two and a half decades.
+          </p>
+        </header>
+        <section class="swt-controls" aria-label="Controls">
+          <div class="swt-control-card">
+            <label for="swt-date-input">Storm Reports Date</label>
+            <input id="swt-date-input" class="swt-input" type="date" max="" aria-describedby="swt-date-hint">
+            <div id="swt-date-hint" style="display:none;">Select a UTC date to load SPC preliminary reports.</div>
+          </div>
+          <div class="swt-control-card">
+            <label>Event Types</label>
+            <div class="swt-event-toggle-group" role="group" aria-label="Event types">
+              <button type="button" class="swt-toggle is-active" data-type="tornado">Tornado</button>
+              <button type="button" class="swt-toggle is-active" data-type="wind">Wind</button>
+              <button type="button" class="swt-toggle is-active" data-type="hail">Hail</button>
+            </div>
+          </div>
+        </section>
+        <div class="swt-status" id="swt-status" role="status"></div>
+        <section class="swt-map-section" aria-label="Storm detail">
+          <div class="swt-summary-container">
+            <header>
+              <h2>Daily Overview</h2>
+              <span id="swt-summary-date">Loading…</span>
+            </header>
+            <div class="swt-map-summary" id="swt-map-summary"></div>
+          </div>
+          <article class="swt-map-panel">
+            <h2>Event Footprints</h2>
+            <div id="swt-map" role="region" aria-label="Storm report map"></div>
+            <div class="swt-map-footer">
+              <div class="swt-map-legend" aria-hidden="true">
+                <span class="tornado">Tornado</span>
+                <span class="wind">Wind</span>
+                <span class="hail">Hail</span>
+              </div>
+              <span id="swt-map-source"></span>
+            </div>
+          </article>
+          <aside class="swt-side-panel">
+            <h2>Significant Reports</h2>
+            <div class="swt-report-scroll" role="list">
+              <div class="swt-report-list" id="swt-report-list"></div>
+              <div class="swt-divider" role="presentation"></div>
+              <div class="swt-report-list" id="swt-secondary-report-list" aria-label="Additional reports"></div>
+            </div>
+          </aside>
+        </section>
+        <section class="swt-chart-panel" aria-label="Tornado trends">
+          <h2>Tornado Activity Benchmark</h2>
+          <div class="swt-chart-meta" id="swt-chart-meta">
+            <span class="swt-loader">Loading tornado history…</span>
+          </div>
+          <div class="swt-chart-canvas">
+            <canvas id="swt-tornado-chart" role="img" aria-label="Chart comparing current tornado activity with history"></canvas>
+          </div>
+          <div class="swt-chart-legend">
+            <span class="current">Current year</span>
+            <span class="comparison">Prior year</span>
+            <span class="baseline">History (2000+)</span>
+          </div>
+          <div class="swt-chart-summary" id="swt-chart-summary"></div>
+          <p class="swt-footnote">
+            Source: <a href="https://www.spc.noaa.gov/wcm/#data" target="_blank" rel="noopener">NOAA Storm Prediction Center</a>. Data reflect preliminary reports and may be updated after verification.
+          </p>
+        </section>
+      </div>
+    `;
+
+    const root = document.getElementById("swt-app-root");
+    if (root) {
+      root.innerHTML = APP_TEMPLATE;
+    }
+
+    const SELECTORS = root
+      ? {
+          dateInput: root.querySelector("#swt-date-input"),
+          status: root.querySelector("#swt-status"),
+          toggleButtons: Array.from(root.querySelectorAll(".swt-toggle")),
+          mapSummary: root.querySelector("#swt-map-summary"),
+          summaryDate: root.querySelector("#swt-summary-date"),
+          mapSource: root.querySelector("#swt-map-source"),
+          reportList: root.querySelector("#swt-report-list"),
+          secondaryReportList: root.querySelector("#swt-secondary-report-list"),
+          reportDivider: root.querySelector(".swt-side-panel .swt-divider"),
+          chartCanvas: root.querySelector("#swt-tornado-chart"),
+          chartMeta: root.querySelector("#swt-chart-meta"),
+          chartSummary: root.querySelector("#swt-chart-summary"),
+          chartLegend: root.querySelector(".swt-chart-legend")
+        }
+      : {
+          toggleButtons: []
+        };
+
+    const highlightLabelPlugin = {
+      id: "highlightLabel",
+      afterDatasetsDraw(chart, _args, opts) {
+        const datasetId = opts?.datasetId;
+        if (!datasetId) return;
+        const datasetIndex = chart.data.datasets.findIndex((dataset) => dataset.id === datasetId);
+        if (datasetIndex === -1) return;
+        const meta = chart.getDatasetMeta(datasetIndex);
+        if (!meta || !meta.data || !meta.data.length) return;
+
+        const pointIndex = opts?.pointIndex != null ? opts.pointIndex : meta.data.length - 1;
+        const element = meta.data[pointIndex];
+        if (!element) return;
+        const { ctx } = chart;
+        const { x, y } = element.getProps(["x", "y"], true);
+        ctx.save();
+        ctx.fillStyle = opts?.color || "#111827";
+        ctx.font = "600 13px 'Inter', sans-serif";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        const text = typeof opts?.labelText === "function" ? opts.labelText(chart) : opts?.labelText;
+        if (text) {
+          const padding = 10;
+          const bubbleRadius = 8;
+          ctx.beginPath();
+          const textWidth = ctx.measureText(text).width;
+          const boxWidth = textWidth + bubbleRadius * 2;
+          const boxHeight = 28;
+          const boxX = x + padding;
+          const boxY = y - boxHeight / 2;
+          ctx.fillStyle = "rgba(251, 113, 133, 0.18)";
+          ctx.strokeStyle = opts?.color || "#f43f5e";
+          ctx.lineWidth = 1.4;
+          ctx.roundRect(boxX, boxY, boxWidth, boxHeight, 14);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = opts?.color || "#f43f5e";
+          ctx.fillText(text, boxX + bubbleRadius, y);
+        }
+        ctx.restore();
+      }
+    };
+
+    Chart.register(highlightLabelPlugin);
+
+    function formatIsoDate(date) {
+      if (!(date instanceof Date)) return null;
+      const iso = date.toISOString();
+      return iso.slice(0, 10);
+    }
+
+    function normalizeDateForChart(iso) {
+      if (!iso) return null;
+      const date = new Date(iso);
+      if (Number.isNaN(date.getTime())) return null;
+      const month = date.getUTCMonth();
+      const day = date.getUTCDate();
+      return new Date(Date.UTC(CHART_ANCHOR_YEAR, month, day));
+    }
+
+    function formatDisplayDate(iso) {
+      if (!iso) return "";
+      const date = new Date(iso);
+      if (Number.isNaN(date.getTime())) return iso;
+      return date.toLocaleDateString(undefined, {
+        month: "long",
+        day: "numeric",
+        year: "numeric"
+      });
+    }
+
+    function formatNumber(value) {
+      if (value == null || Number.isNaN(value)) return "–";
+      return Number(value).toLocaleString();
+    }
+
+    function formatMagnitude(report) {
+      if (!report) return "";
+      if (report.type === "tornado") {
+        return report.scale ? `EF Rating: ${report.scale}` : "EF Rating: Unk";
+      }
+      if (report.type === "wind") {
+        return report.speedMph != null ? `Gust: ${report.speedMph} kt` : "Gust: Unk";
+      }
+      if (report.type === "hail") {
+        return report.sizeInches != null
+          ? `Size: ${report.sizeInches.toFixed(2)} in`
+          : "Size: Unk";
+      }
+      return "";
+    }
+
+    function computeMarkerRadius(report) {
+      if (!report) return 6;
+      if (report.type === "tornado") {
+        return 6 + Math.max(0, report.efRating || 0) * 2;
+      }
+      if (report.type === "wind") {
+        const speed = report.speedMph != null ? report.speedMph : 40;
+        return 5 + Math.min(12, speed / 15);
+      }
+      if (report.type === "hail") {
+        const size = report.sizeInches != null ? report.sizeInches : 0.75;
+        return 4 + Math.min(10, size * 4);
+      }
+      return 6;
+    }
+
+    function ensureMap() {
+      if (state.map) return state.map;
+      state.map = L.map("swt-map", {
+        zoomControl: false,
+        attributionControl: false
+      }).setView([37.8, -96], 4.3);
+
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+        maxZoom: 18,
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+      }).addTo(state.map);
+
+      L.control.zoom({ position: "topright" }).addTo(state.map);
+      return state.map;
+    }
+
+    function clearMarkers() {
+      state.markers.forEach((marker) => marker.remove());
+      state.markers = [];
+    }
+
+    function renderMarkers() {
+      const map = ensureMap();
+      clearMarkers();
+      const reports = state.reportsResponse?.reports || {};
+
+      const bounds = [];
+
+      ["tornado", "wind", "hail"].forEach((type) => {
+        const entries = reports[type] || [];
+        if (!state.activeTypes.has(type)) {
+          return;
+        }
+        entries.forEach((report) => {
+          if (report.latitude == null || report.longitude == null) return;
+          const style = EVENT_STYLES[type];
+          const marker = L.circleMarker([report.latitude, report.longitude], {
+            radius: computeMarkerRadius(report),
+            color: style.color,
+            weight: 1.4,
+            fillColor: style.fillColor,
+            fillOpacity: 0.72,
+            bubblingMouseEvents: false
+          }).addTo(map);
+
+          const popupLines = [
+            `<strong>${report.location || "Unknown location"}, ${report.state || ""}</strong>`,
+            `Time: ${report.time || "N/A"} UTC`,
+            formatMagnitude(report)
+          ];
+
+          if (report.comments) {
+            popupLines.push(`<em>${report.comments}</em>`);
+          }
+
+          popupLines.push(
+            `County: ${report.county || "Unknown"} • Coords: ${report.latitude.toFixed(2)}, ${report.longitude.toFixed(2)}`
+          );
+
+          marker.bindPopup(popupLines.join("<br>"));
+          state.markers.push(marker);
+          bounds.push([report.latitude, report.longitude]);
+        });
+      });
+
+      if (bounds.length) {
+        const mapBounds = L.latLngBounds(bounds);
+        map.fitBounds(mapBounds.pad(0.25), { animate: true });
+      }
+    }
+
+    function renderSummaryCards() {
+      const target = SELECTORS.mapSummary;
+      const summaryDateLabel = SELECTORS.summaryDate;
+      if (!target) return;
+      target.innerHTML = "";
+
+      const response = state.reportsResponse;
+      if (!response) {
+        if (summaryDateLabel) {
+          summaryDateLabel.textContent = "No data loaded";
+        }
+        return;
+      }
+
+      if (summaryDateLabel) {
+        const shown = formatDisplayDate(response.date) || "Date unavailable";
+        const requested = formatDisplayDate(response.requestedDate);
+        summaryDateLabel.textContent =
+          response.date && response.requestedDate && response.date !== response.requestedDate
+            ? `Showing ${shown} (requested ${requested || "n/a"})`
+            : `Showing ${shown}`;
+      }
+
+      const summaryData = [
+        {
+          label: "Preliminary Reports",
+          value: formatNumber(response.summary?.tornadoes + response.summary?.wind + response.summary?.hail),
+          detail: `${formatNumber(response.summary?.tornadoes)} tornado · ${formatNumber(response.summary?.wind)} wind · ${formatNumber(response.summary?.hail)} hail`
+        },
+        {
+          label: "Mapped Records",
+          value: formatNumber(
+            (response.mappedCounts?.tornadoes || 0) +
+              (response.mappedCounts?.wind || 0) +
+              (response.mappedCounts?.hail || 0)
+          ),
+          detail: "Entries with lat/long"
+        },
+        {
+          label: "Requested Date",
+          value: formatDisplayDate(response.requestedDate),
+          detail:
+            response.date && response.date !== response.requestedDate
+              ? `Showing ${formatDisplayDate(response.date)} due to availability`
+              : `Displaying ${formatDisplayDate(response.date)}`
+        }
+      ];
+
+      summaryData.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "swt-summary-card";
+        card.innerHTML = `
+          <span>${item.label}</span>
+          <strong>${item.value}</strong>
+          <small>${item.detail}</small>
+        `;
+        target.appendChild(card);
+      });
+    }
+
+    function renderReportSpotlight() {
+      const primaryTarget = SELECTORS.reportList;
+      const secondaryTarget = SELECTORS.secondaryReportList;
+      if (!primaryTarget || !secondaryTarget) return;
+
+      primaryTarget.innerHTML = "";
+      secondaryTarget.innerHTML = "";
+
+      const response = state.reportsResponse;
+      if (!response) return;
+
+      const typesOrder = ["tornado", "wind", "hail"];
+      const aggregated = [];
+
+      typesOrder.forEach((type) => {
+        if (!state.activeTypes.has(type)) return;
+        const entries = response.reports?.[type] || [];
+        entries.forEach((entry) => {
+          aggregated.push({ ...entry, type });
+        });
+      });
+
+      aggregated.sort((a, b) => {
+        const timeA = a.rawTime ? Number(a.rawTime) : 0;
+        const timeB = b.rawTime ? Number(b.rawTime) : 0;
+        return timeB - timeA;
+      });
+
+      const topEntries = aggregated.slice(0, 5);
+      const remaining = aggregated.slice(5);
+
+      const typeLabels = {
+        tornado: "Tornado",
+        wind: "Severe Wind",
+        hail: "Large Hail"
+      };
+
+      const typeColors = {
+        tornado: "#ef4444",
+        wind: "#2563eb",
+        hail: "#0f766e"
+      };
+
+      function buildItem(entry) {
+        const wrapper = document.createElement("article");
+        wrapper.className = "swt-report-item";
+        wrapper.dataset.typeLabel = typeLabels[entry.type] || "Report";
+        wrapper.style.color = typeColors[entry.type] || "#475569";
+
+        const title = entry.location
+          ? `${entry.location}, ${entry.state || ""}`.trim()
+          : `County: ${entry.county || "Unknown"}`;
+
+        const comments = entry.comments
+          ? entry.comments.replace(/\s+/g, " ")
+          : "No commentary provided.";
+
+        wrapper.innerHTML = `
+          <h3>${title}</h3>
+          <p>${comments}</p>
+          <div class="swt-report-meta">
+            <span>${entry.time || "N/A"} UTC</span>
+            <span>${formatMagnitude(entry)}</span>
+          </div>
+        `;
+
+        return wrapper;
+      }
+
+      if (!aggregated.length) {
+        const emptyMessage = document.createElement("div");
+        emptyMessage.className = "swt-report-empty";
+        emptyMessage.textContent = "No reports match the selected filters.";
+        primaryTarget.appendChild(emptyMessage);
+        if (SELECTORS.reportDivider) {
+          SELECTORS.reportDivider.style.display = "none";
+        }
+        secondaryTarget.style.display = "none";
+        return;
+      }
+
+      topEntries.forEach((entry) => primaryTarget.appendChild(buildItem(entry)));
+
+      if (remaining.length) {
+        remaining.forEach((entry) => secondaryTarget.appendChild(buildItem(entry)));
+        if (SELECTORS.reportDivider) {
+          SELECTORS.reportDivider.style.display = "";
+        }
+        secondaryTarget.style.display = "";
+      } else {
+        secondaryTarget.style.display = "none";
+        if (SELECTORS.reportDivider) {
+          SELECTORS.reportDivider.style.display = "none";
+        }
+      }
+    }
+
+    function updateMapSource() {
+      const sourceEl = SELECTORS.mapSource;
+      if (!sourceEl) return;
+      const source = state.reportsResponse?.source;
+      const date = state.reportsResponse?.date;
+      if (!source) {
+        sourceEl.textContent = "";
+        return;
+      }
+      sourceEl.innerHTML = `SPC preliminary reports • ${formatDisplayDate(date)} • <a href="${source}" target="_blank" rel="noopener">CSV</a>`;
+    }
+
+    async function fetchStormReports(dateValue) {
+      const url = new URL(API_ENDPOINTS.reports, window.location.origin);
+      if (dateValue) {
+        url.searchParams.set("date", dateValue);
+      }
+      const response = await fetch(url.toString());
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || `Failed to load storm reports (${response.status})`);
+      }
+      return response.json();
+    }
+
+    async function fetchTornadoTrends() {
+      const response = await fetch(API_ENDPOINTS.tornado);
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || `Failed to load tornado history (${response.status})`);
+      }
+      return response.json();
+    }
+
+    function setStatus(message, isError = false) {
+      const status = SELECTORS.status;
+      if (!status) return;
+      if (!message) {
+        status.classList.remove("is-visible", "is-error");
+        status.textContent = "";
+        return;
+      }
+      status.classList.add("is-visible");
+      status.classList.toggle("is-error", Boolean(isError));
+      status.innerHTML = message;
+    }
+
+    async function loadStormReports() {
+      const dateValue = SELECTORS.dateInput?.value;
+      try {
+        setStatus(`<span class="swt-loader">Loading NOAA SPC reports…</span>`, false);
+        const result = await fetchStormReports(dateValue);
+        state.reportsResponse = result;
+        setStatus(`Loaded ${formatNumber(result.summary?.tornadoes + result.summary?.wind + result.summary?.hail)} preliminary reports.`, false);
+        renderSummaryCards();
+        renderMarkers();
+        renderReportSpotlight();
+        updateMapSource();
+      } catch (error) {
+        console.error(error);
+        setStatus(error.message || "Failed to load storm reports.", true);
+      }
+    }
+
+    const CHART_AXIS_MIN = new Date(Date.UTC(CHART_ANCHOR_YEAR, 0, 1));
+    const CHART_AXIS_MAX = new Date(Date.UTC(CHART_ANCHOR_YEAR, 11, 31));
+
+    function buildChartDatasets(data) {
+      const { years, currentYear, comparisonYear } = data;
+      if (!Array.isArray(years) || !years.length) return [];
+
+      const datasets = [];
+      years.forEach((yearEntry) => {
+        const { year, series } = yearEntry;
+        const points = series
+          .map((point) => {
+            const normalized = normalizeDateForChart(point.date);
+            if (!normalized) return null;
+            return {
+              x: normalized,
+              y: point.cumulative,
+              originalDate: point.date
+            };
+          })
+          .filter(Boolean);
+
+        if (year === currentYear) {
+          datasets.push({
+            id: "currentYear",
+            label: `${year}`,
+            data: points,
+            borderColor: "#ef4444",
+            backgroundColor: "rgba(239,68,68,0.12)",
+            tension: 0.24,
+            borderWidth: 3,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            pointHitRadius: 12,
+            order: 3,
+            parsing: false,
+            spanGaps: true
+          });
+        } else if (year === comparisonYear) {
+          datasets.push({
+            id: "comparisonYear",
+            label: `${year}`,
+            data: points,
+            borderColor: "#334155",
+            borderDash: [6, 5],
+            tension: 0.2,
+            borderWidth: 2.5,
+            pointRadius: 0,
+            pointHoverRadius: 3,
+            pointHitRadius: 10,
+            order: 2,
+            parsing: false,
+            spanGaps: true
+          });
+        } else {
+          datasets.push({
+            id: `year-${year}`,
+            label: `${year}`,
+            data: points,
+            borderColor: "rgba(148, 163, 184, 0.38)",
+            borderWidth: 1.2,
+            pointRadius: 0,
+            pointHoverRadius: 2,
+            pointHitRadius: 8,
+            tension: 0.18,
+            order: 1,
+            parsing: false,
+            spanGaps: true
+          });
+        }
+      });
+
+      return datasets;
+    }
+
+    function findValueOnOrBefore(series, dayOfYear) {
+      if (!Array.isArray(series) || !series.length) return null;
+      let result = null;
+      for (const point of series) {
+        if (point.dayOfYear <= dayOfYear) {
+          result = point;
+        } else {
+          break;
+        }
+      }
+      return result;
+    }
+
+    function renderChartSummary(data) {
+      const target = SELECTORS.chartSummary;
+      if (!target) return;
+      target.innerHTML = "";
+
+      const { currentYear, comparisonYear, currentLatestPoint, years, ensembleStats } = data;
+      const comparisonSeries = years.find((entry) => entry.year === comparisonYear);
+      const currentSeries = years.find((entry) => entry.year === currentYear);
+      const dayOfYear = currentLatestPoint?.dayOfYear;
+      const comparisonPoint = comparisonSeries ? findValueOnOrBefore(comparisonSeries.series, dayOfYear) : null;
+
+      const cards = [
+        {
+          label: `${currentYear} Reports`,
+          value: formatNumber(currentLatestPoint?.cumulative || 0),
+          detail: `As of ${formatDisplayDate(currentLatestPoint?.date) || "latest available"}`
+        },
+        {
+          label: `${comparisonYear || currentYear - 1} Reports`,
+          value: formatNumber(comparisonPoint?.cumulative || comparisonSeries?.totalReports || 0),
+          detail: comparisonPoint
+            ? `Same time last year`
+            : `Total for ${comparisonYear || currentYear - 1}`
+        },
+        {
+          label: "Historical Average",
+          value: formatNumber(Math.round(ensembleStats?.averageTotal || 0)),
+          detail: `${ensembleStats?.count || 0} seasons since ${data.startYear}`
+        }
+      ];
+
+      cards.forEach((card) => {
+        const node = document.createElement("div");
+        node.className = "swt-chart-card";
+        node.innerHTML = `
+          <span>${card.label}</span>
+          <strong>${card.value}</strong>
+          <small>${card.detail}</small>
+        `;
+        target.appendChild(node);
+      });
+    }
+
+    function renderChartMeta(data) {
+      const target = SELECTORS.chartMeta;
+      if (!target) return;
+      target.innerHTML = "";
+
+      const { currentYear, currentLatestPoint, comparisonYear, years } = data;
+      const comparisonSeries = years.find((entry) => entry.year === comparisonYear);
+      const comparisonPoint = comparisonSeries
+        ? findValueOnOrBefore(comparisonSeries.series, currentLatestPoint?.dayOfYear || 0)
+        : null;
+
+      const diff =
+        currentLatestPoint && comparisonPoint
+          ? currentLatestPoint.cumulative - comparisonPoint.cumulative
+          : null;
+
+      const diffText =
+        diff != null
+          ? diff === 0
+            ? "matching last season"
+            : diff > 0
+              ? `${formatNumber(diff)} ahead of last season`
+              : `${formatNumber(Math.abs(diff))} behind last season`
+          : "insufficient comparison data";
+
+      const paragraph = document.createElement("p");
+      paragraph.innerHTML = `
+        <strong>${currentYear} tornado reports:</strong> ${formatNumber(currentLatestPoint?.cumulative || 0)} total as of ${formatDisplayDate(currentLatestPoint?.date)} — ${diffText}.
+      `;
+      target.appendChild(paragraph);
+    }
+
+    function renderTornadoChart() {
+      const data = state.tornadoResponse;
+      if (!data) return;
+
+      const datasets = buildChartDatasets(data);
+      if (!datasets.length) return;
+
+      if (!SELECTORS.chartCanvas) return;
+      const ctx = SELECTORS.chartCanvas.getContext("2d");
+      if (!ctx) return;
+
+      const ySuggestedMax = Y_AXIS_MAX;
+      const tickStep = 200;
+
+      if (state.chart) {
+        state.chart.destroy();
+      }
+
+      state.chart = new Chart(ctx, {
+        type: "line",
+        data: { datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          scales: {
+            x: {
+              type: "time",
+              min: CHART_AXIS_MIN,
+              max: CHART_AXIS_MAX,
+              time: {
+                unit: "month",
+                tooltipFormat: "MMM d",
+                displayFormats: { month: "MMM" }
+              },
+              grid: {
+                drawBorder: false,
+                color: "rgba(148, 163, 184, 0.18)"
+              },
+              ticks: {
+                color: "#475569",
+                font: { size: 12 }
+              }
+            },
+            y: {
+              beginAtZero: true,
+              suggestedMax: ySuggestedMax,
+              max: ySuggestedMax,
+              grid: {
+                drawBorder: false,
+                color: (context) => (context.index % 2 === 0
+                  ? "rgba(148, 163, 184, 0.14)"
+                  : "rgba(148, 163, 184, 0.05)"),
+                borderDash: [4, 4]
+              },
+              ticks: {
+                color: "#475569",
+                font: { size: 12 },
+                stepSize: tickStep,
+                callback: (value) => formatNumber(value)
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              enabled: true,
+              backgroundColor: "rgba(15, 23, 42, 0.92)",
+              titleColor: "#e2e8f0",
+              bodyColor: "#cbd5f5",
+              borderColor: "rgba(148, 163, 184, 0.4)",
+              borderWidth: 1,
+              padding: 12,
+              callbacks: {
+                title(items) {
+                  if (!items.length) return "";
+                  const raw = items[0].raw;
+                  const iso = raw?.originalDate;
+                  if (iso) {
+                    return formatDisplayDate(iso);
+                  }
+                  const { parsed } = items[0];
+                  return luxon.DateTime.fromMillis(parsed.x).toFormat("MMM d");
+                },
+                label(item) {
+                  const label = item.dataset.label || "";
+                  if (item.raw && item.raw.originalDate) {
+                    const displayDate = formatDisplayDate(item.raw.originalDate);
+                    return `${label}: ${formatNumber(item.parsed.y)} reports (${displayDate})`;
+                  }
+                  return `${label}: ${formatNumber(item.parsed.y)} reports`;
+                }
+              }
+            },
+            highlightLabel: {
+              datasetId: "currentYear",
+              color: "#b91c1c",
+              labelText: () => {
+                const point = data.currentLatestPoint;
+                if (!point) return null;
+                return `${data.currentYear}: ${formatNumber(point.cumulative)}`;
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function buildChartLegend(result) {
+      const legend = SELECTORS.chartLegend;
+      if (!legend) return;
+
+      const currentLabel = legend.querySelector(".current");
+      const comparisonLabel = legend.querySelector(".comparison");
+      const baselineLabel = legend.querySelector(".baseline");
+
+      if (currentLabel) {
+        currentLabel.textContent = `${result.currentYear} season`;
+      }
+
+      if (comparisonLabel) {
+        comparisonLabel.textContent = result.comparisonYear
+          ? `${result.comparisonYear} season`
+          : "Prior season";
+      }
+
+      if (baselineLabel) {
+        baselineLabel.textContent = `History (${result.startYear}–${result.currentYear - 1})`;
+      }
+    }
+
+    async function loadTornadoHistory() {
+      try {
+        SELECTORS.chartMeta.innerHTML = `<span class="swt-loader">Loading tornado history…</span>`;
+        const result = await fetchTornadoTrends();
+        state.tornadoResponse = result;
+        renderTornadoChart();
+        renderChartMeta(result);
+        renderChartSummary(result);
+        buildChartLegend(result);
+      } catch (error) {
+        console.error(error);
+        SELECTORS.chartMeta.innerHTML = `<span class="swt-status is-visible is-error">${error.message || "Unable to load tornado history."}</span>`;
+      }
+    }
+
+    function setDefaultDate() {
+      if (!SELECTORS.dateInput) return;
+      const today = new Date();
+      const iso = formatIsoDate(today);
+      SELECTORS.dateInput.max = iso;
+      if (!SELECTORS.dateInput.value) {
+        SELECTORS.dateInput.value = iso;
+      }
+    }
+
+    function bindEvents() {
+      SELECTORS.toggleButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const type = button.dataset.type;
+          if (!type) return;
+          if (state.activeTypes.has(type) && state.activeTypes.size === 1) {
+            return;
+          }
+          if (state.activeTypes.has(type)) {
+            state.activeTypes.delete(type);
+            button.classList.remove("is-active");
+          } else {
+            state.activeTypes.add(type);
+            button.classList.add("is-active");
+          }
+          renderMarkers();
+          renderReportSpotlight();
+        });
+      });
+
+      SELECTORS.dateInput?.addEventListener("change", () => {
+        loadStormReports();
+        loadTornadoHistory();
+      });
+    }
+
+    function init() {
+      setDefaultDate();
+      bindEvents();
+      ensureMap();
+      loadStormReports().then(() => loadTornadoHistory());
+    }
+
+    document.addEventListener("DOMContentLoaded", init);
+  })();
+</script>

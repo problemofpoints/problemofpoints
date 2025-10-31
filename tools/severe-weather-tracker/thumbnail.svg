@@ -1,0 +1,65 @@
+<svg width="960" height="540" viewBox="0 0 960 540" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="swt-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#eef3ff"/>
+      <stop offset="55%" stop-color="#f5f0ff"/>
+      <stop offset="100%" stop-color="#f2f6ff"/>
+    </linearGradient>
+    <linearGradient id="swt-card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="rgba(255,255,255,0.92)"/>
+      <stop offset="1" stop-color="rgba(255,255,255,0.76)"/>
+    </linearGradient>
+    <clipPath id="swt-clip">
+      <rect x="120" y="150" width="700" height="280" rx="18"/>
+    </clipPath>
+  </defs>
+  <rect width="960" height="540" rx="36" fill="url(#swt-bg)"/>
+  <rect x="80" y="96" width="800" height="348" rx="28" fill="url(#swt-card)" stroke="rgba(148,163,184,0.18)"/>
+  <g fill="#0f172a" font-family="Inter, 'Segoe UI', system-ui" letter-spacing="-0.01em">
+    <text x="112" y="144" font-weight="700" font-size="38">Severe Weather Tracker</text>
+    <text x="114" y="178" font-size="18" opacity="0.65" letter-spacing="0">
+      Daily SPC storm reports mapped with a tornado pace benchmark
+    </text>
+  </g>
+  <g clip-path="url(#swt-clip)">
+    <rect x="120" y="150" width="700" height="280" fill="#f8fbff"/>
+    <g transform="translate(140 170)">
+      <g stroke="#d1d9e6" stroke-dasharray="4 6" stroke-width="1">
+        <line x1="0" y1="40" x2="660" y2="40"/>
+        <line x1="0" y1="120" x2="660" y2="120"/>
+        <line x1="0" y1="200" x2="660" y2="200"/>
+      </g>
+      <g stroke="rgba(148,163,184,0.35)" stroke-width="1.4" fill="none">
+        <path d="M0 210 C60 180 90 150 140 124 C180 103 220 86 260 72 C320 53 360 46 420 40 C470 36 530 37 580 46 C620 53 650 68 660 80"/>
+        <path d="M0 210 C68 170 118 143 170 118 C220 94 260 78 310 64 C360 50 410 42 470 36 C520 32 590 35 640 46 C665 52 660 70 660 86" opacity="0.7"/>
+        <path d="M0 212 C50 198 92 162 140 140 C210 108 270 88 330 72 C390 56 450 48 520 42 C580 38 640 42 680 56" opacity="0.55"/>
+        <path d="M0 214 C44 184 96 162 140 142 C200 114 256 96 320 82 C374 69 428 60 492 54 C542 50 612 54 660 64" opacity="0.28"/>
+        <path d="M0 216 C60 196 114 176 170 150 C230 122 286 102 344 86 C404 70 462 60 528 52 C588 46 642 48 660 58" opacity="0.2"/>
+      </g>
+      <path d="M0 214 C56 178 124 142 186 120 C232 104 286 92 332 82 C374 74 418 70 456 68 C510 66 558 74 604 90 C632 100 648 110 660 122" fill="none" stroke="#ef4444" stroke-width="4"/>
+      <circle cx="532" cy="86" r="6" fill="#ef4444" stroke="#fee2e2" stroke-width="3"/>
+      <g font-family="Inter, 'Segoe UI', system-ui" font-weight="600" font-size="14" fill="#b91c1c">
+        <text x="546" y="80">2025 pace</text>
+        <text x="546" y="100" opacity="0.75">1,299 reports</text>
+      </g>
+      <g font-family="Inter" font-size="12" fill="#64748b">
+        <text x="-6" y="212" text-anchor="end">0</text>
+        <text x="-6" y="172" text-anchor="end">400</text>
+        <text x="-6" y="132" text-anchor="end">800</text>
+        <text x="-6" y="92" text-anchor="end">1,200</text>
+        <text x="-6" y="52" text-anchor="end">1,600</text>
+      </g>
+      <g font-family="Inter" font-size="12" fill="#94a3b8">
+        <text x="0" y="240">Jan</text>
+        <text x="120" y="240">Mar</text>
+        <text x="240" y="240">May</text>
+        <text x="360" y="240">Jul</text>
+        <text x="480" y="240">Sep</text>
+        <text x="600" y="240">Nov</text>
+      </g>
+    </g>
+  </g>
+  <g transform="translate(104 468)" font-family="Inter" font-size="14">
+    <text fill="#334155" font-weight="600">Live NOAA SPC feed · Interactive Leaflet map · Tornado pace vs. history</text>
+  </g>
+</svg>
