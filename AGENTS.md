@@ -11,7 +11,7 @@
 ## Local Environment
 - Install Quarto separately if it is not already available on the machine.
 - Create and activate a Python 3.12 virtual environment, then install dependencies:
-  ```bash
+  ```zsh
   python3.12 -m venv .venv
   source .venv/bin/activate
   pip install -r requirements.txt

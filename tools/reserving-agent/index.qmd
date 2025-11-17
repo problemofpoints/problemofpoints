@@ -1,0 +1,8 @@
+---
+title: "Reserving Agent"
+description: "AI Loss Reserving assistant using the chainladder python package."
+page-layout: full
+image: thumbnail.svg
+---
+
+{{< include app.html >}}
