@@ -27,17 +27,7 @@ import pandas as pd
 clrd = cl.load_sample("clrd")
 triangle = clrd.loc[("New Jersey Manufacturers Grp", "wkcomp"), "CumPaidLoss"]
 
-# Convert to a tidy cumulative DataFrame for the accident years of interest
-cum_df = (
-    triangle.to_frame()
-    .reset_index()
-    .rename(columns={"index": "accident_year"})
-    .assign(accident_year=lambda df: pd.to_datetime(df["accident_year"]).dt.year)
-)
-# Accident years 1989-1997 correspond to the R article's summaries
-cum_df = cum_df.query("accident_year >= 1989")
-latest_paid = cum_df[["accident_year", 12, 24, 36, 48, 60, 72, 84, 96, 108]].set_index("accident_year")
-latest_paid
+triangle
 ```
 
 The latest diagonal of this triangle sums to the same $1,310,483 observed in the R output. The original chain
@@ -52,14 +42,13 @@ flag which cells belong to the upper-right portion of the triangle that require 
 
 ```{python}
 # Compute incremental amounts; keep the first column as-is, then use differences by development period
-cum_matrix = cum_df.set_index("accident_year")
-incr_matrix = cum_matrix.diff(axis=1)
-incr_matrix.iloc[:, 0] = cum_matrix.iloc[:, 0]
-
+incr_triangle = triangle.cum_to_incr()
 incr_long = (
-    incr_matrix.reset_index()
+    incr_triangle.to_frame(origin_as_datetime=True)
+    .rename_axis("accident_year")
+    .reset_index()
     .melt(id_vars="accident_year", var_name="dev", value_name="incremental")
-    .assign(dev=lambda df: df["dev"].astype(int))
+    .assign(dev=lambda df: df["dev"].astype(int), accident_year=lambda df: df["accident_year"].dt.year)
 )
 
 observed = incr_long.dropna().copy()
@@ -67,8 +56,17 @@ observed["accident_year"] = observed["accident_year"].astype("category")
 observed["dev"] = observed["dev"].astype("category")
 
 future_cells = incr_long[incr_long["incremental"].isna()].copy().reset_index(drop=True)
-future_cells["accident_year"] = future_cells["accident_year"].astype("category")
-future_cells["dev"] = future_cells["dev"].astype("category")
+future_cells = future_cells.loc[future_cells["accident_year"] >= 1989].copy()
+
+# Align categorical levels with the training data so Bambi sees the same factor levels
+future_cells["accident_year"] = pd.Categorical(
+    future_cells["accident_year"],
+    categories=observed["accident_year"].cat.categories,
+)
+future_cells["dev"] = pd.Categorical(
+    future_cells["dev"],
+    categories=observed["dev"].cat.categories,
+)
 
 observed.head()
 ```
@@ -132,14 +130,20 @@ reserve_summary["cv"] = reserve_summary["std"] / reserve_summary["mean"]
 reserve_summary = reserve_summary.reset_index().rename(columns={"index": "accident_year"})
 
 # Add total row and attach the observed latest paid amounts for context
-latest_by_year = latest_paid[108].reset_index().rename(columns={108: "latest_paid"})
+latest_by_year = (
+    triangle.latest_diagonal.to_frame(origin_as_datetime=True)
+    .rename_axis("accident_year")
+    .reset_index()
+    .assign(accident_year=lambda df: df["accident_year"].dt.year)
+    .rename(columns=lambda c: "latest_paid" if c != "accident_year" else c)
+)
 reserve_summary = reserve_summary.merge(latest_by_year, on="accident_year", how="left")
 reserve_summary.loc[len(reserve_summary)] = [
     "total",
     accident_draws.sum(axis=1).mean(),
     accident_draws.sum(axis=1).std(),
     accident_draws.sum(axis=1).std() / accident_draws.sum(axis=1).mean(),
-    latest_paid[108].sum(),
+    latest_by_year.latest_paid.sum(),
 ]
 reserve_summary
 ```
@@ -160,7 +164,6 @@ ppc_idata = model.predict(idata, data=observed, kind="response", inplace=False)
 # Attach the observed increments so ArviZ can handle the PPC plot
 import xarray as xr
 obs_ds = xr.Dataset({"incremental": ("__obs__", observed["incremental"].values)})
-ppc_idata.add_groups(observed_data=obs_ds)
 
 az.plot_ppc(ppc_idata, data_pairs={"incremental": "incremental"}, num_pp_samples=100, figsize=(8, 4))
 ```
