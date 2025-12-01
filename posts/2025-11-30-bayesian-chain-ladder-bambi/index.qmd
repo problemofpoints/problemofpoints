@@ -129,7 +129,7 @@ accident_draws = samples_df.groupby(level=0, axis=1).sum()
 
 reserve_summary = accident_draws.agg(["mean", "std"]).T
 reserve_summary["cv"] = reserve_summary["std"] / reserve_summary["mean"]
-reserve_summary = reserve_summary.reset_index().rename(columns={"level_0": "accident_year"})
+reserve_summary = reserve_summary.reset_index().rename(columns={"index": "accident_year"})
 
 # Add total row and attach the observed latest paid amounts for context
 latest_by_year = latest_paid[108].reset_index().rename(columns={108: "latest_paid"})
