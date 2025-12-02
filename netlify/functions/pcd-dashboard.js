@@ -46,6 +46,7 @@ const TICKERS = {
   WRB: "W. R. Berkley Corporation",
   WTM: "White Mountains Insurance Group",
   "ZURN.SW": "Zurich Insurance Group",
+  "BEZ.L": "Beazley plc",
   BOW: "Bowhead Specialty Holdings"
 };
 
