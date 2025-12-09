@@ -14,4 +14,4 @@ bambi>=0.16
 chainladder>=0.8
 formulae>=0.5
 pymc>=5.26
-reservetestr>=0.1
+reservetestr @ git+https://github.com/problemofpoints/reservetestr-python.git
