@@ -100,10 +100,11 @@ calendar_effects.describe()
 
 ## AR(1) estimate for diagonal correlation
 
-The AR(1) parameter $\rho$ can be estimated by regressing the calendar effect on its own one-period lag. We also
-show the empirical autocorrelation function (ACF) for the first five lags and compare it with the AR(1) pattern
-$\rho^k$. Confidence intervals use the Fisher $z$ approximation with effective sample size equal to the number of
-calendar years contributing to each lag.
+The AR(1) parameter $\rho$ can be estimated by regressing the calendar effect on its own one-period lag. That slope
+is unconstrained and can drift outside $[-1, 1]$, so it should be viewed as an autoregressive coefficient, not a
+direct correlation. We also show the empirical autocorrelation function (ACF) for the first five lags and compare
+it with the AR(1) pattern $\rho^k$. Confidence intervals use the Fisher $z$ approximation with effective sample size
+equal to the number of calendar years contributing to each lag.
 
 ```{python}
 def fit_ar1(series: pd.Series, max_lag: int = 5):
@@ -253,13 +254,43 @@ $i, j$ equals $\rho^{|i-j|}$.
 rho = phi_hat
 n = min(10, len(calendar_effects))
 indices = [f"CY{i+1}" for i in range(n)]
-corr_matrix = pd.DataFrame(
+toeplitz_matrix = pd.DataFrame(
     [[rho ** abs(i - j) for j in range(n)] for i in range(n)],
     index=indices,
     columns=indices,
 )
 
-corr_matrix
+toeplitz_matrix
+```
+
+## Rank correlations by line and lag
+
+To feed a positive-definite calendar-year correlation matrix, we also compute Spearman rank correlations between
+each line's calendar-effect series and its own lagged copies. These coefficients are bounded inside $[-1, 1]$ by
+construction and can be used directly when parameterizing a correlation matrix.
+
+```{python}
+max_lag = 5
+rank_corr_rows = []
+for line, df in dev_factors.groupby("line"):
+    ce = calendar_effects_from(df.copy())
+    for lag in range(1, max_lag + 1):
+        aligned = pd.concat([ce, ce.shift(lag)], axis=1, keys=["curr", "lagged"]).dropna()
+        if len(aligned) > 1:
+            r = aligned["curr"].corr(aligned["lagged"], method="spearman")
+        else:
+            r = np.nan
+        rank_corr_rows.append({"line": line, "lag": lag, "rank_corr": r})
+
+rank_corr_table = pd.DataFrame(rank_corr_rows)
+rank_corr_display = (
+    rank_corr_table.assign(line=lambda df: df["line"].map(display_names))
+    .pivot(index="line", columns="lag", values="rank_corr")
+    .pipe(lambda df: df.rename_axis("Line of business").rename(columns=lambda c: f"Lag {c}"))
+    .applymap(lambda r: f"{r:.2f}" if pd.notna(r) else "–")
+)
+
+rank_corr_display
 ```
 
 ## Takeaways
@@ -280,6 +311,8 @@ display(
   {line_map.loc['ppauto', 'display_name']}, and `r = {line_map.loc['wkcomp', 'phi']:.2f}` for
   {line_map.loc['wkcomp', 'display_name']} (see table above for exact confidence intervals). Pooling all
   lines yields the Toeplitz correlation matrix reported above, matching the structure in the reference figure.
+- Spearman rank correlations by line and lag stay inside $[-1, 1]$ and can feed a positive-definite calendar-year
+  correlation matrix without additional truncation. The table above lists lags 1–5 for each line.
 - The empirical autocorrelations fall close to the AR(1) curve $\rho^k$, suggesting that the diagonal dependence
   can be summarized by a single parameter without large residual structure. This AR(1) fit is a reasonable
   diagnostic for calendar effects before applying an ODP bootstrap, but the best way to model residual
