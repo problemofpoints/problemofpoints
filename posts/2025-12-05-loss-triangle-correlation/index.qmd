@@ -1,0 +1,242 @@
+---
+title: "Calendar-Year Correlation in Meyers' Loss Triangles"
+date: 2025-12-05
+categories: [analysis, insurance]
+subtitle: "Estimating diagonal dependence with an AR(1) calendar effect"
+draft: false
+format:
+  html:
+    fig-format: svg
+---
+
+Understanding how observations within a loss development triangle move together is essential when reserving
+with correlated errors. This post uses the **CAS loss reserve database** as assembled in the
+[`reservetestr-python`](https://github.com/problemofpoints/reservetestr-python) project to measure
+the calendar-year dependence implied by the Meyers 200 test triangles. The correlation structure proposed in
+Figure 2.3.1 above treats each diagonal (calendar year) as following an AR(1) process, so that the correlation
+between cells `k` years apart on the same diagonal is approximately $\rho^{k}$. We estimate that parameter for
+each line of business, for the full collection of triangles, and then use it to build the full correlation matrix
+across diagonals.
+
+We work with cumulative **paid** losses for the four major NAIC lines—Commercial Auto, Personal Auto, Workers' Comp,
+and Other Liability—and we summarize how strongly adjacent diagonals move together. Each triangle appears twice in
+the raw file (train/test splits), so we focus on the **training** segment to keep one copy of every cell.
+
+## Data preparation
+
+```{python}
+import numpy as np
+import pandas as pd
+
+subset_url = "https://raw.githubusercontent.com/problemofpoints/reservetestr-python/main/src/reservetestr/data/clrd_triangles_fortesting_list.csv"
+triangles_url = "https://raw.githubusercontent.com/problemofpoints/reservetestr-python/main/src/reservetestr/data/meyers_triangles_long.csv"
+
+subset = pd.read_csv(subset_url)
+subset["line"] = subset["line"].str.lower()
+triangles = pd.read_csv(triangles_url)
+triangles["line"] = triangles["line"].str.lower()
+
+# Use only paid loss cells from the Meyers 200 subset
+paid_subset = (
+    triangles.query("loss_type == 'paid' and segment == 'train'")
+    .merge(subset, on=["line", "group_id"], how="inner")
+    .assign(calendar_year=lambda df: df.accident_year + df.development_lag - 1)
+)
+
+line_counts = (
+    paid_subset[["line", "group_id"]]
+    .drop_duplicates()
+    .groupby("line")
+    .size()
+    .rename("triangle_count")
+    .reset_index()
+)
+line_counts
+```
+
+## From development factors to calendar effects
+
+We convert each cumulative triangle to development factors, remove the average pattern for each development
+lag, and average the residuals by calendar year. This isolates the calendar effect that the AR(1) process is
+supposed to capture, while keeping a common development structure across all triangles.
+
+```{python}
+records = []
+for (line, gid), triangle in paid_subset.groupby(["line", "group_id"]):
+    wide = triangle.pivot(index="accident_year", columns="development_lag", values="value")
+    wide = wide.sort_index(axis=0).sort_index(axis=1)
+    # compute log development factors where both current and previous lags exist and are positive
+    for ay in wide.index:
+        for lag in wide.columns[1:]:
+            prev_lag = lag - 1
+            if prev_lag not in wide.columns:
+                continue
+            curr, prev = wide.loc[ay, lag], wide.loc[ay, prev_lag]
+            if np.isfinite(curr) and np.isfinite(prev) and curr > 0 and prev > 0:
+                log_factor = np.log(curr / prev)
+                records.append(
+                    {
+                        "line": line,
+                        "group_id": gid,
+                        "accident_year": ay,
+                        "development_lag": lag,
+                        "calendar_year": ay + lag - 1,
+                        "log_factor": log_factor,
+                    }
+                )
+
+dev_factors = pd.DataFrame(records)
+lag_means = dev_factors.groupby("development_lag")["log_factor"].transform("mean")
+dev_factors = dev_factors.assign(resid=dev_factors["log_factor"] - lag_means)
+
+
+def calendar_effects_from(df: pd.DataFrame) -> pd.Series:
+    return df.groupby("calendar_year")["resid"].mean().sort_index()
+
+
+calendar_effects = calendar_effects_from(dev_factors)
+calendar_effects.describe()
+```
+
+## AR(1) estimate for diagonal correlation
+
+The AR(1) parameter $\rho$ can be estimated by regressing the calendar effect on its own one-period lag. We also
+show the empirical autocorrelation function (ACF) for the first five lags and compare it with the AR(1) pattern
+$\rho^k$. Confidence intervals use the Fisher $z$ approximation with effective sample size equal to the number of
+calendar years contributing to each lag.
+
+```{python}
+def fit_ar1(series: pd.Series, max_lag: int = 5):
+    series = series.dropna()
+    lagged = series.shift(1).dropna()
+    phi_hat = float(np.sum(series.loc[lagged.index] * lagged) / np.sum(lagged ** 2))
+    n_eff = len(lagged)
+    se_phi = np.sqrt((1 - phi_hat**2) / max(n_eff - 1, 1))
+    phi_ci = (phi_hat - 1.96 * se_phi, phi_hat + 1.96 * se_phi)
+
+    acf_rows = []
+    for lag in range(1, max_lag + 1):
+        r = series.autocorr(lag=lag)
+        eff_n = len(series) - lag
+        z = np.arctanh(np.clip(r, -0.9999, 0.9999))
+        se_z = 1 / np.sqrt(max(eff_n - 3, 1))
+        ci_low, ci_high = np.tanh(z - 1.96 * se_z), np.tanh(z + 1.96 * se_z)
+        acf_rows.append(
+            {
+                "lag": lag,
+                "empirical_corr": r,
+                "ci_low": ci_low,
+                "ci_high": ci_high,
+                "ar1_curve": phi_hat**lag,
+            }
+        )
+
+    return phi_hat, phi_ci, pd.DataFrame(acf_rows)
+
+
+phi_hat, phi_ci, acf_table = fit_ar1(calendar_effects)
+
+line_results = []
+for line, df in dev_factors.groupby("line"):
+    ce = calendar_effects_from(df.copy())
+    line_phi, line_ci, _ = fit_ar1(ce)
+    line_results.append(
+        {
+            "line": line,
+            "phi": line_phi,
+            "ci_low": line_ci[0],
+            "ci_high": line_ci[1],
+            "obs": len(ce.dropna()),
+        }
+    )
+
+line_table = pd.DataFrame(line_results).sort_values("line")
+display_names = {
+    "comauto": "Commercial Auto",
+    "othliab": "Other Liability",
+    "ppauto": "Personal Auto",
+    "wkcomp": "Workers' Comp",
+}
+line_table["display_name"] = line_table["line"].map(display_names)
+line_map = line_table.set_index("line")
+phi_hat, phi_ci, line_table
+```
+
+```{python}
+#| fig-format: svg
+#| fig-width: 7
+#| fig-height: 4
+
+import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.errorbar(
+    acf_table["lag"],
+    acf_table["empirical_corr"],
+    yerr=[
+        acf_table["empirical_corr"] - acf_table["ci_low"],
+        acf_table["ci_high"] - acf_table["empirical_corr"],
+    ],
+    fmt="o",
+    capsize=4,
+    label="Empirical ACF",
+)
+ax.plot(acf_table["lag"], acf_table["ar1_curve"], label=r"AR(1) $\rho^k$")
+ax.axhline(0, color="gray", linewidth=0.7)
+ax.set_xlabel("Lag (calendar years apart)")
+ax.set_ylabel("Correlation")
+ax.set_title("Calendar-year autocorrelation in Meyers triangles")
+ax.legend()
+fig.tight_layout()
+fig
+```
+
+## Correlation matrix from the AR(1) estimate
+
+The AR(1) parameter implies a Toeplitz correlation matrix along calendar-year diagonals. The table below uses the
+pooled estimate across all four lines to populate a 10-year-by-10-year diagonal correlation matrix, where entry
+$i, j$ equals $\rho^{|i-j|}$.
+
+```{python}
+rho = phi_hat
+n = min(10, len(calendar_effects))
+indices = [f"CY{i+1}" for i in range(n)]
+corr_matrix = pd.DataFrame(
+    [[rho ** abs(i - j) for j in range(n)] for i in range(n)],
+    index=indices,
+    columns=indices,
+)
+
+corr_matrix
+```
+
+## Takeaways
+
+```{python}
+from IPython.display import Markdown, display
+
+display(
+    Markdown(
+        f"""
+- Across the 200 Meyers triangles, the estimated AR(1) correlation between adjacent calendar-year diagonals is
+  **`r = {phi_hat:.2f}`** with a 95% confidence interval of **`[{phi_ci[0]:.2f}, {phi_ci[1]:.2f}]`**.
+- Line-by-line AR(1) estimates show meaningful variation: `r = {line_map.loc['comauto', 'phi']:.2f}` for
+  {line_map.loc['comauto', 'display_name']}, `r = {line_map.loc['othliab', 'phi']:.2f}` for
+  {line_map.loc['othliab', 'display_name']}, `r = {line_map.loc['ppauto', 'phi']:.2f}` for
+  {line_map.loc['ppauto', 'display_name']}, and `r = {line_map.loc['wkcomp', 'phi']:.2f}` for
+  {line_map.loc['wkcomp', 'display_name']} (see table above for exact confidence intervals). Pooling all
+  lines yields the Toeplitz correlation matrix reported above, matching the structure in the reference figure.
+- The empirical autocorrelations fall close to the AR(1) curve $\rho^k$, suggesting that the diagonal dependence
+  can be summarized by a single parameter without large residual structure. This AR(1) fit is a reasonable
+  diagnostic for calendar effects before applying an ODP bootstrap, but the best way to model residual
+  correlation in the `chainladder` ODP bootstrap is to use a fitted GLM (or state-space/variance model) that
+  explicitly includes calendar-year parameters rather than imposing correlation on resampled residuals.
+"""
+    )
+)
+```
+
+The AR(1) calendar-year effect provides a practical way to capture the dominant diagonal correlation while keeping
+chain-ladder style development structure intact. When projecting reserves, this $\rho$ feeds directly into the
+cell-level covariance matrix implied by Figure 2.3.1 and enables interval estimates that respect the calendar
+pattern visible in historical data.
