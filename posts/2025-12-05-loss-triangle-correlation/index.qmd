@@ -162,6 +162,42 @@ line_map = line_table.set_index("line")
 phi_hat, phi_ci, line_table
 ```
 
+The grand-mean calendar effect averages residuals across all lines, so opposite-signed patterns cancel out and
+push the pooled AR(1) estimate toward zero. The by-line estimates remain high because each line’s calendar trend
+is internally consistent even though they differ in sign and magnitude. The small sample size (nine usable
+calendar years per line) also widens the intervals and makes the pooled series more sensitive to cross-line
+offsets.
+
+```{python}
+#| fig-format: svg
+#| fig-width: 7
+#| fig-height: 4
+
+line_calendar_effects = (
+    dev_factors.groupby(["line", "calendar_year"])["resid"].mean().reset_index()
+    .pivot(index="calendar_year", columns="line", values="resid")
+    .sort_index()
+)
+
+import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots(figsize=(7, 4))
+for line in sorted(line_calendar_effects.columns):
+    ax.plot(
+        line_calendar_effects.index,
+        line_calendar_effects[line],
+        marker="o",
+        label=display_names.get(line, line.title()),
+    )
+ax.axhline(0, color="gray", linewidth=0.7)
+ax.set_xlabel("Calendar year")
+ax.set_ylabel("Mean residual dev factor")
+ax.set_title("Calendar effects by line of business (train triangles)")
+ax.legend()
+fig.tight_layout()
+fig
+```
+
 ```{python}
 #| fig-format: svg
 #| fig-width: 7
@@ -218,8 +254,10 @@ from IPython.display import Markdown, display
 display(
     Markdown(
         f"""
-- Across the 200 Meyers triangles, the estimated AR(1) correlation between adjacent calendar-year diagonals is
-  **`r = {phi_hat:.2f}`** with a 95% confidence interval of **`[{phi_ci[0]:.2f}, {phi_ci[1]:.2f}]`**.
+- Across the 200 Meyers triangles, the grand-mean AR(1) correlation between adjacent calendar-year diagonals is
+  **`r = {phi_hat:.2f}`** with a 95% confidence interval of **`[{phi_ci[0]:.2f}, {phi_ci[1]:.2f}]`**. Because lines
+  pull in opposite directions in some calendar years, this pooled estimate is much lower than the within-line
+  correlations even though each line shows a strong trend on its own.
 - Line-by-line AR(1) estimates show meaningful variation: `r = {line_map.loc['comauto', 'phi']:.2f}` for
   {line_map.loc['comauto', 'display_name']}, `r = {line_map.loc['othliab', 'phi']:.2f}` for
   {line_map.loc['othliab', 'display_name']}, `r = {line_map.loc['ppauto', 'phi']:.2f}` for
