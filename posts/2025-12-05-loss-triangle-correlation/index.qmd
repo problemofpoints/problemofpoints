@@ -159,14 +159,30 @@ display_names = {
 }
 line_table["display_name"] = line_table["line"].map(display_names)
 line_map = line_table.set_index("line")
-phi_hat, phi_ci, line_table
+line_table_display = (
+    line_table.assign(
+        r=lambda df: df["phi"].map("{:.2f}".format),
+        ci=lambda df: df.apply(
+            lambda row: f"[{row['ci_low']:.2f}, {row['ci_high']:.2f}]", axis=1
+        ),
+        obs=lambda df: df["obs"].astype(int),
+    )[["display_name", "obs", "r", "ci"]]
+    .rename(
+        columns={
+            "display_name": "Line of business",
+            "obs": "Calendar years",
+            "r": "AR(1) r",
+            "ci": "95% CI",
+        }
+    )
+)
+phi_hat, phi_ci, line_table_display
 ```
 
-The grand-mean calendar effect averages residuals across all lines, so opposite-signed patterns cancel out and
-push the pooled AR(1) estimate toward zero. The by-line estimates remain high because each line’s calendar trend
-is internally consistent even though they differ in sign and magnitude. The small sample size (nine usable
-calendar years per line) also widens the intervals and makes the pooled series more sensitive to cross-line
-offsets.
+The table summarizes the line-level AR(1) fits, including the number of usable calendar years in each series.
+Commercial Auto and Workers' Comp exhibit stronger positive correlation in adjacent diagonals, while Personal
+Auto sits nearer to zero and Other Liability dips negative. Those offsets explain why the pooled grand-mean AR(1)
+estimate remains small even though individual lines show clear trends.
 
 ```{python}
 #| fig-format: svg
