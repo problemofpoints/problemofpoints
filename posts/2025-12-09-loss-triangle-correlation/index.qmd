@@ -1,0 +1,526 @@
+---
+title: "Estimating Calendar Year Correlation in Loss Triangles"
+date: 2025-12-09
+slug: loss-triangle-correlation
+categories: [reserving, correlation]
+description: "Empirical analysis of the calendar year correlation structure in loss reserving triangles using the CAS Loss Reserve Database."
+---
+
+Loss reserving models often assume independence between cells in a loss triangle. In practice, common
+factors like inflation, legal changes, and economic conditions create correlations between cells,
+particularly those falling within the same calendar year diagonal. This post quantifies that correlation
+structure using 200 paid loss triangles from the CAS Loss Reserve Database.
+
+## The Block Autoregressive Correlation Structure
+
+A natural correlation structure for loss triangles is the "block autoregressive" model, where:
+
+- Cells on the same calendar year diagonal have correlation $\rho$
+- Cells separated by $k$ calendar years have correlation $\rho^{k+1}$
+
+This structure captures the intuition that calendar year effects (inflation, judicial trends, economic
+conditions) create dependencies between cells processed in the same period, with correlation decaying
+geometrically as calendar years diverge.
+
+The correlation matrix for a small triangle illustrates this structure:
+
+```{python}
+#| label: fig-correlation-matrix-example
+#| fig-cap: "Example correlation matrix for a 4-year triangle with ρ = 0.5. Cells are ordered by accident year and development period. The shaded diagonal represents cells on the same calendar year (CY 1991). Correlation decreases for more distant calendar years: ρ² = 0.25 for adjacent years, ρ³ = 0.125 for two years apart."
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+def create_block_ar_correlation_matrix(n_years=4, rho=0.5):
+    """Create block AR correlation matrix for an n-year triangle."""
+    # Generate all cells in the lower-left triangle
+    cells = []
+    for ay in range(n_years):
+        for dev in range(n_years - ay):
+            cy = ay + dev
+            cells.append({'ay': 1988 + ay, 'dev': (dev + 1) * 12, 'cy': 1988 + cy})
+
+    n_cells = len(cells)
+    corr_matrix = np.eye(n_cells)
+
+    for i in range(n_cells):
+        for j in range(i + 1, n_cells):
+            cy_dist = abs(cells[i]['cy'] - cells[j]['cy'])
+            # Same diagonal: rho, k apart: rho^(k+1)
+            corr = rho ** (cy_dist + 1)
+            corr_matrix[i, j] = corr
+            corr_matrix[j, i] = corr
+
+    labels = [f"AY{c['ay']}\nDev{c['dev']}" for c in cells]
+    return pd.DataFrame(corr_matrix, index=labels, columns=labels), cells
+
+corr_example, cells_example = create_block_ar_correlation_matrix(n_years=4, rho=0.5)
+
+fig, ax = plt.subplots(figsize=(10, 8))
+mask = np.triu(np.ones_like(corr_example, dtype=bool), k=1)
+sns.heatmap(corr_example, annot=True, fmt='.2f', cmap='RdBu_r', center=0,
+            vmin=-0.5, vmax=1, ax=ax, mask=None, square=True,
+            cbar_kws={'label': 'Correlation'})
+ax.set_title(f'Block AR Correlation Matrix (ρ = 0.5)', fontsize=12)
+plt.tight_layout()
+plt.show()
+```
+
+## Data: The Meyers 200 Triangles
+
+We use the 200 paid loss triangles from Glenn Meyers' testing subset of the CAS Loss Reserve Database,
+accessed via the [reservetestr](https://github.com/problemofpoints/reservetestr-python) package. These
+triangles span four major lines of business:
+
+- Commercial Auto (50 triangles)
+- Personal Auto (50 triangles)
+- Workers Compensation (50 triangles)
+- Other Liability (50 triangles)
+
+Each triangle contains accident years 1988-1997 with development periods from 12 to 120 months,
+giving 55 observable cells per triangle.
+
+```{python}
+#| label: tbl-data-summary
+#| tbl-cap: "Summary of the Meyers 200 triangles by line of business."
+
+import reservetestr as rt
+import warnings
+warnings.filterwarnings('ignore')
+
+# Load the Meyers dataset
+records = rt.build_triangle_records()
+
+# Summarize by line
+line_summary = []
+line_names = {
+    'comauto': 'Commercial Auto',
+    'ppauto': 'Personal Auto',
+    'wkcomp': 'Workers Compensation',
+    'othliab': 'Other Liability'
+}
+
+for line in ['comauto', 'ppauto', 'wkcomp', 'othliab']:
+    line_records = [r for r in records if r.line == line]
+    line_summary.append({
+        'Line of Business': line_names[line],
+        'Triangles': len(line_records),
+        'Accident Years': '1988-1997',
+        'Development Periods': '12-120 months'
+    })
+
+summary_df = pd.DataFrame(line_summary)
+summary_df
+```
+
+## Methodology
+
+To estimate the calendar year correlation structure, we:
+
+1. **Extract incremental paid losses** from each triangle and apply a log transformation
+2. **Compute residuals** by removing accident year and development period effects using a log-linear model: $\log(\text{incremental}) \sim \text{AY} + \text{dev}$
+3. **Calculate Spearman rank correlations** between all pairs of cells across the 200 triangles
+4. **Group correlations by calendar year distance** between cell pairs
+5. **Estimate confidence intervals** via bootstrap resampling of triangles
+
+Using residuals removes the systematic effects of accident year (loss trend) and development period
+(payment pattern), isolating the calendar year effect. Spearman correlation is robust to outliers
+and non-normality in the loss data.
+
+```{python}
+#| label: prepare-data
+#| code-fold: true
+#| code-summary: "Data preparation code"
+
+def get_calendar_year(origin_year, dev_months):
+    """Calculate calendar year from origin year and development period."""
+    return int(origin_year + dev_months / 12 - 1)
+
+def extract_triangle_residuals(record):
+    """Extract residuals from log-linear model: log(incr) ~ origin + dev."""
+    paid_tri = record.train_triangles['paid']
+    incr_df = paid_tri.cum_to_incr().to_frame()
+
+    long_data = []
+    for origin in incr_df.index:
+        origin_year = origin.year
+        for dev in incr_df.columns:
+            dev_months = int(dev)
+            value = incr_df.loc[origin, dev]
+            if pd.notna(value) and value > 0:
+                cy = get_calendar_year(origin_year, dev_months)
+                cell_id = f"{origin_year}_{dev_months}"
+                long_data.append({
+                    'origin_year': origin_year,
+                    'dev': dev_months,
+                    'calendar_year': cy,
+                    'cell_id': cell_id,
+                    'log_value': np.log(value),
+                    'group_id': record.group_id,
+                    'line': record.line
+                })
+
+    df = pd.DataFrame(long_data)
+
+    if len(df) < 10:
+        return None
+
+    # Fit log-linear model residuals (simple group mean approach)
+    grand_mean = df['log_value'].mean()
+    origin_effects = df.groupby('origin_year')['log_value'].mean() - grand_mean
+    dev_effects = df.groupby('dev')['log_value'].mean() - grand_mean
+
+    df['expected'] = grand_mean + df['origin_year'].map(origin_effects) + df['dev'].map(dev_effects)
+    df['residual'] = df['log_value'] - df['expected']
+
+    return df
+
+# Extract residuals from all triangles
+all_residuals = []
+for record in records:
+    resid_df = extract_triangle_residuals(record)
+    if resid_df is not None:
+        all_residuals.append(resid_df)
+
+full_df = pd.concat(all_residuals, ignore_index=True)
+cell_cy_map = full_df.groupby('cell_id')['calendar_year'].first().to_dict()
+```
+
+## Results
+
+### Overall Correlation Structure
+
+The following table shows the mean Spearman correlation between cell pairs, grouped by the calendar
+year distance between them. Distance 0 represents cells on the same calendar year diagonal; distance 1
+represents adjacent calendar years, and so on.
+
+```{python}
+#| label: compute-correlations
+#| code-fold: true
+#| code-summary: "Correlation computation code"
+
+from scipy import stats
+from itertools import combinations
+
+np.random.seed(42)
+
+def compute_cy_correlations(df, line=None, n_bootstrap=1000):
+    """Compute correlations with bootstrap confidence intervals."""
+
+    if line:
+        df = df[df['line'] == line]
+        pivot = df.pivot_table(
+            index='group_id',
+            columns='cell_id',
+            values='residual',
+            aggfunc='first'
+        )
+    else:
+        pivot = df.pivot_table(
+            index=['line', 'group_id'],
+            columns='cell_id',
+            values='residual',
+            aggfunc='first'
+        )
+
+    valid_cells = pivot.columns[pivot.notna().mean() > 0.7].tolist()
+    pivot = pivot[valid_cells]
+
+    triangle_indices = pivot.index.tolist()
+    n_triangles = len(triangle_indices)
+
+    corr_matrix = pivot.corr(method='spearman')
+
+    pairs_by_distance = {}
+    cells = corr_matrix.columns.tolist()
+
+    for cell_i, cell_j in combinations(cells, 2):
+        cy_i = cell_cy_map.get(cell_i)
+        cy_j = cell_cy_map.get(cell_j)
+        if cy_i is None or cy_j is None:
+            continue
+        cy_dist = abs(cy_i - cy_j)
+        if cy_dist not in pairs_by_distance:
+            pairs_by_distance[cy_dist] = []
+        corr_val = corr_matrix.loc[cell_i, cell_j]
+        if pd.notna(corr_val):
+            pairs_by_distance[cy_dist].append((cell_i, cell_j, corr_val))
+
+    results = {}
+    for dist, pairs in pairs_by_distance.items():
+        corrs = [p[2] for p in pairs]
+        results[dist] = {
+            'mean': np.mean(corrs),
+            'median': np.median(corrs),
+            'std': np.std(corrs),
+            'count': len(corrs),
+            'pairs': pairs
+        }
+
+    # Bootstrap for confidence intervals
+    bootstrap_means = {dist: [] for dist in results.keys()}
+
+    for _ in range(n_bootstrap):
+        boot_indices = np.random.choice(n_triangles, n_triangles, replace=True)
+        boot_triangles = [triangle_indices[i] for i in boot_indices]
+        boot_pivot = pivot.loc[boot_triangles]
+        boot_corr = boot_pivot.corr(method='spearman')
+
+        for dist, pairs in pairs_by_distance.items():
+            boot_corrs = []
+            for cell_i, cell_j, _ in pairs:
+                bc = boot_corr.loc[cell_i, cell_j]
+                if pd.notna(bc):
+                    boot_corrs.append(bc)
+            if boot_corrs:
+                bootstrap_means[dist].append(np.mean(boot_corrs))
+
+    for dist in results.keys():
+        boot_samples = bootstrap_means[dist]
+        if len(boot_samples) > 10:
+            results[dist]['ci_lower'] = np.percentile(boot_samples, 2.5)
+            results[dist]['ci_upper'] = np.percentile(boot_samples, 97.5)
+            results[dist]['se'] = np.std(boot_samples)
+        else:
+            results[dist]['ci_lower'] = np.nan
+            results[dist]['ci_upper'] = np.nan
+            results[dist]['se'] = np.nan
+
+    return results
+
+# Compute for all lines combined
+results_all = compute_cy_correlations(full_df, n_bootstrap=1000)
+```
+
+```{python}
+#| label: tbl-overall-correlation
+#| tbl-cap: "Spearman correlation by calendar year distance (all lines combined). Distance 0 represents cells on the same calendar year diagonal."
+
+# Create results table
+results_table = []
+for dist in sorted(results_all.keys()):
+    r = results_all[dist]
+    results_table.append({
+        'CY Distance': dist,
+        'Mean Correlation': f"{r['mean']:.3f}",
+        '95% CI': f"[{r['ci_lower']:.3f}, {r['ci_upper']:.3f}]" if pd.notna(r['ci_lower']) else "N/A",
+        'SE': f"{r['se']:.4f}" if pd.notna(r['se']) else "N/A",
+        'Cell Pairs': r['count']
+    })
+
+pd.DataFrame(results_table)
+```
+
+The key finding is that cells on the **same calendar year diagonal have a positive correlation of
+approximately 0.09** (95% CI: 0.07 to 0.11). This correlation:
+
+- Remains positive for adjacent calendar years (distance 1-2)
+- Crosses zero around distance 3
+- Becomes increasingly negative for more distant calendar years
+
+```{python}
+#| label: fig-correlation-by-distance
+#| fig-cap: "Mean Spearman correlation by calendar year distance with 95% confidence intervals. The correlation is positive for cells on the same or adjacent calendar year diagonals, then becomes negative for more distant calendar years."
+
+fig, ax = plt.subplots(figsize=(10, 6))
+
+distances = sorted(results_all.keys())
+means = [results_all[d]['mean'] for d in distances]
+ci_lower = [results_all[d]['ci_lower'] for d in distances]
+ci_upper = [results_all[d]['ci_upper'] for d in distances]
+
+ax.errorbar(distances, means,
+            yerr=[np.array(means) - np.array(ci_lower),
+                  np.array(ci_upper) - np.array(means)],
+            fmt='o-', capsize=4, capthick=1.5, markersize=8,
+            color='steelblue', ecolor='gray', linewidth=2)
+
+ax.axhline(y=0, color='black', linestyle='--', alpha=0.5, linewidth=1)
+ax.fill_between(distances, ci_lower, ci_upper, alpha=0.2, color='steelblue')
+
+ax.set_xlabel('Calendar Year Distance', fontsize=12)
+ax.set_ylabel('Mean Spearman Correlation', fontsize=12)
+ax.set_title('Calendar Year Correlation Structure (All Lines)', fontsize=14)
+ax.set_xticks(distances)
+ax.grid(True, alpha=0.3)
+ax.set_ylim(-0.35, 0.2)
+
+plt.tight_layout()
+plt.show()
+```
+
+### Correlation by Line of Business
+
+The calendar year correlation varies substantially across lines of business:
+
+```{python}
+#| label: compute-by-line
+#| code-fold: true
+
+# Compute for each line
+results_by_line = {}
+for line in ['comauto', 'ppauto', 'wkcomp', 'othliab']:
+    results_by_line[line] = compute_cy_correlations(full_df, line=line, n_bootstrap=1000)
+```
+
+```{python}
+#| label: tbl-rho-by-line
+#| tbl-cap: "Estimated calendar year correlation (ρ) by line of business. Personal Auto shows the strongest correlation, while Workers Compensation shows the weakest."
+
+# Summary table by line
+summary_by_line = []
+for line in ['comauto', 'ppauto', 'wkcomp', 'othliab']:
+    r = results_by_line[line]
+    summary_by_line.append({
+        'Line of Business': line_names[line],
+        'ρ (Same CY)': f"{r[0]['mean']:.3f}",
+        '95% CI': f"[{r[0]['ci_lower']:.3f}, {r[0]['ci_upper']:.3f}]",
+        'ρ (Adjacent CY)': f"{r[1]['mean']:.3f}",
+        'Triangles': 50
+    })
+
+summary_by_line.append({
+    'Line of Business': 'All Lines',
+    'ρ (Same CY)': f"{results_all[0]['mean']:.3f}",
+    '95% CI': f"[{results_all[0]['ci_lower']:.3f}, {results_all[0]['ci_upper']:.3f}]",
+    'ρ (Adjacent CY)': f"{results_all[1]['mean']:.3f}",
+    'Triangles': 200
+})
+
+pd.DataFrame(summary_by_line)
+```
+
+```{python}
+#| label: fig-correlation-by-line
+#| fig-cap: "Calendar year correlation structure by line of business. Personal Auto shows the strongest calendar year effect, while Workers Compensation shows the weakest. All lines exhibit the same pattern of positive correlation for nearby calendar years transitioning to negative correlation for distant calendar years."
+
+fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+axes = axes.flatten()
+
+colors = {'comauto': '#1f77b4', 'ppauto': '#ff7f0e',
+          'wkcomp': '#2ca02c', 'othliab': '#d62728'}
+
+for idx, line in enumerate(['comauto', 'ppauto', 'wkcomp', 'othliab']):
+    ax = axes[idx]
+    r = results_by_line[line]
+
+    distances = sorted([d for d in r.keys() if d <= 8])
+    means = [r[d]['mean'] for d in distances]
+    ci_lower = [r[d]['ci_lower'] for d in distances]
+    ci_upper = [r[d]['ci_upper'] for d in distances]
+
+    ax.errorbar(distances, means,
+                yerr=[np.array(means) - np.array(ci_lower),
+                      np.array(ci_upper) - np.array(means)],
+                fmt='o-', capsize=4, capthick=1.5, markersize=7,
+                color=colors[line], ecolor='gray', linewidth=2)
+
+    ax.axhline(y=0, color='black', linestyle='--', alpha=0.5, linewidth=1)
+    ax.fill_between(distances, ci_lower, ci_upper, alpha=0.2, color=colors[line])
+
+    ax.set_xlabel('Calendar Year Distance', fontsize=11)
+    ax.set_ylabel('Mean Spearman Correlation', fontsize=11)
+    ax.set_title(f'{line_names[line]}', fontsize=12, fontweight='bold')
+    ax.set_xticks(distances)
+    ax.grid(True, alpha=0.3)
+    ax.set_ylim(-0.35, 0.3)
+
+plt.tight_layout()
+plt.show()
+```
+
+The variation across lines likely reflects differences in:
+
+- **Claim duration**: Personal Auto claims settle quickly, making calendar year effects more concentrated
+- **Economic sensitivity**: Auto lines may be more responsive to economic cycles
+- **Regulatory environment**: Workers Compensation is heavily regulated, potentially dampening calendar year variation
+
+### Comparison to Block AR Model
+
+The simple block autoregressive model predicts that correlation should decay as $\rho^{k+1}$ for cells
+$k$ calendar years apart. Let's compare the empirical pattern to this theoretical structure:
+
+```{python}
+#| label: fig-block-ar-comparison
+#| fig-cap: "Comparison of empirical correlations (blue) to block AR model predictions (orange) using ρ estimated from same-diagonal correlation. The empirical decay is slower than the block AR model predicts, and the sign reversal at larger distances is not captured by the simple model."
+
+fig, ax = plt.subplots(figsize=(10, 6))
+
+# Empirical values
+distances = sorted([d for d in results_all.keys() if d <= 8])
+empirical_means = [results_all[d]['mean'] for d in distances]
+
+# Block AR predictions using rho from distance 0
+rho_hat = results_all[0]['mean']
+block_ar_pred = [rho_hat ** (d + 1) for d in distances]
+
+ax.plot(distances, empirical_means, 'o-', color='steelblue', linewidth=2,
+        markersize=8, label='Empirical')
+ax.plot(distances, block_ar_pred, 's--', color='darkorange', linewidth=2,
+        markersize=8, label=f'Block AR (ρ = {rho_hat:.3f})')
+
+ax.axhline(y=0, color='black', linestyle='--', alpha=0.5, linewidth=1)
+ax.set_xlabel('Calendar Year Distance', fontsize=12)
+ax.set_ylabel('Mean Correlation', fontsize=12)
+ax.set_title('Empirical vs Block AR Model', fontsize=14)
+ax.set_xticks(distances)
+ax.legend(fontsize=11)
+ax.grid(True, alpha=0.3)
+ax.set_ylim(-0.25, 0.15)
+
+plt.tight_layout()
+plt.show()
+```
+
+The comparison reveals that:
+
+1. **The block AR model captures the general decay pattern** but predicts faster decay than observed
+2. **Correlation at distance 1 is higher than predicted**, suggesting adjacent calendar years are more
+   similar than the simple model assumes
+3. **The sign reversal at larger distances is not captured** by the block AR model, which predicts
+   positive (though small) correlations at all distances
+
+This suggests that a more flexible correlation structure may be needed to fully capture the empirical
+pattern, perhaps incorporating mean-reversion effects that create negative correlations between
+distant calendar years.
+
+## Implications for Reserve Estimation
+
+These findings have practical implications for stochastic loss reserving:
+
+1. **Ignoring calendar year correlation understates reserve uncertainty**. The positive correlation
+   between cells on the same diagonal means that unfavorable calendar year effects (higher inflation,
+   adverse legal developments) will simultaneously affect multiple cells, creating correlated
+   reserve errors.
+
+2. **The magnitude of correlation varies by line**. Personal Auto reserves may require stronger
+   correlation assumptions ($\rho \approx 0.17$) than Workers Compensation ($\rho \approx 0.05$).
+
+3. **Simple block AR structures may oversimplify**. The empirical evidence suggests correlation
+   decays more slowly than $\rho^{k+1}$ for nearby calendar years, and the sign reversal at larger
+   distances indicates mean-reversion effects not captured by the simple model.
+
+4. **Reasonable parameter ranges for simulation**. When simulating correlated loss triangles,
+   a same-diagonal correlation of $\rho \in [0.05, 0.20]$ appears reasonable based on this analysis,
+   with the specific value depending on line of business.
+
+## Technical Notes
+
+- **Standardization**: We use residuals from a simple log-linear model rather than raw values to
+  remove systematic accident year and development period effects that would otherwise dominate the correlation structure.
+
+- **Spearman correlation**: We use rank correlation to be robust to outliers and non-normality in the
+  loss distributions. Pearson correlations yield similar but slightly noisier results.
+
+- **Bootstrap inference**: Confidence intervals are computed by resampling triangles (not cells)
+  to preserve the within-triangle correlation structure.
+
+- **Negative correlations at large distances**: This pattern suggests mean-reversion in calendar year
+  effects---a year with unusually high losses tends to be followed (eventually) by years with lower
+  losses. This could reflect mean-reverting inflation or correction of reserve estimates.
+
+The code for this analysis uses the [reservetestr](https://github.com/problemofpoints/reservetestr-python)
+package for data access and standard Python libraries (pandas, scipy, matplotlib) for analysis and
+visualization.
