@@ -1,0 +1,150 @@
+---
+title: "Economic capital correlation: what to borrow from Solvency II and the rating agencies"
+subtitle: "Practical assumptions for underwriting, reserve, credit, equity, and interest-rate risk"
+date: 2025-12-14
+categories: [risk, insurance]
+draft: false
+---
+
+Robust diversification assumptions can change a property & casualty (P&C) economic capital estimate by double-digit percentages. Yet many models still rely on undocumented rules of thumb. This post compares publicly disclosed correlation structures from major frameworks and shows how sensitive a simple P&C capital stack is to those choices.
+
+## Reference points from regulation and rating agencies
+
+### Solvency II standard formula (non-life focus)
+
+The European Union's Solvency II standard formula aggregates risk modules using a correlation matrix derived from observed co-movements across undertakings. At the market risk sub-module level, the Delegated Regulation specifies the following representative correlations (rows/columns ordered: interest-rate, equity, spread, property, currency):
+
+|               | Interest | Equity | Spread | Property | Currency |
+|---------------|---------:|-------:|-------:|---------:|---------:|
+| **Interest**  | 1.00     | 0.25   | 0.50   | 0.25     | 0.25     |
+| **Equity**    | 0.25     | 1.00   | 0.75   | 0.50     | 0.25     |
+| **Spread**    | 0.50     | 0.75   | 1.00   | 0.50     | 0.25     |
+| **Property**  | 0.25     | 0.50   | 0.50   | 1.00     | 0.25     |
+| **Currency**  | 0.25     | 0.25   | 0.25   | 0.25     | 1.00     |
+
+For non-life underwriting, the standard formula uses two key drivers: premium/reserve risk and catastrophe risk. The correlation between them is set at 0.50. Counterparty default (type 1/2) enters the basic solvency capital requirement (BSCR) with a 0.25 correlation against both market and non-life modules, reflecting partial diversification.
+
+### S&P Insurance Capital Model (2024 criteria)
+
+S&P's publicly available criteria outline a square-root aggregation with stronger co-movement between credit and market risk than in Solvency II, and moderately positive correlation between insurance and financial risks. A stylized extract of the published covariance assumptions for a P&C carrier is:
+
+|               | Underwriting | Credit | Market |
+|---------------|-------------:|-------:|-------:|
+| **Underwriting** | 1.00 | 0.50 | 0.25 |
+| **Credit**       | 0.50 | 1.00 | 0.75 |
+| **Market**       | 0.25 | 0.75 | 1.00 |
+
+Here, "underwriting" combines premium and reserve risk; "credit" covers reinsurance and investment counterparties; and "market" blends equity and interest-rate exposures.
+
+### AM Best BCAR (2024 methodology)
+
+BCAR disclosures show diversification limited mainly to interactions among underwriting, reserve, and credit components. Market risk is often treated with minimal diversification against underwriting. A simplified covariance view consistent with BCAR's published covariance charge is:
+
+|               | Premium & Reserve | Credit | Market |
+|---------------|-----------------:|-------:|-------:|
+| **Premium & Reserve** | 1.00 | 0.50 | 0.00 |
+| **Credit**            | 0.50 | 1.00 | 0.00 |
+| **Market**            | 0.00 | 0.00 | 1.00 |
+
+The relatively low diversification means higher total required capital for the same standalone risk profile compared with Solvency II or S&P.
+
+## Sensitivity analysis in a simple P&C stack
+
+To see how correlation drives results, consider a stylized company with the following standalone 99.5% VaR capital (in arbitrary units):
+
+- Underwriting (premium & reserve): 250
+- Catastrophe: 150
+- Credit (reinsurance + investments): 120
+- Equity market risk: 180
+- Interest-rate risk (fixed income): 90
+
+The code below aggregates capital using a square-root formula under three matrices: Solvency II-inspired, S&P-like, and BCAR-like. It also shocks the overall off-diagonal correlations ±10% to illustrate model sensitivity.
+
+```{python}
+import numpy as np
+import pandas as pd
+
+# Standalone capital vector
+risks = ["UW", "Cat", "Credit", "Equity", "IR"]
+capital = pd.Series([250, 150, 120, 180, 90], index=risks)
+
+# Helper: aggregate capital via square-root formula
+
+def aggregate(capital, corr):
+    v = np.asarray(capital)
+    c = np.asarray(corr)
+    return float(np.sqrt(v @ c @ v))
+
+# Correlation assumptions (symmetric, rows/cols follow 'risks')
+solvency_corr = pd.DataFrame(
+    [
+        [1.0, 0.5, 0.25, 0.25, 0.25],   # UW vs others
+        [0.5, 1.0, 0.25, 0.25, 0.25],   # Cat vs others
+        [0.25, 0.25, 1.0, 0.5, 0.5],    # Credit vs others (closer to spread risk)
+        [0.25, 0.25, 0.5, 1.0, 0.25],   # Equity vs others
+        [0.25, 0.25, 0.5, 0.25, 1.0],   # IR vs others
+    ],
+    index=risks,
+    columns=risks,
+)
+
+sp_corr = pd.DataFrame(
+    [
+        [1.0, 0.5, 0.5, 0.25, 0.25],
+        [0.5, 1.0, 0.5, 0.25, 0.25],
+        [0.5, 0.5, 1.0, 0.75, 0.5],
+        [0.25, 0.25, 0.75, 1.0, 0.5],
+        [0.25, 0.25, 0.5, 0.5, 1.0],
+    ],
+    index=risks,
+    columns=risks,
+)
+
+bcar_corr = pd.DataFrame(
+    [
+        [1.0, 0.5, 0.5, 0.0, 0.0],
+        [0.5, 1.0, 0.5, 0.0, 0.0],
+        [0.5, 0.5, 1.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 1.0, 0.25],
+        [0.0, 0.0, 0.0, 0.25, 1.0],
+    ],
+    index=risks,
+    columns=risks,
+)
+
+scenarios = {
+    "Solvency II style": solvency_corr,
+    "S&P style": sp_corr,
+    "BCAR style": bcar_corr,
+}
+
+records = []
+for name, corr in scenarios.items():
+    base = aggregate(capital, corr)
+    # uniformly scale off-diagonal correlations up/down by 10% (capped to [-1,1])
+    off_diag = corr.values.copy()
+    np.fill_diagonal(off_diag, 0)
+    shocked_up = corr.values + 0.1 * off_diag
+    shocked_down = corr.values - 0.1 * off_diag
+    np.fill_diagonal(shocked_up, 1)
+    np.fill_diagonal(shocked_down, 1)
+    records.append(
+        {
+            "Framework": name,
+            "Base capital": round(base, 1),
+            "+10% rho": round(aggregate(capital, shocked_up), 1),
+            "-10% rho": round(aggregate(capital, shocked_down), 1),
+        }
+    )
+
+pd.DataFrame.from_records(records)
+```
+
+The outputs show how diversification assumptions dominate total required capital.
+
+## Takeaways for practitioners
+
+- **Anchor to an external benchmark.** Solvency II provides a transparent starting point; adjust the equity–credit and underwriting–credit correlations if your asset mix or reinsurance program differs materially from the European average.
+- **Reflect business mix.** A reinsurer with heavy catastrophe exposure might justify a higher correlation between underwriting and equity (due to CAT bonds or retrocession linked to financial markets) than a personal lines carrier.
+- **Document rationale and periodic back-testing.** Revisit correlations annually with empirical checks (e.g., rolling correlations of combined ratios vs. credit spreads/equity indices) and explain deviations from published frameworks to governance bodies.
+- **Stress diversification.** Regulators and rating agencies often review sensitivity to higher correlations. Including ±10% shocks, as above, in your internal capital adequacy assessment will pre-empt questions about model risk.
