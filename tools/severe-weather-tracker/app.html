@@ -504,6 +504,54 @@
     color: rgba(148, 163, 184, 0.8);
   }
 
+  .swt-chart-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .swt-chart-header h2 {
+    margin: 0;
+  }
+
+  .swt-state-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .swt-state-filter label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #475569;
+  }
+
+  .swt-state-select {
+    padding: 8px 32px 8px 12px;
+    font-size: 0.92rem;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.32);
+    background: rgba(250, 253, 255, 0.96) url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") right 8px center/16px no-repeat;
+    color: #0f172a;
+    cursor: pointer;
+    appearance: none;
+    min-width: 140px;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .swt-state-select:focus {
+    border-color: rgba(59, 130, 246, 0.6);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  }
+
+  .swt-state-select:hover {
+    border-color: rgba(148, 163, 184, 0.5);
+  }
+
   .swt-chart-canvas {
     height: 440px;
     max-height: 440px;
@@ -617,8 +665,9 @@
       activeTypes: new Set(["tornado", "wind", "hail"]),
       reportsResponse: null,
       tornadoResponse: null,
-    chart: null
-  };
+      chart: null,
+      selectedState: ""
+    };
     const CHART_ANCHOR_YEAR = 2000;
     const Y_AXIS_MAX = 2000;
 
@@ -687,7 +736,15 @@
           </aside>
         </section>
         <section class="swt-chart-panel" aria-label="Tornado trends">
-          <h2>Tornado Activity Benchmark</h2>
+          <div class="swt-chart-header">
+            <h2>Tornado Activity Benchmark</h2>
+            <div class="swt-state-filter">
+              <label for="swt-state-select">Filter by State</label>
+              <select id="swt-state-select" class="swt-state-select">
+                <option value="">All States</option>
+              </select>
+            </div>
+          </div>
           <div class="swt-chart-meta" id="swt-chart-meta">
             <span class="swt-loader">Loading tornado history…</span>
           </div>
@@ -726,7 +783,8 @@
           chartCanvas: root.querySelector("#swt-tornado-chart"),
           chartMeta: root.querySelector("#swt-chart-meta"),
           chartSummary: root.querySelector("#swt-chart-summary"),
-          chartLegend: root.querySelector(".swt-chart-legend")
+          chartLegend: root.querySelector(".swt-chart-legend"),
+          stateSelect: root.querySelector("#swt-state-select")
         }
       : {
           toggleButtons: []
@@ -1136,13 +1194,22 @@
     const CHART_AXIS_MIN = new Date(Date.UTC(CHART_ANCHOR_YEAR, 0, 1));
     const CHART_AXIS_MAX = new Date(Date.UTC(CHART_ANCHOR_YEAR, 11, 31));
 
-    function buildChartDatasets(data) {
+    function getSeriesForState(yearEntry, stateFilter) {
+      if (!stateFilter) {
+        return yearEntry.series;
+      }
+      const stateData = yearEntry.byState?.[stateFilter];
+      return stateData?.series || [];
+    }
+
+    function buildChartDatasets(data, stateFilter = "") {
       const { years, currentYear, comparisonYear } = data;
       if (!Array.isArray(years) || !years.length) return [];
 
       const datasets = [];
       years.forEach((yearEntry) => {
-        const { year, series } = yearEntry;
+        const { year } = yearEntry;
+        const series = getSeriesForState(yearEntry, stateFilter);
         const points = series
           .map((point) => {
             const normalized = normalizeDateForChart(point.date);
@@ -1221,32 +1288,77 @@
       return result;
     }
 
-    function renderChartSummary(data) {
+    function getLatestPointForState(data, stateFilter) {
+      if (!stateFilter) {
+        return data.currentLatestPoint;
+      }
+      const currentYearData = data.years.find((y) => y.year === data.currentYear);
+      if (!currentYearData) return null;
+      const stateSeries = currentYearData.byState?.[stateFilter]?.series;
+      if (!stateSeries || !stateSeries.length) return null;
+      return stateSeries[stateSeries.length - 1];
+    }
+
+    function computeStateEnsembleStats(data, stateFilter) {
+      if (!stateFilter) {
+        return data.ensembleStats;
+      }
+      const { years, currentYear, comparisonYear } = data;
+      const historical = years.filter(
+        (item) => item.year !== currentYear && item.year !== comparisonYear
+      );
+      const totals = historical
+        .map((item) => item.byState?.[stateFilter]?.totalReports)
+        .filter((val) => val != null && Number.isFinite(val));
+      const average = totals.length
+        ? totals.reduce((sum, val) => sum + val, 0) / totals.length
+        : null;
+      const max = totals.length ? Math.max(...totals) : null;
+      const min = totals.length ? Math.min(...totals) : null;
+      return {
+        averageTotal: average,
+        maxTotal: max,
+        minTotal: min,
+        count: totals.length
+      };
+    }
+
+    function renderChartSummary(data, stateFilter = "") {
       const target = SELECTORS.chartSummary;
       if (!target) return;
       target.innerHTML = "";
 
-      const { currentYear, comparisonYear, currentLatestPoint, years, ensembleStats } = data;
-      const comparisonSeries = years.find((entry) => entry.year === comparisonYear);
-      const currentSeries = years.find((entry) => entry.year === currentYear);
+      const { currentYear, comparisonYear, years } = data;
+      const currentLatestPoint = getLatestPointForState(data, stateFilter);
+      const ensembleStats = computeStateEnsembleStats(data, stateFilter);
+
+      const comparisonYearData = years.find((entry) => entry.year === comparisonYear);
+      const comparisonSeries = stateFilter
+        ? comparisonYearData?.byState?.[stateFilter]?.series
+        : comparisonYearData?.series;
+      const comparisonTotalReports = stateFilter
+        ? comparisonYearData?.byState?.[stateFilter]?.totalReports
+        : comparisonYearData?.totalReports;
       const dayOfYear = currentLatestPoint?.dayOfYear;
-      const comparisonPoint = comparisonSeries ? findValueOnOrBefore(comparisonSeries.series, dayOfYear) : null;
+      const comparisonPoint = comparisonSeries ? findValueOnOrBefore(comparisonSeries, dayOfYear) : null;
+
+      const stateLabel = stateFilter ? ` (${stateFilter})` : "";
 
       const cards = [
         {
-          label: `${currentYear} Reports`,
+          label: `${currentYear} Reports${stateLabel}`,
           value: formatNumber(currentLatestPoint?.cumulative || 0),
           detail: `As of ${formatDisplayDate(currentLatestPoint?.date) || "latest available"}`
         },
         {
-          label: `${comparisonYear || currentYear - 1} Reports`,
-          value: formatNumber(comparisonPoint?.cumulative || comparisonSeries?.totalReports || 0),
+          label: `${comparisonYear || currentYear - 1} Reports${stateLabel}`,
+          value: formatNumber(comparisonPoint?.cumulative || comparisonTotalReports || 0),
           detail: comparisonPoint
             ? `Same time last year`
             : `Total for ${comparisonYear || currentYear - 1}`
         },
         {
-          label: "Historical Average",
+          label: `Historical Average${stateLabel}`,
           value: formatNumber(Math.round(ensembleStats?.averageTotal || 0)),
           detail: `${ensembleStats?.count || 0} seasons since ${data.startYear}`
         }
@@ -1264,15 +1376,20 @@
       });
     }
 
-    function renderChartMeta(data) {
+    function renderChartMeta(data, stateFilter = "") {
       const target = SELECTORS.chartMeta;
       if (!target) return;
       target.innerHTML = "";
 
-      const { currentYear, currentLatestPoint, comparisonYear, years } = data;
-      const comparisonSeries = years.find((entry) => entry.year === comparisonYear);
+      const { currentYear, comparisonYear, years } = data;
+      const currentLatestPoint = getLatestPointForState(data, stateFilter);
+
+      const comparisonYearData = years.find((entry) => entry.year === comparisonYear);
+      const comparisonSeries = stateFilter
+        ? comparisonYearData?.byState?.[stateFilter]?.series
+        : comparisonYearData?.series;
       const comparisonPoint = comparisonSeries
-        ? findValueOnOrBefore(comparisonSeries.series, currentLatestPoint?.dayOfYear || 0)
+        ? findValueOnOrBefore(comparisonSeries, currentLatestPoint?.dayOfYear || 0)
         : null;
 
       const diff =
@@ -1289,9 +1406,10 @@
               : `${formatNumber(Math.abs(diff))} behind last season`
           : "insufficient comparison data";
 
+      const stateLabel = stateFilter ? ` in ${stateFilter}` : "";
       const paragraph = document.createElement("p");
       paragraph.innerHTML = `
-        <strong>${currentYear} tornado reports:</strong> ${formatNumber(currentLatestPoint?.cumulative || 0)} total as of ${formatDisplayDate(currentLatestPoint?.date)} — ${diffText}.
+        <strong>${currentYear} tornado reports${stateLabel}:</strong> ${formatNumber(currentLatestPoint?.cumulative || 0)} total as of ${formatDisplayDate(currentLatestPoint?.date)} — ${diffText}.
       `;
       target.appendChild(paragraph);
     }
@@ -1300,19 +1418,48 @@
       const data = state.tornadoResponse;
       if (!data) return;
 
-      const datasets = buildChartDatasets(data);
-      if (!datasets.length) return;
+      const stateFilter = state.selectedState;
+      const datasets = buildChartDatasets(data, stateFilter);
+
+      // For state-filtered view with no data, show message
+      if (!datasets.length || datasets.every((d) => !d.data.length)) {
+        if (!SELECTORS.chartCanvas) return;
+        const ctx = SELECTORS.chartCanvas.getContext("2d");
+        if (state.chart) {
+          state.chart.destroy();
+          state.chart = null;
+        }
+        // Clear canvas and show no data message
+        if (ctx) {
+          ctx.clearRect(0, 0, SELECTORS.chartCanvas.width, SELECTORS.chartCanvas.height);
+        }
+        return;
+      }
 
       if (!SELECTORS.chartCanvas) return;
       const ctx = SELECTORS.chartCanvas.getContext("2d");
       if (!ctx) return;
 
-      const ySuggestedMax = Y_AXIS_MAX;
-      const tickStep = 200;
+      // Calculate dynamic Y axis max based on data
+      let maxValue = 0;
+      datasets.forEach((ds) => {
+        ds.data.forEach((point) => {
+          if (point.y > maxValue) maxValue = point.y;
+        });
+      });
+      // Round up to nice value with some headroom
+      const yAxisMax = stateFilter
+        ? Math.ceil(maxValue * 1.15 / 50) * 50 || 100
+        : Y_AXIS_MAX;
+      const tickStep = stateFilter
+        ? Math.max(10, Math.ceil(yAxisMax / 10 / 5) * 5)
+        : 200;
 
       if (state.chart) {
         state.chart.destroy();
       }
+
+      const currentLatestPoint = getLatestPointForState(data, stateFilter);
 
       state.chart = new Chart(ctx, {
         type: "line",
@@ -1342,8 +1489,8 @@
             },
             y: {
               beginAtZero: true,
-              suggestedMax: ySuggestedMax,
-              max: ySuggestedMax,
+              suggestedMax: yAxisMax,
+              max: yAxisMax,
               grid: {
                 drawBorder: false,
                 color: (context) => (context.index % 2 === 0
@@ -1396,9 +1543,9 @@
               datasetId: "currentYear",
               color: "#b91c1c",
               labelText: () => {
-                const point = data.currentLatestPoint;
-                if (!point) return null;
-                return `${data.currentYear}: ${formatNumber(point.cumulative)}`;
+                if (!currentLatestPoint) return null;
+                const stateLabel = stateFilter ? ` (${stateFilter})` : "";
+                return `${data.currentYear}${stateLabel}: ${formatNumber(currentLatestPoint.cumulative)}`;
               }
             }
           }
@@ -1429,14 +1576,56 @@
       }
     }
 
+    function populateStateDropdown(allStates) {
+      const select = SELECTORS.stateSelect;
+      if (!select) return;
+
+      // Clear existing options except the first "All States"
+      while (select.options.length > 1) {
+        select.remove(1);
+      }
+
+      // Add state options
+      allStates.forEach((stateCode) => {
+        const option = document.createElement("option");
+        option.value = stateCode;
+        option.textContent = stateCode;
+        select.appendChild(option);
+      });
+
+      // Restore selected state if still valid
+      if (state.selectedState && allStates.includes(state.selectedState)) {
+        select.value = state.selectedState;
+      } else {
+        state.selectedState = "";
+        select.value = "";
+      }
+    }
+
+    function updateChartView() {
+      const data = state.tornadoResponse;
+      if (!data) return;
+      const stateFilter = state.selectedState;
+      renderTornadoChart();
+      renderChartMeta(data, stateFilter);
+      renderChartSummary(data, stateFilter);
+    }
+
     async function loadTornadoHistory() {
       try {
         SELECTORS.chartMeta.innerHTML = `<span class="swt-loader">Loading tornado history…</span>`;
         const result = await fetchTornadoTrends();
         state.tornadoResponse = result;
+
+        // Populate state dropdown
+        if (result.allStates) {
+          populateStateDropdown(result.allStates);
+        }
+
+        const stateFilter = state.selectedState;
         renderTornadoChart();
-        renderChartMeta(result);
-        renderChartSummary(result);
+        renderChartMeta(result, stateFilter);
+        renderChartSummary(result, stateFilter);
         buildChartLegend(result);
       } catch (error) {
         console.error(error);
@@ -1477,6 +1666,11 @@
       SELECTORS.dateInput?.addEventListener("change", () => {
         loadStormReports();
         loadTornadoHistory();
+      });
+
+      SELECTORS.stateSelect?.addEventListener("change", (e) => {
+        state.selectedState = e.target.value;
+        updateChartView();
       });
     }
 
