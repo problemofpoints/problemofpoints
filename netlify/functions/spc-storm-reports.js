@@ -260,6 +260,10 @@ function subtractDays(date, days) {
   return clone;
 }
 
+function toUtcDate(date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") {
     return {
@@ -283,14 +287,12 @@ exports.handler = async (event) => {
 
   try {
     const requestedDate = resolveDateParameter(event);
-    const targetDate = new Date(Date.UTC(
-      requestedDate.getUTCFullYear(),
-      requestedDate.getUTCMonth(),
-      requestedDate.getUTCDate()
-    ));
+    const targetDate = toUtcDate(requestedDate);
+    const todayUtc = toUtcDate(new Date());
+    const shouldAttemptFallback = targetDate.getTime() === todayUtc.getTime();
 
     const fallbackDate = subtractDays(targetDate, 1);
-    const tries = [targetDate, fallbackDate];
+    const tries = shouldAttemptFallback ? [targetDate, fallbackDate] : [targetDate];
     let result = null;
     let usedDate = null;
 
