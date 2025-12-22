@@ -1378,7 +1378,7 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          interaction: { mode: "index", intersect: false },
+          interaction: { mode: "nearest", axis: "x", intersect: false },
           scales: {
             x: {
               type: "time",
@@ -1423,13 +1423,13 @@
             },
             tooltip: {
               enabled: true,
-              filter: (item) => item.dataset?.id === "currentYear",
               backgroundColor: "rgba(15, 23, 42, 0.92)",
               titleColor: "#e2e8f0",
               bodyColor: "#cbd5f5",
               borderColor: "rgba(148, 163, 184, 0.4)",
               borderWidth: 1,
               padding: 12,
+              displayColors: false,
               callbacks: {
                 title(items) {
                   if (!items.length) return "";
@@ -1451,7 +1451,7 @@
                     item.raw?.dayOfYear ?? dayOfYearFromIso(item.raw?.originalDate) ?? null;
                   const stats = getTooltipStats(data, dayOfYear);
                   if (!stats) {
-                    return "Data unavailable";
+                    return ["Data unavailable"];
                   }
 
                   const lines = [];
