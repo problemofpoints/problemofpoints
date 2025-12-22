@@ -808,6 +808,15 @@
       return Number(value).toLocaleString();
     }
 
+    function dayOfYearFromIso(iso) {
+      if (!iso) return null;
+      const date = new Date(iso);
+      if (Number.isNaN(date.getTime())) return null;
+      const start = Date.UTC(date.getUTCFullYear(), 0, 0);
+      const diff = date.getTime() - start;
+      return Math.floor(diff / (24 * 60 * 60 * 1000));
+    }
+
     function formatMagnitude(report) {
       if (!report) return "";
       if (report.type === "tornado") {
@@ -1150,7 +1159,8 @@
             return {
               x: normalized,
               y: point.cumulative,
-              originalDate: point.date
+              originalDate: point.date,
+              dayOfYear: point.dayOfYear
             };
           })
           .filter(Boolean);
@@ -1219,6 +1229,54 @@
         }
       }
       return result;
+    }
+
+    function computeHistoricalAverageAtDay(years, dayOfYear, exclusions = []) {
+      if (!Array.isArray(years)) {
+        return { average: null, count: 0 };
+      }
+
+      const excludedYears = new Set(exclusions.filter(Boolean));
+      const values = years
+        .filter((entry) => entry && !excludedYears.has(entry.year))
+        .map((entry) => findValueOnOrBefore(entry.series, dayOfYear))
+        .filter((point) => point && Number.isFinite(point.cumulative))
+        .map((point) => point.cumulative);
+
+      if (!values.length) {
+        return { average: null, count: 0 };
+      }
+
+      const total = values.reduce((sum, value) => sum + value, 0);
+      return { average: total / values.length, count: values.length };
+    }
+
+    function getSeriesPointForYear(data, year, dayOfYear) {
+      if (!data || year == null || dayOfYear == null) return null;
+      const entry = data.years?.find((item) => item.year === year);
+      if (!entry) return null;
+      return findValueOnOrBefore(entry.series, dayOfYear);
+    }
+
+    function getTooltipStats(data, dayOfYear) {
+      if (!data || dayOfYear == null) return null;
+      const currentPoint = getSeriesPointForYear(data, data.currentYear, dayOfYear);
+      const comparisonPoint = data.comparisonYear
+        ? getSeriesPointForYear(data, data.comparisonYear, dayOfYear)
+        : null;
+      const historical = computeHistoricalAverageAtDay(data.years, dayOfYear, [
+        data.currentYear,
+        data.comparisonYear
+      ]);
+
+      return {
+        dayOfYear,
+        current: currentPoint?.cumulative ?? null,
+        comparison: comparisonPoint?.cumulative ?? null,
+        historicalAverage: historical.average,
+        historicalCount: historical.count,
+        date: currentPoint?.date || comparisonPoint?.date || null
+      };
     }
 
     function renderChartSummary(data) {
@@ -1365,6 +1423,7 @@
             },
             tooltip: {
               enabled: true,
+              filter: (item) => item.dataset?.id === "currentYear",
               backgroundColor: "rgba(15, 23, 42, 0.92)",
               titleColor: "#e2e8f0",
               bodyColor: "#cbd5f5",
@@ -1375,20 +1434,38 @@
                 title(items) {
                   if (!items.length) return "";
                   const raw = items[0].raw;
-                  const iso = raw?.originalDate;
-                  if (iso) {
-                    return formatDisplayDate(iso);
+                  const dayOfYear =
+                    raw?.dayOfYear ?? dayOfYearFromIso(raw?.originalDate) ?? null;
+                  const stats = getTooltipStats(data, dayOfYear);
+                  if (stats?.date) {
+                    return formatDisplayDate(stats.date);
+                  }
+                  if (raw?.originalDate) {
+                    return formatDisplayDate(raw.originalDate);
                   }
                   const { parsed } = items[0];
                   return luxon.DateTime.fromMillis(parsed.x).toFormat("MMM d");
                 },
                 label(item) {
-                  const label = item.dataset.label || "";
-                  if (item.raw && item.raw.originalDate) {
-                    const displayDate = formatDisplayDate(item.raw.originalDate);
-                    return `${label}: ${formatNumber(item.parsed.y)} reports (${displayDate})`;
+                  const dayOfYear =
+                    item.raw?.dayOfYear ?? dayOfYearFromIso(item.raw?.originalDate) ?? null;
+                  const stats = getTooltipStats(data, dayOfYear);
+                  if (!stats) {
+                    return "Data unavailable";
                   }
-                  return `${label}: ${formatNumber(item.parsed.y)} reports`;
+
+                  const lines = [];
+                  lines.push(`${data.currentYear}: ${formatNumber(stats.current)} reports`);
+
+                  const comparisonLabel = data.comparisonYear || data.currentYear - 1;
+                  lines.push(`${comparisonLabel}: ${formatNumber(stats.comparison)} reports`);
+
+                  const historicalLine = stats.historicalCount
+                    ? `Historical avg (${stats.historicalCount} yrs): ${formatNumber(Math.round(stats.historicalAverage))} reports`
+                    : "Historical avg: –";
+                  lines.push(historicalLine);
+
+                  return lines;
                 }
               }
             },
