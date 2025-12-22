@@ -180,7 +180,10 @@ async function buildCurrentYearSeriesFromDaily(year, todayUtc) {
   // Track per-state cumulative counts: { state: { cumulative, dailyByDayOfYear } }
   let stateCumulatives = {};
 
-  if (cacheEntry && cacheEntry.lastDate) {
+  // Check if cache is valid AND has the new byState structure
+  const cacheIsValid = cacheEntry && cacheEntry.lastDate && cacheEntry.data?.byState !== undefined;
+
+  if (cacheIsValid) {
     const cachedData = cacheEntry.data;
     if (cachedData?.series?.length) {
       series = [...cachedData.series];
@@ -261,9 +264,9 @@ async function buildCurrentYearSeriesFromDaily(year, todayUtc) {
   const statesSet = new Set();
   for (const [st, stData] of Object.entries(stateCumulatives)) {
     statesSet.add(st);
-    // Merge cached series with new daily data
+    // Merge cached series with new daily data (only if cache is valid)
     let stateSeries = [];
-    if (cacheEntry?.data?.byState?.[st]?.series) {
+    if (cacheIsValid && cacheEntry?.data?.byState?.[st]?.series) {
       stateSeries = [...cacheEntry.data.byState[st].series];
     }
     if (stateDailyData[st]) {
