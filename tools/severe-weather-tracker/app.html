@@ -794,12 +794,14 @@
 
     function formatDisplayDate(iso) {
       if (!iso) return "";
-      const date = new Date(iso);
-      if (Number.isNaN(date.getTime())) return iso;
+      const [year, month, day] = iso.split("-").map((part) => Number.parseInt(part, 10));
+      if ([year, month, day].some((value) => Number.isNaN(value))) return iso;
+      const date = new Date(Date.UTC(year, month - 1, day));
       return date.toLocaleDateString(undefined, {
         month: "long",
         day: "numeric",
-        year: "numeric"
+        year: "numeric",
+        timeZone: "UTC"
       });
     }
 
@@ -1122,6 +1124,9 @@
         setStatus(`<span class="swt-loader">Loading NOAA SPC reports…</span>`, false);
         const result = await fetchStormReports(dateValue);
         state.reportsResponse = result;
+        if (SELECTORS.dateInput && result?.date && SELECTORS.dateInput.value !== result.date) {
+          SELECTORS.dateInput.value = result.date;
+        }
         setStatus(`Loaded ${formatNumber(result.summary?.tornadoes + result.summary?.wind + result.summary?.hail)} preliminary reports.`, false);
         renderSummaryCards();
         renderMarkers();
@@ -1447,10 +1452,13 @@
     function setDefaultDate() {
       if (!SELECTORS.dateInput) return;
       const today = new Date();
-      const iso = formatIsoDate(today);
-      SELECTORS.dateInput.max = iso;
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+      const todayIso = formatIsoDate(today);
+      const yesterdayIso = formatIsoDate(yesterday);
+      SELECTORS.dateInput.max = todayIso;
       if (!SELECTORS.dateInput.value) {
-        SELECTORS.dateInput.value = iso;
+        SELECTORS.dateInput.value = yesterdayIso || todayIso;
       }
     }
 
