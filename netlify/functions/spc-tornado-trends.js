@@ -546,6 +546,30 @@ function computeLatestPoint(series) {
   return series[series.length - 1];
 }
 
+function extendSeriesToDate(series, targetDate) {
+  if (!Array.isArray(series) || !series.length) return series;
+  const targetYear = targetDate.getUTCFullYear();
+  const targetDay = dayOfYearFromParts(
+    targetDate.getUTCFullYear(),
+    targetDate.getUTCMonth() + 1,
+    targetDate.getUTCDate()
+  );
+  const lastPoint = series[series.length - 1];
+  if (lastPoint.dayOfYear >= targetDay || !lastPoint.date.startsWith(String(targetYear))) {
+    return series;
+  }
+  const extended = [...series];
+  extended.push({
+    dayOfYear: targetDay,
+    date: formatIsoDate(targetDate),
+    cumulative: lastPoint.cumulative,
+    daily: 0,
+    injuries: lastPoint.injuries ?? null,
+    fatalities: lastPoint.fatalities ?? null
+  });
+  return extended;
+}
+
 function normalizeStateCode(code) {
   if (!code) return null;
   const normalized = code.trim().toUpperCase();
@@ -715,19 +739,30 @@ exports.handler = async (event) => {
       };
     }
 
-    const availableYears = selectedSeries.map((item) => item.year);
+    const todayUtc = new Date();
+    const normalizedSeries = selectedSeries.map((entry) => {
+      if (entry.year === calendarCurrentYear) {
+        return {
+          ...entry,
+          series: extendSeriesToDate(entry.series, todayUtc)
+        };
+      }
+      return entry;
+    });
+
+    const availableYears = normalizedSeries.map((item) => item.year);
     const currentYear = calendarCurrentYear;
     const comparisonYearCandidate = currentYear - 1;
     const comparisonYear = availableYears.includes(comparisonYearCandidate)
       ? comparisonYearCandidate
       : null;
 
-    const currentSeries = selectedSeries.find((item) => item.year === currentYear)
-      || selectedSeries.find((item) => item.year === availableYears[availableYears.length - 1]);
+    const currentSeries = normalizedSeries.find((item) => item.year === currentYear)
+      || normalizedSeries.find((item) => item.year === availableYears[availableYears.length - 1]);
     const comparisonSeries = comparisonYear
-      ? selectedSeries.find((item) => item.year === comparisonYear)
+      ? normalizedSeries.find((item) => item.year === comparisonYear)
       : null;
-    const ensembleStats = computeEnsembleStats(selectedSeries, currentYear, comparisonYear);
+    const ensembleStats = computeEnsembleStats(normalizedSeries, currentYear, comparisonYear);
     const currentLatestPoint = computeLatestPoint(currentSeries?.series || []);
     const primarySource =
       currentSeries?.source ||
@@ -749,7 +784,7 @@ exports.handler = async (event) => {
         comparisonYear,
         currentLatestPoint,
         ensembleStats,
-        years: selectedSeries,
+        years: normalizedSeries,
         missingYears: errors,
         notes: "Data represents preliminary tornado reports as published by SPC. Counts are cumulative by day of year.",
         stateCode,

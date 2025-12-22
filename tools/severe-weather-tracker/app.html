@@ -121,6 +121,20 @@
     gap: 10px;
   }
 
+  .swt-chart-filters {
+    margin-top: 12px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .swt-chart-filters label {
+    font-size: 0.92rem;
+    color: #475569;
+    font-weight: 600;
+  }
+
   .swt-toggle {
     display: inline-flex;
     align-items: center;
@@ -659,12 +673,6 @@
               <button type="button" class="swt-toggle is-active" data-type="hail">Hail</button>
             </div>
           </div>
-          <div class="swt-control-card">
-            <label for="swt-state-select">Tornado Benchmark Region</label>
-            <select id="swt-state-select" class="swt-select" aria-label="Select state for tornado benchmark">
-              <option value="ALL">All states</option>
-            </select>
-          </div>
         </section>
         <div class="swt-status" id="swt-status" role="status"></div>
         <section class="swt-map-section" aria-label="Storm detail">
@@ -698,6 +706,12 @@
         </section>
         <section class="swt-chart-panel" aria-label="Tornado trends">
           <h2>Tornado Activity Benchmark</h2>
+          <div class="swt-chart-filters">
+            <label for="swt-state-select">Benchmark region:</label>
+            <select id="swt-state-select" class="swt-select" aria-label="Select state for tornado benchmark">
+              <option value="ALL">All states</option>
+            </select>
+          </div>
           <div class="swt-chart-meta" id="swt-chart-meta">
             <span class="swt-loader">Loading tornado history…</span>
           </div>
@@ -1329,9 +1343,11 @@
         return Math.max(max, datasetMax);
       }, 0);
 
-      const suggestedCeiling = Math.ceil((maxValue || 0) / 100) * 100 + 100;
-      const ySuggestedMax = Math.min(Y_AXIS_MAX, Math.max(400, suggestedCeiling));
-      const tickStep = ySuggestedMax > 800 ? 200 : 100;
+      const margin = Math.max(50, maxValue * 0.12);
+      const suggestedCeiling = maxValue + margin;
+      const roundedCeiling = Math.max(100, Math.ceil(suggestedCeiling / 50) * 50);
+      const ySuggestedMax = roundedCeiling;
+      const tickStep = ySuggestedMax > 1000 ? 200 : ySuggestedMax > 400 ? 100 : 50;
 
       if (state.chart) {
         state.chart.destroy();
