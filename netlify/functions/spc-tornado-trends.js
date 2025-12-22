@@ -252,6 +252,7 @@ function parseTornadoYear(csvText, expectedYear) {
 
   const injuryIndex = indexByName.get("inj");
   const fatalityIndex = indexByName.get("fat");
+  const stateIndex = indexByName.get("st");
 
   const entries = [];
 
@@ -275,6 +276,7 @@ function parseTornadoYear(csvText, expectedYear) {
 
     const dayKey = dayOfYearFromParts(year, month, day);
     const isoDate = `${year}-${pad(month)}-${pad(day)}`;
+    const state = stateIndex != null ? (parts[stateIndex] || "").trim().toUpperCase() : null;
 
     entries.push({
       year,
@@ -282,6 +284,7 @@ function parseTornadoYear(csvText, expectedYear) {
       day,
       dayOfYear: dayKey,
       isoDate,
+      state,
       injuries: injuryIndex != null ? parseInteger(parts[injuryIndex]) : 0,
       fatalities: fatalityIndex != null ? parseInteger(parts[fatalityIndex]) : 0
     });
@@ -295,12 +298,14 @@ function parseTornadoYear(csvText, expectedYear) {
       injuries: 0,
       fatalities: 0,
       firstReportDate: null,
-      lastReportDate: null
+      lastReportDate: null,
+      byState: {}
     };
   }
 
   entries.sort((a, b) => a.dayOfYear - b.dayOfYear);
 
+  // Build overall daily aggregation
   const daily = new Map();
   for (const entry of entries) {
     if (!daily.has(entry.dayOfYear)) {
@@ -339,6 +344,59 @@ function parseTornadoYear(csvText, expectedYear) {
   const lastDay = sortedDays[sortedDays.length - 1];
   const seriesYear = expectedYear || entries[0].year;
 
+  // Build per-state aggregations
+  const stateDaily = new Map();
+  const statesSet = new Set();
+  for (const entry of entries) {
+    if (!entry.state) continue;
+    statesSet.add(entry.state);
+    const stateKey = entry.state;
+    if (!stateDaily.has(stateKey)) {
+      stateDaily.set(stateKey, new Map());
+    }
+    const stateDays = stateDaily.get(stateKey);
+    if (!stateDays.has(entry.dayOfYear)) {
+      stateDays.set(entry.dayOfYear, {
+        count: 0,
+        injuries: 0,
+        fatalities: 0
+      });
+    }
+    const current = stateDays.get(entry.dayOfYear);
+    current.count += 1;
+    current.injuries += entry.injuries;
+    current.fatalities += entry.fatalities;
+  }
+
+  const byState = {};
+  for (const [stateCode, stateDays] of stateDaily) {
+    const stateSortedDays = Array.from(stateDays.keys()).sort((a, b) => a - b);
+    let stateCumulative = 0;
+    let stateInjuries = 0;
+    let stateFatalities = 0;
+    const stateSeries = stateSortedDays.map((dayKey) => {
+      const { count, injuries, fatalities } = stateDays.get(dayKey);
+      stateCumulative += count;
+      stateInjuries += injuries;
+      stateFatalities += fatalities;
+      return {
+        dayOfYear: dayKey,
+        date: isoFromDayOfYear(seriesYear, dayKey),
+        cumulative: stateCumulative,
+        daily: count,
+        injuries,
+        fatalities
+      };
+    });
+
+    byState[stateCode] = {
+      series: stateSeries,
+      totalReports: stateCumulative,
+      injuries: stateInjuries,
+      fatalities: stateFatalities
+    };
+  }
+
   return {
     year: seriesYear,
     series,
@@ -346,7 +404,9 @@ function parseTornadoYear(csvText, expectedYear) {
     injuries: totalInjuries,
     fatalities: totalFatalities,
     firstReportDate: firstDay ? isoFromDayOfYear(seriesYear, firstDay) : null,
-    lastReportDate: lastDay ? isoFromDayOfYear(seriesYear, lastDay) : null
+    lastReportDate: lastDay ? isoFromDayOfYear(seriesYear, lastDay) : null,
+    byState,
+    states: Array.from(statesSet).sort()
   };
 }
 
@@ -519,6 +579,15 @@ exports.handler = async (event) => {
       currentSeries?.source ||
       (currentSeries ? `${TORNADO_BASE_URL}${currentSeries.year}_torn.csv` : null);
 
+    // Collect all unique states across all years
+    const allStatesSet = new Set();
+    for (const yearData of seriesByYear) {
+      if (yearData.states) {
+        yearData.states.forEach((st) => allStatesSet.add(st));
+      }
+    }
+    const allStates = Array.from(allStatesSet).sort();
+
     return {
       statusCode: 200,
       headers: {
@@ -536,6 +605,7 @@ exports.handler = async (event) => {
         currentLatestPoint,
         ensembleStats,
         years: seriesByYear,
+        allStates,
         missingYears: errors,
         notes: "Data represents preliminary tornado reports as published by SPC. Counts are cumulative by day of year."
       })
