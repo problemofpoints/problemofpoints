@@ -78,11 +78,14 @@ function toDailyFilename(date) {
   };
 }
 
-function parseDailyTornadoCount(csvText) {
-  if (!csvText) return 0;
+function parseDailyTornadoData(csvText) {
+  if (!csvText) return { count: 0, byState: {} };
   const lines = csvText.split(/\r?\n/);
   let inTornadoSection = false;
+  let headerParsed = false;
+  let stateIndex = -1;
   let count = 0;
+  const stateCounts = {};
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
@@ -90,6 +93,11 @@ function parseDailyTornadoCount(csvText) {
 
     if (SECTION_HEADERS.tornado.test(line)) {
       inTornadoSection = true;
+      // Parse header to find State column index
+      // Format: Time,F_Scale,Location,County,State,Lat,Lon,Comments
+      const headerParts = splitCsvLine(line);
+      stateIndex = headerParts.findIndex((col) => col.toLowerCase() === "state");
+      headerParsed = true;
       continue;
     }
     if (SECTION_HEADERS.wind.test(line) || SECTION_HEADERS.hail.test(line)) {
@@ -97,15 +105,23 @@ function parseDailyTornadoCount(csvText) {
       continue;
     }
 
-    if (inTornadoSection) {
+    if (inTornadoSection && headerParsed) {
       count += 1;
+      // Extract state from the line
+      if (stateIndex >= 0) {
+        const parts = splitCsvLine(line);
+        const state = (parts[stateIndex] || "").trim().toUpperCase();
+        if (state) {
+          stateCounts[state] = (stateCounts[state] || 0) + 1;
+        }
+      }
     }
   }
 
-  return count;
+  return { count, byState: stateCounts };
 }
 
-async function fetchDailyTornadoCount(date) {
+async function fetchDailyTornadoData(date) {
   const { candidates } = toDailyFilename(date);
   for (const candidate of candidates) {
     const url = `${REPORTS_BASE_URL}${candidate}`;
@@ -115,7 +131,7 @@ async function fetchDailyTornadoCount(date) {
 
     if (response.ok) {
       const text = await response.text();
-      return parseDailyTornadoCount(text);
+      return parseDailyTornadoData(text);
     }
 
     if (response.status !== 404) {
@@ -126,7 +142,7 @@ async function fetchDailyTornadoCount(date) {
       throw error;
     }
   }
-  return 0;
+  return { count: 0, byState: {} };
 }
 
 async function mapWithConcurrency(items, handler, limit = 6) {
@@ -161,12 +177,20 @@ async function buildCurrentYearSeriesFromDaily(year, todayUtc) {
   let series = [];
   let cumulative = 0;
   let fetchStartDate = new Date(startDate.getTime());
+  // Track per-state cumulative counts: { state: { cumulative, dailyByDayOfYear } }
+  let stateCumulatives = {};
 
   if (cacheEntry && cacheEntry.lastDate) {
     const cachedData = cacheEntry.data;
     if (cachedData?.series?.length) {
       series = [...cachedData.series];
       cumulative = series[series.length - 1].cumulative;
+    }
+    // Restore state cumulatives from cache
+    if (cachedData?.byState) {
+      for (const [st, stData] of Object.entries(cachedData.byState)) {
+        stateCumulatives[st] = { cumulative: stData.totalReports };
+      }
     }
     const cachedDate = new Date(`${cacheEntry.lastDate}T00:00:00Z`);
     if (cachedDate >= targetEndDate) {
@@ -184,19 +208,23 @@ async function buildCurrentYearSeriesFromDaily(year, todayUtc) {
     datesToFetch.push(new Date(date.getTime()));
   }
 
-  const counts = await mapWithConcurrency(datesToFetch, async (date) => {
+  const dailyResults = await mapWithConcurrency(datesToFetch, async (date) => {
     try {
-      return await fetchDailyTornadoCount(date);
+      return await fetchDailyTornadoData(date);
     } catch (error) {
       if (error.statusCode === 404) {
-        return 0;
+        return { count: 0, byState: {} };
       }
       throw error;
     }
   });
 
+  // Track per-state daily data for building series
+  const stateDailyData = {};
+
   datesToFetch.forEach((date, idx) => {
-    const count = counts[idx] || 0;
+    const result = dailyResults[idx] || { count: 0, byState: {} };
+    const count = result.count;
     const dayOfYear = dayOfYearFromParts(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate());
     cumulative += count;
     series.push({
@@ -207,7 +235,47 @@ async function buildCurrentYearSeriesFromDaily(year, todayUtc) {
       injuries: null,
       fatalities: null
     });
+
+    // Aggregate state data
+    for (const [st, stCount] of Object.entries(result.byState)) {
+      if (!stateCumulatives[st]) {
+        stateCumulatives[st] = { cumulative: 0 };
+      }
+      if (!stateDailyData[st]) {
+        stateDailyData[st] = [];
+      }
+      stateCumulatives[st].cumulative += stCount;
+      stateDailyData[st].push({
+        dayOfYear,
+        date: formatIsoDate(date),
+        cumulative: stateCumulatives[st].cumulative,
+        daily: stCount,
+        injuries: null,
+        fatalities: null
+      });
+    }
   });
+
+  // Build byState structure
+  const byState = {};
+  const statesSet = new Set();
+  for (const [st, stData] of Object.entries(stateCumulatives)) {
+    statesSet.add(st);
+    // Merge cached series with new daily data
+    let stateSeries = [];
+    if (cacheEntry?.data?.byState?.[st]?.series) {
+      stateSeries = [...cacheEntry.data.byState[st].series];
+    }
+    if (stateDailyData[st]) {
+      stateSeries = stateSeries.concat(stateDailyData[st]);
+    }
+    byState[st] = {
+      series: stateSeries,
+      totalReports: stData.cumulative,
+      injuries: null,
+      fatalities: null
+    };
+  }
 
   const data = {
     year,
@@ -217,6 +285,8 @@ async function buildCurrentYearSeriesFromDaily(year, todayUtc) {
     fatalities: null,
     firstReportDate: series.length ? series[0].date : null,
     lastReportDate: series.length ? series[series.length - 1].date : null,
+    byState,
+    states: Array.from(statesSet).sort(),
     source: `${REPORTS_BASE_URL}YYMMDD_rpts.csv`
   };
 
