@@ -789,7 +789,7 @@
       if (Number.isNaN(date.getTime())) return null;
       const month = date.getUTCMonth();
       const day = date.getUTCDate();
-      return new Date(Date.UTC(CHART_ANCHOR_YEAR, month, day));
+      return Date.UTC(CHART_ANCHOR_YEAR, month, day);
     }
 
     function formatDisplayDate(iso) {
@@ -1138,8 +1138,8 @@
       }
     }
 
-    const CHART_AXIS_MIN = new Date(Date.UTC(CHART_ANCHOR_YEAR, 0, 1));
-    const CHART_AXIS_MAX = new Date(Date.UTC(CHART_ANCHOR_YEAR, 11, 31));
+    const CHART_AXIS_MIN = Date.UTC(CHART_ANCHOR_YEAR, 0, 1);
+    const CHART_AXIS_MAX = Date.UTC(CHART_ANCHOR_YEAR, 11, 31);
 
     function buildChartDatasets(data) {
       const { years, currentYear, comparisonYear } = data;
