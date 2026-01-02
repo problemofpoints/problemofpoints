@@ -141,8 +141,6 @@ returns_2025 = returns_2025.merge(
 returns_2025 = returns_2025.sort_values("return_2025", ascending=False)
 
 latest_trade_date = payload.get("last_trade_date")
-
-returns_2025.head(3)
 ```
 
 ## 2025 returns leaderboard
@@ -150,9 +148,18 @@ returns_2025.head(3)
 The property-casualty (re)insurance universe delivered a wide range of total returns in 2025. The
 charts below use the **adjusted close** data from the P&C Stocks Monitor (a total-return proxy that
 includes dividends) and measure performance from the last trading day of 2024 through the last
-available trading day in 2025 (`python latest_trade_date`).
+available trading day in 2025.
 
 ```{python}
+#| output: asis
+print(
+    "Latest trading day used for the 2025 return window: "
+    f"**{latest_trade_date}**."
+)
+```
+
+```{python}
+#| output: false
 TOP_N = 10
 
 leaderboard = returns_2025[["ticker", "name", "segment", "return_2025"]].copy()
@@ -194,30 +201,54 @@ axes[1].legend_.remove()
 plot_path = Path("leaderboard-2025.png")
 fig.savefig(plot_path, dpi=200)
 plt.close(fig)
-
-plot_path
 ```
 
 ![](leaderboard-2025.png){fig-alt="Top and bottom 10 total return performers in 2025."}
 
 ```{python}
-leaders
+#| results: asis
+leaders_table = leaders.rename(columns={
+    "ticker": "Ticker",
+    "name": "Company",
+    "segment": "Segment",
+    "return_2025": "2025 Return (%)",
+})
+print(leaders_table.to_html(index=False, classes="table table-striped table-hover"))
 ```
 
 ```{python}
-laggards
+#| results: asis
+laggards_table = laggards.rename(columns={
+    "ticker": "Ticker",
+    "name": "Company",
+    "segment": "Segment",
+    "return_2025": "2025 Return (%)",
+})
+print(laggards_table.to_html(index=False, classes="table table-striped table-hover"))
 ```
 
 **Key takeaways**
 
-- The top performers were heavily tilted toward `python leaders["segment"].value_counts().idxmax()`
-  franchises, suggesting the market rewarded scaling, underwriting leverage, and consistent
-  pricing power into year-end.
-- The laggards list shows stress concentrated in `python laggards["segment"].value_counts().idxmax()`
-  names where rate momentum slowed and volatility climbed.
-- Dispersion remains high: the gap between the median return of the top decile and bottom decile
-  exceeded **`python f"{leaders['return_2025'].median() - laggards['return_2025'].median():.1f}"` percentage
-  points**.
+```{python}
+#| output: asis
+top_segment = leaders["segment"].value_counts().idxmax()
+bottom_segment = laggards["segment"].value_counts().idxmax()
+dispersion = leaders["return_2025"].median() - laggards["return_2025"].median()
+
+print(
+    "- The top performers were heavily tilted toward "
+    f"**{top_segment}** franchises, suggesting the market rewarded scaling, "
+    "underwriting leverage, and consistent pricing power into year-end."
+)
+print(
+    "- The laggards list shows stress concentrated in "
+    f"**{bottom_segment}** names where rate momentum slowed and volatility climbed."
+)
+print(
+    "- Dispersion remains high: the gap between the median return of the top decile and bottom "
+    f"decile exceeded **{dispersion:.1f} percentage points**."
+)
+```
 
 ## Segment performance: reinsurers vs. primary carriers
 
@@ -226,6 +257,7 @@ market-cap-weighted returns. Market caps are the latest values available from th
 so they approximate the segment weights investors currently own.
 
 ```{python}
+#| output: false
 segment_summary = (
     returns_2025
     .groupby("segment")
@@ -253,32 +285,59 @@ segment_summary["median_return"] = (segment_summary["median_return"] * 100).roun
 segment_summary["market_cap_weighted_return"] = (
     segment_summary["market_cap_weighted_return"] * 100
 ).round(1)
-
-segment_summary
 ```
 
 ```{python}
-fig, ax = plt.subplots(figsize=(14, 10), constrained_layout=True)
+#| results: asis
+segment_table = segment_summary.rename(columns={
+    "segment": "Segment",
+    "equal_weight_return": "Equal-weighted Return (%)",
+    "median_return": "Median Return (%)",
+    "market_cap_weighted_return": "Market Cap-weighted Return (%)",
+    "coverage": "Tickers",
+})
+print(segment_table.to_html(index=False, classes="table table-striped table-hover"))
+```
+
+```{python}
+#| output: false
+fig_height = max(14, 0.4 * len(returns_2025))
+fig, ax = plt.subplots(figsize=(14, fig_height), constrained_layout=True)
 all_tickers = returns_2025.sort_values("return_2025", ascending=False).copy()
 all_tickers["return_pct"] = all_tickers["return_2025"] * 100
 colors = np.where(all_tickers["return_pct"] >= 0, "#16a34a", "#dc2626")
 
-ax.barh(all_tickers["ticker"], all_tickers["return_pct"], color=colors)
+bars = ax.barh(all_tickers["ticker"], all_tickers["return_pct"], color=colors)
 ax.axvline(0, color="#334155", linewidth=1)
 ax.set_xlabel("Total return (%)")
 ax.set_title("2025 Total Returns by Ticker (All P&C (Re)Insurance Stocks)")
 ax.invert_yaxis()
+ax.margins(x=0.1)
+
+for bar in bars:
+    value = bar.get_width()
+    y_pos = bar.get_y() + bar.get_height() / 2
+    offset = 0.6 if value >= 0 else -0.6
+    align = "left" if value >= 0 else "right"
+    ax.text(
+        value + offset,
+        y_pos,
+        f"{value:.1f}%",
+        va="center",
+        ha=align,
+        fontsize=8,
+        color="#0f172a",
+    )
 
 plot_path = Path("all-tickers-returns-2025.png")
 fig.savefig(plot_path, dpi=200)
 plt.close(fig)
-
-plot_path
 ```
 
 ![](all-tickers-returns-2025.png){fig-alt="All tickers sorted by 2025 total returns."}
 
 ```{python}
+#| output: false
 fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
 segment_plot = segment_summary.copy()
 segment_plot = segment_plot.sort_values("equal_weight_return")
@@ -290,8 +349,6 @@ ax.set_title("2025 Returns by Segment (Equal-weighted)")
 plot_path = Path("segment-returns-2025.png")
 fig.savefig(plot_path, dpi=200)
 plt.close(fig)
-
-plot_path
 ```
 
 ![](segment-returns-2025.png){fig-alt="Equal-weighted total returns by segment in 2025."}
@@ -353,18 +410,38 @@ fig
 
 **Insights by segment**
 
-- **Reinsurers** (including listed Bermuda and European names) collectively posted
-  `python f"{segment_summary.loc[segment_summary['segment'] == 'Reinsurers', 'equal_weight_return'].iloc[0]:.1f}"`%
-  equal-weighted gains. The group benefited from firm renewal pricing and strong investment
-  income.
-- **Large commercial carriers** delivered `python f"{segment_summary.loc[segment_summary['segment'] == 'Large commercial', 'equal_weight_return'].iloc[0]:.1f}"`%
-  equal-weighted returns, with the market differentiating between scale-driven balance sheet
-  strength and capital intensity.
-- **Personal lines** were more mixed, ending the year with an equal-weighted return of
-  `python f"{segment_summary.loc[segment_summary['segment'] == 'Personal lines', 'equal_weight_return'].iloc[0]:.1f}"`%.
-  Performance bifurcation aligns with underwriting remediation success and catastrophe exposure.
-- **Specialty and regional carriers** generally sat in the middle of the pack, though dispersion
-  within those groups remains wide.
+```{python}
+#| output: asis
+reinsurer_return = segment_summary.loc[
+    segment_summary["segment"] == "Reinsurers", "equal_weight_return"
+].iloc[0]
+commercial_return = segment_summary.loc[
+    segment_summary["segment"] == "Large commercial", "equal_weight_return"
+].iloc[0]
+personal_return = segment_summary.loc[
+    segment_summary["segment"] == "Personal lines", "equal_weight_return"
+].iloc[0]
+
+print(
+    f"- **Reinsurers** (including listed Bermuda and European names) collectively posted "
+    f"**{reinsurer_return:.1f}%** equal-weighted gains. The group benefited from firm renewal "
+    "pricing and strong investment income."
+)
+print(
+    f"- **Large commercial carriers** delivered **{commercial_return:.1f}%** equal-weighted "
+    "returns, with the market differentiating between scale-driven balance sheet strength and "
+    "capital intensity."
+)
+print(
+    f"- **Personal lines** were more mixed, ending the year with an equal-weighted return of "
+    f"**{personal_return:.1f}%**. Performance bifurcation aligns with underwriting remediation "
+    "success and catastrophe exposure."
+)
+print(
+    "- **Specialty and regional carriers** generally sat in the middle of the pack, though "
+    "dispersion within those groups remains wide."
+)
+```
 
 ## Valuation: price-to-book in 2025
 
@@ -374,6 +451,7 @@ price and P/B ratio, then apply that book value to historical prices. This isola
 price component and offers a clean view of how investors re-rated each stock during the year.
 
 ```{python}
+#| output: false
 valuations = returns_2025[["ticker", "pb_ratio", "last_price", "segment"]].copy()
 valuations = valuations.dropna(subset=["pb_ratio", "last_price"])
 valuations = valuations[valuations["pb_ratio"] > 0]
@@ -417,8 +495,6 @@ ax.legend(ncol=2, frameon=False)
 plot_path = Path("segment-pb-2025.png")
 fig.savefig(plot_path, dpi=200)
 plt.close(fig)
-
-plot_path
 ```
 
 ![](segment-pb-2025.png){fig-alt="Median implied price-to-book ratios by segment in 2025."}
@@ -441,5 +517,10 @@ plot_path
 - The data set is broad; specialty carriers remain a fertile hunting ground for differentiated
   underwriting stories.
 
-*Data source: Problem of Points P&C Stocks Monitor (Yahoo Finance via Netlify function), pulled
-on `python payload["generated_at"]`.*
+```{python}
+#| output: asis
+print(
+    "*Data source: Problem of Points P&C Stocks Monitor (Yahoo Finance via Netlify function), "
+    f"pulled on {payload['generated_at']}.*"
+)
+```
