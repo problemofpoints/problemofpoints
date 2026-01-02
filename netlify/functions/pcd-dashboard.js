@@ -73,6 +73,10 @@ const RETURN_DEFINITIONS = {
 
 const TRADING_DAYS_PER_YEAR = 252;
 const HISTORY_LOOKBACK_DAYS = 365 * 2 + 30;
+const CACHE_TTL_MS = 15 * 60 * 1000;
+
+let cachedResponse = null;
+let cachedAt = 0;
 
 function toISODate(date) {
   return date.toISOString().slice(0, 10);
@@ -352,9 +356,19 @@ function computeAggregates(companies) {
 }
 
 exports.handler = async () => {
+  const now = Date.now();
+  const cacheFresh = cachedResponse && now - cachedAt < CACHE_TTL_MS;
+  if (cacheFresh) {
+    return cachedResponse;
+  }
+
   try {
-    yahooFinance = new YahooFinance({
-      suppressNotices: ["yahooSurvey"]
+    yahooFinance = YahooFinance;
+    yahooFinance.suppressNotices(["yahooSurvey"]);
+    yahooFinance.setGlobalConfig({
+      queue: {
+        concurrency: 2
+      }
     });
 
     const symbols = [...Object.keys(TICKERS), ...BENCHMARK_SYMBOLS];
@@ -416,7 +430,7 @@ exports.handler = async () => {
       errors
     };
 
-    return {
+    const response = {
       statusCode: errors.length && !companies.length ? 502 : 200,
       headers: {
         "Content-Type": "application/json",
@@ -425,8 +439,20 @@ exports.handler = async () => {
       },
       body: JSON.stringify(responseBody)
     };
+
+    if (response.statusCode === 200) {
+      cachedResponse = response;
+      cachedAt = now;
+    } else if (cacheFresh) {
+      return cachedResponse;
+    }
+
+    return response;
   } catch (error) {
     console.error("pcd-dashboard error", error);
+    if (cacheFresh) {
+      return cachedResponse;
+    }
     return {
       statusCode: 500,
       headers: {
