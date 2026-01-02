@@ -258,6 +258,27 @@ segment_summary
 ```
 
 ```{python}
+fig, ax = plt.subplots(figsize=(14, 10), constrained_layout=True)
+all_tickers = returns_2025.sort_values("return_2025", ascending=False).copy()
+all_tickers["return_pct"] = all_tickers["return_2025"] * 100
+colors = np.where(all_tickers["return_pct"] >= 0, "#16a34a", "#dc2626")
+
+ax.barh(all_tickers["ticker"], all_tickers["return_pct"], color=colors)
+ax.axvline(0, color="#334155", linewidth=1)
+ax.set_xlabel("Total return (%)")
+ax.set_title("2025 Total Returns by Ticker (All P&C (Re)Insurance Stocks)")
+ax.invert_yaxis()
+
+plot_path = Path("all-tickers-returns-2025.png")
+fig.savefig(plot_path, dpi=200)
+plt.close(fig)
+
+plot_path
+```
+
+![](all-tickers-returns-2025.png){fig-alt="All tickers sorted by 2025 total returns."}
+
+```{python}
 fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
 segment_plot = segment_summary.copy()
 segment_plot = segment_plot.sort_values("equal_weight_return")
@@ -274,6 +295,61 @@ plot_path
 ```
 
 ![](segment-returns-2025.png){fig-alt="Equal-weighted total returns by segment in 2025."}
+
+## Interactive return and valuation table
+
+Use the interactive table below to explore 2025 total returns alongside current valuation
+metrics. You can sort or search the table to drill into individual names.
+
+```{python}
+import plotly.graph_objects as go
+
+table_df = returns_2025.copy()
+table_df["return_2025_pct"] = (table_df["return_2025"] * 100).round(1)
+table_df["pb_ratio"] = table_df["pb_ratio"].round(2)
+table_df["market_cap_b"] = (table_df["market_cap"] / 1e9).round(1)
+
+table_df = table_df[[
+    "ticker",
+    "name",
+    "segment",
+    "return_2025_pct",
+    "pb_ratio",
+    "market_cap_b",
+]]
+
+table_df = table_df.sort_values("return_2025_pct", ascending=False)
+
+fig = go.Figure(
+    data=[
+        go.Table(
+            header=dict(
+                values=[
+                    "Ticker",
+                    "Company",
+                    "Segment",
+                    "2025 Return (%)",
+                    "Latest P/B",
+                    "Market Cap ($B)",
+                ],
+                fill_color="#0f172a",
+                font=dict(color="white", size=12),
+                align="left",
+            ),
+            cells=dict(
+                values=[table_df[col] for col in table_df.columns],
+                fill_color="#f8fafc",
+                align="left",
+                font=dict(color="#0f172a", size=11),
+                height=24,
+            ),
+        )
+    ]
+)
+
+fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=600)
+fig
+```
 
 **Insights by segment**
 
