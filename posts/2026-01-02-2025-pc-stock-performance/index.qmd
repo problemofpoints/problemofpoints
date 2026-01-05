@@ -24,10 +24,21 @@ import requests
 sns.set_theme(style="whitegrid")
 
 DATA_URL = "https://www.problemofpoints.com/.netlify/functions/pcd-dashboard"
+CACHE_PATH = Path("pcd-dashboard-cache.json")
 
-response = requests.get(DATA_URL, timeout=60)
-response.raise_for_status()
-payload = response.json()
+def load_dashboard_payload(url, cache_path, timeout=60):
+    try:
+        response = requests.get(url, timeout=timeout)
+        response.raise_for_status()
+        payload = response.json()
+        cache_path.write_text(json.dumps(payload, indent=2))
+        return payload, "live"
+    except Exception as exc:
+        if cache_path.exists():
+            return json.loads(cache_path.read_text()), f"cache (fallback after {exc})"
+        raise
+
+payload, payload_source = load_dashboard_payload(DATA_URL, CACHE_PATH)
 
 companies = pd.DataFrame(payload["companies"])
 prices = payload["prices"]
@@ -550,6 +561,6 @@ plt.close(fig)
 #| output: asis
 print(
     "*Data source: Problem of Points P&C Stocks Monitor (Yahoo Finance via Netlify function), "
-    f"pulled on {payload['generated_at']}.*"
+    f"pulled on {payload['generated_at']} ({payload_source}).*"
 )
 ```
