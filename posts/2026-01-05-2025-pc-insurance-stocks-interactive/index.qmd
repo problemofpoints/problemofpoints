@@ -1,0 +1,452 @@
+---
+title: "2025 P&C (Re)Insurance Stock Returns: Interactive Visualization"
+date: 2026-01-05
+categories: [analysis, insurance, markets, visualization]
+subtitle: "An interactive view of total returns across 52 publicly traded property & casualty insurers"
+draft: false
+freeze: true
+---
+
+The property-casualty (re)insurance sector delivered a strong year in 2025, with the majority of
+tracked stocks posting positive total returns. This interactive visualization provides a
+comprehensive view of performance across the universe of publicly traded P&C insurers.
+
+## 2025 total returns
+
+The chart below displays total returns (price appreciation plus dividends) for 52 P&C (re)insurance
+stocks. Returns are sorted from highest to lowest, with green bars indicating positive returns and
+red bars indicating negative returns.
+
+```{=html}
+<div id="insurance-returns-root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+<script>
+(function() {
+  const { useState, useEffect, createElement: h } = React;
+
+  const data = [
+    { ticker: 'HRTG', return: 141.8 },
+    { ticker: 'LMND', return: 94.1 },
+    { ticker: 'MAP.MC', return: 83.3 },
+    { ticker: 'HCI', return: 66.3 },
+    { ticker: 'UVE', return: 65.3 },
+    { ticker: 'HG', return: 46.6 },
+    { ticker: 'MCY', return: 44.1 },
+    { ticker: 'ALV.DE', return: 37.7 },
+    { ticker: 'ORI', return: 37.5 },
+    { ticker: 'FFH.TO', return: 32.2 },
+    { ticker: 'JRVR', return: 31.6 },
+    { ticker: 'HSX.L', return: 31.4 },
+    { ticker: 'UFCS', return: 30.5 },
+    { ticker: 'SCR.PA', return: 30.1 },
+    { ticker: 'HIG', return: 28.1 },
+    { ticker: 'PLMR', return: 27.6 },
+    { ticker: 'CS.PA', return: 25.7 },
+    { ticker: 'MKL', return: 24.5 },
+    { ticker: 'WRB', return: 23.0 },
+    { ticker: 'TRV', return: 22.4 },
+    { ticker: 'AXS', return: 21.9 },
+    { ticker: 'THG', return: 20.7 },
+    { ticker: 'AIG', return: 20.0 },
+    { ticker: 'MUV2.DE', return: 18.0 },
+    { ticker: 'ZURN.SW', return: 17.6 },
+    { ticker: 'CINF', return: 16.3 },
+    { ticker: 'AIZ', return: 14.7 },
+    { ticker: 'HNR1.DE', return: 13.8 },
+    { ticker: 'CB', return: 13.7 },
+    { ticker: 'RNR', return: 13.6 },
+    { ticker: 'HIPO', return: 12.4 },
+    { ticker: 'IFC.TO', return: 11.2 },
+    { ticker: 'ALL', return: 10.1 },
+    { ticker: 'FIHL', return: 9.4 },
+    { ticker: 'QBE.AX', return: 8.3 },
+    { ticker: 'WTM', return: 6.9 },
+    { ticker: 'SREN.SW', return: 6.8 },
+    { ticker: 'ACGL', return: 3.9 },
+    { ticker: 'BEZ.L', return: 1.9 },
+    { ticker: 'SKWD', return: 1.1 },
+    { ticker: 'ROOT', return: -0.5 },
+    { ticker: 'SAFT', return: -0.8 },
+    { ticker: 'LRE.L', return: -2.6 },
+    { ticker: 'PGR', return: -3.0 },
+    { ticker: 'EG', return: -5.3 },
+    { ticker: 'SIGI', return: -8.8 },
+    { ticker: 'EIG', return: -13.3 },
+    { ticker: 'KNSL', return: -15.8 },
+    { ticker: 'RLI', return: -19.1 },
+    { ticker: 'BOW', return: -19.7 },
+    { ticker: 'AMSF', return: -20.8 },
+    { ticker: 'KMPR', return: -37.5 },
+  ];
+
+  const maxReturn = Math.max(...data.map(d => d.return));
+  const minReturn = Math.min(...data.map(d => d.return));
+  const positiveCount = data.filter(d => d.return >= 0).length;
+  const negativeCount = data.filter(d => d.return < 0).length;
+  const avgReturn = (data.reduce((sum, d) => sum + d.return, 0) / data.length).toFixed(1);
+  const medianReturn = data[Math.floor(data.length / 2)].return;
+
+  function InsuranceReturnsChart() {
+    const [hoveredIndex, setHoveredIndex] = useState(null);
+    const [animated, setAnimated] = useState(false);
+
+    useEffect(() => {
+      const timer = setTimeout(() => setAnimated(true), 100);
+      return () => clearTimeout(timer);
+    }, []);
+
+    const getBarWidth = (value) => {
+      const maxAbsValue = Math.max(Math.abs(maxReturn), Math.abs(minReturn));
+      return (Math.abs(value) / maxAbsValue) * 100;
+    };
+
+    const getBarColor = (value, isHovered) => {
+      if (value >= 0) {
+        return isHovered
+          ? 'linear-gradient(90deg, #10b981 0%, #34d399 100%)'
+          : 'linear-gradient(90deg, #059669 0%, #10b981 100%)';
+      }
+      return isHovered
+        ? 'linear-gradient(90deg, #f87171 0%, #ef4444 100%)'
+        : 'linear-gradient(90deg, #dc2626 0%, #ef4444 100%)';
+    };
+
+    const styles = {
+      container: {
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
+        padding: '40px 20px',
+        fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+        borderRadius: '12px',
+        marginBottom: '24px',
+      },
+      innerContainer: {
+        maxWidth: '1100px',
+        margin: '0 auto',
+      },
+      header: {
+        marginBottom: '32px',
+        textAlign: 'center',
+      },
+      badge: {
+        display: 'inline-block',
+        padding: '6px 16px',
+        background: 'rgba(16, 185, 129, 0.15)',
+        borderRadius: '20px',
+        marginBottom: '16px',
+        border: '1px solid rgba(16, 185, 129, 0.3)',
+      },
+      badgeText: {
+        color: '#10b981',
+        fontSize: '13px',
+        fontWeight: '600',
+        letterSpacing: '0.5px',
+      },
+      title: {
+        fontSize: '36px',
+        fontWeight: '700',
+        color: '#f8fafc',
+        margin: '0 0 8px 0',
+        letterSpacing: '-0.5px',
+      },
+      subtitle: {
+        fontSize: '16px',
+        color: '#94a3b8',
+        margin: 0,
+      },
+      statsGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '16px',
+        marginBottom: '32px',
+      },
+      statCard: {
+        background: 'rgba(255,255,255,0.03)',
+        backdropFilter: 'blur(10px)',
+        borderRadius: '16px',
+        padding: '20px',
+        border: '1px solid rgba(255,255,255,0.08)',
+      },
+      statLabel: {
+        fontSize: '12px',
+        color: '#64748b',
+        fontWeight: '500',
+        marginBottom: '8px',
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px',
+      },
+      statSublabel: {
+        fontSize: '13px',
+        color: '#94a3b8',
+        marginTop: '4px',
+      },
+      distribution: {
+        display: 'flex',
+        gap: '24px',
+        marginBottom: '24px',
+        padding: '16px 20px',
+        background: 'rgba(255,255,255,0.02)',
+        borderRadius: '12px',
+        border: '1px solid rgba(255,255,255,0.06)',
+        flexWrap: 'wrap',
+      },
+      distributionItem: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+      },
+      chartContainer: {
+        background: 'rgba(255,255,255,0.02)',
+        borderRadius: '20px',
+        border: '1px solid rgba(255,255,255,0.06)',
+        overflow: 'hidden',
+      },
+      chartHeader: {
+        display: 'grid',
+        gridTemplateColumns: '80px 1fr 90px',
+        padding: '16px 24px',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        background: 'rgba(255,255,255,0.02)',
+      },
+      chartHeaderText: {
+        fontSize: '11px',
+        fontWeight: '600',
+        color: '#64748b',
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px',
+      },
+      chartBody: {
+        maxHeight: '800px',
+        overflowY: 'auto',
+      },
+      footer: {
+        marginTop: '24px',
+        textAlign: 'center',
+        color: '#475569',
+        fontSize: '12px',
+      },
+    };
+
+    const stats = [
+      { label: 'Top Performer', value: '+' + maxReturn + '%', sublabel: 'HRTG', color: '#10b981' },
+      { label: 'Average Return', value: '+' + avgReturn + '%', sublabel: 'Sector Mean', color: '#60a5fa' },
+      { label: 'Median Return', value: '+' + medianReturn + '%', sublabel: 'Mid-point', color: '#a78bfa' },
+      { label: 'Worst Performer', value: minReturn + '%', sublabel: 'KMPR', color: '#ef4444' },
+    ];
+
+    return h('div', { style: styles.container },
+      h('style', null, `
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
+
+        .chart-row:hover { background: rgba(255,255,255,0.03); }
+        .bar { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .bar:hover { filter: brightness(1.15); box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+        .bar.negative:hover { box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+
+        @keyframes slideIn {
+          from { opacity: 0; transform: scaleX(0); }
+          to { opacity: 1; transform: scaleX(1); }
+        }
+
+        .animated-bar {
+          animation: slideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+          transform-origin: left center;
+        }
+        .animated-bar.negative { transform-origin: right center; }
+
+        #insurance-returns-root ::-webkit-scrollbar { width: 8px; }
+        #insurance-returns-root ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 4px; }
+        #insurance-returns-root ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        #insurance-returns-root ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+
+        @media (max-width: 768px) {
+          #insurance-returns-root .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+      `),
+      h('div', { style: styles.innerContainer },
+        // Header
+        h('div', { style: styles.header },
+          h('div', { style: styles.badge },
+            h('span', { style: styles.badgeText }, '2025 PERFORMANCE REVIEW')
+          ),
+          h('h1', { style: styles.title }, 'P&C (Re)Insurance Stock Returns'),
+          h('p', { style: styles.subtitle }, 'Total returns across ' + data.length + ' publicly traded property & casualty insurers')
+        ),
+
+        // Stats Cards
+        h('div', { style: styles.statsGrid, className: 'stats-grid' },
+          stats.map((stat, i) =>
+            h('div', { key: i, className: 'stat-card', style: { ...styles.statCard, transition: 'transform 0.2s ease, box-shadow 0.2s ease' } },
+              h('div', { style: styles.statLabel }, stat.label),
+              h('div', { style: { fontSize: '28px', fontWeight: '700', color: stat.color, fontFamily: "'JetBrains Mono', monospace" } }, stat.value),
+              h('div', { style: styles.statSublabel }, stat.sublabel)
+            )
+          )
+        ),
+
+        // Distribution Summary
+        h('div', { style: styles.distribution },
+          h('div', { style: styles.distributionItem },
+            h('div', { style: { width: '12px', height: '12px', borderRadius: '3px', background: 'linear-gradient(135deg, #059669, #10b981)' } }),
+            h('span', { style: { color: '#94a3b8', fontSize: '14px' } },
+              h('strong', { style: { color: '#10b981' } }, positiveCount),
+              ' stocks with positive returns'
+            )
+          ),
+          h('div', { style: styles.distributionItem },
+            h('div', { style: { width: '12px', height: '12px', borderRadius: '3px', background: 'linear-gradient(135deg, #dc2626, #ef4444)' } }),
+            h('span', { style: { color: '#94a3b8', fontSize: '14px' } },
+              h('strong', { style: { color: '#ef4444' } }, negativeCount),
+              ' stocks with negative returns'
+            )
+          )
+        ),
+
+        // Chart
+        h('div', { style: styles.chartContainer },
+          // Chart Header
+          h('div', { style: styles.chartHeader },
+            h('div', { style: styles.chartHeaderText }, 'Ticker'),
+            h('div', { style: { ...styles.chartHeaderText, textAlign: 'center' } }, 'Performance'),
+            h('div', { style: { ...styles.chartHeaderText, textAlign: 'right' } }, 'Return')
+          ),
+
+          // Chart Body
+          h('div', { style: styles.chartBody },
+            data.map((item, index) => {
+              const isPositive = item.return >= 0;
+              const isHovered = hoveredIndex === index;
+              const barWidth = getBarWidth(item.return);
+
+              return h('div', {
+                key: item.ticker,
+                className: 'chart-row',
+                style: {
+                  display: 'grid',
+                  gridTemplateColumns: '80px 1fr 90px',
+                  padding: '10px 24px',
+                  alignItems: 'center',
+                  borderBottom: '1px solid rgba(255,255,255,0.03)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                },
+                onMouseEnter: () => setHoveredIndex(index),
+                onMouseLeave: () => setHoveredIndex(null),
+              },
+                // Ticker
+                h('div', {
+                  style: {
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    color: isHovered ? '#f8fafc' : '#cbd5e1',
+                  }
+                }, item.ticker),
+
+                // Bar Container
+                h('div', {
+                  style: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: isPositive ? 'flex-start' : 'flex-end',
+                    padding: '0 20px',
+                    position: 'relative',
+                  }
+                },
+                  // Center line
+                  h('div', {
+                    style: {
+                      position: 'absolute',
+                      left: '50%',
+                      top: 0,
+                      bottom: 0,
+                      width: '1px',
+                      background: 'rgba(255,255,255,0.1)',
+                    }
+                  }),
+                  // Bar
+                  h('div', {
+                    style: {
+                      position: 'relative',
+                      width: '50%',
+                      display: 'flex',
+                      justifyContent: isPositive ? 'flex-start' : 'flex-end',
+                      marginLeft: isPositive ? '50%' : 0,
+                      marginRight: isPositive ? 0 : '50%',
+                    }
+                  },
+                    h('div', {
+                      className: 'bar ' + (animated ? 'animated-bar' : '') + (!isPositive ? ' negative' : ''),
+                      style: {
+                        width: animated ? barWidth + '%' : '0%',
+                        height: '24px',
+                        background: getBarColor(item.return, isHovered),
+                        borderRadius: isPositive ? '0 6px 6px 0' : '6px 0 0 6px',
+                        animationDelay: (index * 20) + 'ms',
+                        boxShadow: isHovered
+                          ? '0 4px 15px ' + (isPositive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)')
+                          : 'none',
+                      }
+                    })
+                  )
+                ),
+
+                // Return Value
+                h('div', {
+                  style: {
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: isPositive ? '#10b981' : '#ef4444',
+                    textAlign: 'right',
+                  }
+                }, (isPositive ? '+' : '') + item.return.toFixed(1) + '%')
+              );
+            })
+          )
+        ),
+
+        // Footer
+        h('div', { style: styles.footer },
+          'Data reflects total returns (price appreciation + dividends) for the 2025 calendar year'
+        )
+      )
+    );
+  }
+
+  const root = ReactDOM.createRoot(document.getElementById('insurance-returns-root'));
+  root.render(h(InsuranceReturnsChart));
+})();
+</script>
+```
+
+## Key observations
+
+**Top performers**: Heritage Insurance Holdings (HRTG) led the pack with an extraordinary +141.8%
+return, followed by insurtech Lemonade (LMND) at +94.1% and Spain's Mapfre (MAP.MC) at +83.3%. The
+top performers were dominated by personal lines carriers that successfully navigated rate increases
+and improved underwriting results.
+
+**Sector breadth**: Of the 52 stocks tracked, 40 (77%) posted positive returns while only 12 (23%)
+finished the year in negative territory. This broad participation suggests favorable conditions
+across the P&C sector.
+
+**Bottom performers**: Kemper Corp (KMPR) was the worst performer at -37.5%, followed by AMERISAFE
+(AMSF) at -20.8% and Bowhead Specialty (BOW) at -19.7%. Several specialty carriers faced headwinds
+from loss cost inflation and competitive pressures.
+
+**Market leaders**: Major insurers like Travelers (TRV), Chubb (CB), and AIG all posted solid
+double-digit returns, demonstrating that scale and diversification continued to be rewarded by
+investors.
+
+## Methodology
+
+Returns are calculated as total returns including price appreciation and dividends reinvested. Data
+is sourced from adjusted closing prices for the period from December 31, 2024 through December 31,
+2025.
+
+*For a more detailed analysis including segment breakdowns, valuation metrics, and price-to-book
+trends, see the [full 2025 P&C Stock Performance Review](/posts/2026-01-02-2025-pc-stock-performance/).*
