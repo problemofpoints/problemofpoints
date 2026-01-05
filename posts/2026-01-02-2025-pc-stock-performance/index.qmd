@@ -183,6 +183,18 @@ axes[0].set_title("Top 10 P&C (Re)Insurance Stocks in 2025")
 axes[0].set_xlabel("Total return (%)")
 axes[0].set_ylabel("")
 axes[0].legend_.remove()
+for bar in axes[0].patches:
+    value = bar.get_width()
+    y_pos = bar.get_y() + bar.get_height() / 2
+    axes[0].text(
+        value + 0.6,
+        y_pos,
+        f"{value:.1f}%",
+        va="center",
+        ha="left",
+        fontsize=9,
+        color="#0f172a",
+    )
 
 sns.barplot(
     data=laggards,
@@ -197,6 +209,18 @@ axes[1].set_title("Bottom 10 P&C (Re)Insurance Stocks in 2025")
 axes[1].set_xlabel("Total return (%)")
 axes[1].set_ylabel("")
 axes[1].legend_.remove()
+for bar in axes[1].patches:
+    value = bar.get_width()
+    y_pos = bar.get_y() + bar.get_height() / 2
+    axes[1].text(
+        value - 0.6,
+        y_pos,
+        f"{value:.1f}%",
+        va="center",
+        ha="right",
+        fontsize=9,
+        color="#0f172a",
+    )
 
 plot_path = Path("leaderboard-2025.png")
 fig.savefig(plot_path, dpi=200)
@@ -207,13 +231,15 @@ plt.close(fig)
 
 ```{python}
 #| results: asis
+from IPython.display import HTML
+
 leaders_table = leaders.rename(columns={
     "ticker": "Ticker",
     "name": "Company",
     "segment": "Segment",
     "return_2025": "2025 Return (%)",
 })
-print(leaders_table.to_html(index=False, classes="table table-striped table-hover"))
+HTML(leaders_table.to_html(index=False, classes="table table-striped table-hover"))
 ```
 
 ```{python}
@@ -224,7 +250,7 @@ laggards_table = laggards.rename(columns={
     "segment": "Segment",
     "return_2025": "2025 Return (%)",
 })
-print(laggards_table.to_html(index=False, classes="table table-striped table-hover"))
+HTML(laggards_table.to_html(index=False, classes="table table-striped table-hover"))
 ```
 
 **Key takeaways**
@@ -296,7 +322,7 @@ segment_table = segment_summary.rename(columns={
     "market_cap_weighted_return": "Market Cap-weighted Return (%)",
     "coverage": "Tickers",
 })
-print(segment_table.to_html(index=False, classes="table table-striped table-hover"))
+HTML(segment_table.to_html(index=False, classes="table table-striped table-hover"))
 ```
 
 ```{python}
@@ -309,10 +335,13 @@ colors = np.where(all_tickers["return_pct"] >= 0, "#16a34a", "#dc2626")
 
 bars = ax.barh(all_tickers["ticker"], all_tickers["return_pct"], color=colors)
 ax.axvline(0, color="#334155", linewidth=1)
-ax.set_xlabel("Total return (%)")
-ax.set_title("2025 Total Returns by Ticker (All P&C (Re)Insurance Stocks)")
+ax.set_xlabel("Total return (%)", fontsize=12)
+ax.set_title("2025 Total Returns by Ticker (All P&C (Re)Insurance Stocks)", fontsize=14)
 ax.invert_yaxis()
 ax.margins(x=0.1)
+ax.grid(False)
+ax.tick_params(axis="y", labelsize=10)
+ax.tick_params(axis="x", labelsize=10)
 
 for bar in bars:
     value = bar.get_width()
@@ -325,7 +354,7 @@ for bar in bars:
         f"{value:.1f}%",
         va="center",
         ha=align,
-        fontsize=8,
+        fontsize=9,
         color="#0f172a",
     )
 
