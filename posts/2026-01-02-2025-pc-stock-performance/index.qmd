@@ -20,16 +20,137 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import requests
+import yfinance as yf
+from datetime import datetime, timezone
 
 sns.set_theme(style="whitegrid")
 
 DATA_URL = "https://www.problemofpoints.com/.netlify/functions/pcd-dashboard"
 CACHE_PATH = Path("pcd-dashboard-cache.json")
+TICKERS = [
+    "AIG",
+    "AIZ",
+    "ALL",
+    "ACGL",
+    "AMSF",
+    "AXS",
+    "CB",
+    "CS.PA",
+    "CINF",
+    "EG",
+    "EIG",
+    "FFH.TO",
+    "FIHL",
+    "HNR1.DE",
+    "HCI",
+    "HG",
+    "HIPO",
+    "HRTG",
+    "HIG",
+    "HSX.L",
+    "IFC.TO",
+    "JRVR",
+    "KMPR",
+    "KNSL",
+    "LRE.L",
+    "LMND",
+    "MCY",
+    "MKL",
+    "MUV2.DE",
+    "ALV.DE",
+    "MAP.MC",
+    "ORI",
+    "PGR",
+    "PLMR",
+    "QBE.AX",
+    "RLI",
+    "RNR",
+    "ROOT",
+    "SCR.PA",
+    "SAFT",
+    "SKWD",
+    "SIGI",
+    "THG",
+    "TRV",
+    "SREN.SW",
+    "UFCS",
+    "UVE",
+    "UIHC",
+    "WRB",
+    "WTM",
+    "ZURN.SW",
+    "BEZ.L",
+    "BOW",
+]
+
+def build_payload_from_yfinance(tickers):
+    companies_data = []
+    prices_data = {}
+    errors = []
+    last_trade_date = None
+
+    for ticker in tickers:
+        try:
+            yf_ticker = yf.Ticker(ticker)
+            history = yf_ticker.history(start="2024-01-01", end="2026-01-01", auto_adjust=False)
+            if history.empty:
+                errors.append({"ticker": ticker, "message": "No price history from yfinance"})
+                continue
+
+            history = history.reset_index()
+            history["Date"] = pd.to_datetime(history["Date"]).dt.tz_localize(None)
+            last_date = history["Date"].max()
+            last_trade_date = (
+                last_date.strftime("%Y-%m-%d")
+                if last_trade_date is None or last_date.strftime("%Y-%m-%d") > last_trade_date
+                else last_trade_date
+            )
+
+            prices_data[ticker] = [
+                {
+                    "date": row["Date"].strftime("%Y-%m-%d"),
+                    "adj_close": row.get("Adj Close", row.get("Close")),
+                    "close": row.get("Close"),
+                }
+                for _, row in history.iterrows()
+            ]
+
+            info = yf_ticker.info or {}
+            companies_data.append({
+                "ticker": ticker,
+                "name": info.get("longName") or info.get("shortName") or ticker,
+                "market_cap": info.get("marketCap"),
+                "pb_ratio": info.get("priceToBook"),
+                "last_price": info.get("regularMarketPrice"),
+            })
+        except Exception as exc:
+            errors.append({"ticker": ticker, "message": str(exc)})
+
+    payload = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "last_trade_date": last_trade_date,
+        "companies": companies_data,
+        "prices": prices_data,
+        "benchmarks": [],
+        "aggregates": {
+            "coverage": len(companies_data),
+            "totalMarketCap": sum(
+                company.get("market_cap", 0) or 0 for company in companies_data
+            ),
+            "avgBeta": None,
+            "advancers": 0,
+            "decliners": 0,
+            "breadth1d": None,
+            "above200Count": 0,
+            "above200Ratio": None,
+        },
+        "errors": errors,
+    }
+    return payload
 
 def load_dashboard_payload(url, cache_path, timeout=60):
     try:
         response = requests.get(url, timeout=timeout)
-        response.raise_for_status()
         payload = response.json()
         if not payload.get("companies"):
             raise ValueError("Dashboard returned empty company data.")
@@ -38,7 +159,9 @@ def load_dashboard_payload(url, cache_path, timeout=60):
     except Exception as exc:
         if cache_path.exists():
             return json.loads(cache_path.read_text()), f"cache (fallback after {exc})"
-        raise
+        payload = build_payload_from_yfinance(TICKERS)
+        cache_path.write_text(json.dumps(payload, indent=2))
+        return payload, f"yfinance fallback ({exc})"
 
 payload, payload_source = load_dashboard_payload(DATA_URL, CACHE_PATH)
 
