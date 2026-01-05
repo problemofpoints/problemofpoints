@@ -31,6 +31,8 @@ def load_dashboard_payload(url, cache_path, timeout=60):
         response = requests.get(url, timeout=timeout)
         response.raise_for_status()
         payload = response.json()
+        if not payload.get("companies"):
+            raise ValueError("Dashboard returned empty company data.")
         cache_path.write_text(json.dumps(payload, indent=2))
         return payload, "live"
     except Exception as exc:
