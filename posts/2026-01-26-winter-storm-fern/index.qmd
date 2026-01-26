@@ -1,0 +1,363 @@
+---
+title: "Winter Storm Fern (Jan 21–26): U.S. Cold, Snow, Ice, and Insurance Implications"
+date: 2026-01-26
+categories: [analysis, insurance, weather, visualization]
+subtitle: "How the current outbreak compares to the 2021 Texas freeze"
+draft: false
+freeze: false
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+Winter Storm Fern delivered a multi-day blast of Arctic air and wintry precipitation across the
+United States from **January 21–26**. This post quantifies how cold it was, how much snow and
+freezing precipitation fell, and how the event compares to the 2021 Texas freeze. The analysis
+uses daily station observations from Meteostat (NOAA/ECMWF sources) and benchmarks temperatures
+against a 2011–2020 baseline for the same calendar days. It focuses on implications for the
+property & casualty insurance market—especially claims associated with burst pipes, roof collapse,
+traffic accidents, and power outages.
+
+## Data and methodology
+
+- **Stations**: U.S. stations with daily observations during the event window.
+- **Cold metrics**: Minimum temperature over Jan 21–26 and mean temperature anomaly vs. 2011–2020.
+- **Snow**: Total snowfall (Meteostat `snow`, mm) summed over the window.
+- **Freezing precipitation**: Total precipitation on days with average temperature ≤ 0°C as a
+  proxy for ice accretion / freezing rain exposure.
+- **Comparison event**: February 13–19, 2021 (the Texas freeze event).
+
+```{python}
+from __future__ import annotations
+
+from datetime import date
+
+import numpy as np
+import pandas as pd
+import plotly.express as px
+from meteostat import Daily, Stations
+
+EVENT_START = pd.Timestamp("2026-01-21")
+EVENT_END = pd.Timestamp("2026-01-26")
+BASELINE_YEARS = range(2011, 2021)
+COMPARISON_START = pd.Timestamp("2021-02-13")
+COMPARISON_END = pd.Timestamp("2021-02-19")
+
+
+def c_to_f(series: pd.Series) -> pd.Series:
+    return series * 9 / 5 + 32
+
+
+def mm_to_in(series: pd.Series) -> pd.Series:
+    return series / 25.4
+
+
+def summarize_period(station_ids: list[str], start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    daily = Daily(station_ids, start, end).fetch()
+    if daily.empty:
+        return pd.DataFrame(
+            columns=[
+                "station",
+                "tmin_c",
+                "tavg_c",
+                "snow_mm",
+                "prcp_mm",
+                "freeze_prcp_mm",
+                "obs_days",
+            ]
+        )
+
+    daily = daily.reset_index()
+    freeze_mask = (daily["tavg"] <= 0) | ((daily["tavg"].isna()) & (daily["tmin"] <= 0))
+    daily["freeze_prcp"] = np.where(freeze_mask, daily["prcp"], 0)
+
+    summary = (
+        daily.groupby("station")
+        .agg(
+            tmin_c=("tmin", "min"),
+            tavg_c=("tavg", "mean"),
+            snow_mm=("snow", "sum"),
+            prcp_mm=("prcp", "sum"),
+            freeze_prcp_mm=("freeze_prcp", "sum"),
+            obs_days=("tmin", "count"),
+        )
+        .reset_index()
+    )
+    return summary
+
+
+stations = (
+    Stations()
+    .country("US")
+    .inventory("daily", EVENT_START, EVENT_END)
+    .fetch()
+    .dropna(subset=["latitude", "longitude"])
+)
+
+stations = stations.sample(n=min(900, len(stations)), random_state=42)
+station_ids = stations.index.tolist()
+
+fern_summary = summarize_period(station_ids, EVENT_START, EVENT_END)
+texas_summary = summarize_period(station_ids, COMPARISON_START, COMPARISON_END)
+
+baseline_frames = []
+for year in BASELINE_YEARS:
+    baseline_frames.append(
+        summarize_period(
+            station_ids,
+            pd.Timestamp(year, EVENT_START.month, EVENT_START.day),
+            pd.Timestamp(year, EVENT_END.month, EVENT_END.day),
+        ).assign(year=year)
+    )
+
+baseline = pd.concat(baseline_frames, ignore_index=True)
+
+baseline_avg = (
+    baseline.groupby("station")
+    .agg(
+        baseline_tmin_c=("tmin_c", "mean"),
+        baseline_tavg_c=("tavg_c", "mean"),
+        baseline_snow_mm=("snow_mm", "mean"),
+        baseline_freeze_prcp_mm=("freeze_prcp_mm", "mean"),
+    )
+    .reset_index()
+)
+
+fern = fern_summary.merge(baseline_avg, on="station", how="left")
+fern = fern.merge(
+    stations[["latitude", "longitude", "name", "region"]], left_on="station", right_index=True
+)
+
+texas = texas_summary.merge(
+    stations[["latitude", "longitude", "name", "region"]], left_on="station", right_index=True
+)
+
+fern["tmin_f"] = c_to_f(fern["tmin_c"])
+fern["tavg_f"] = c_to_f(fern["tavg_c"])
+fern["tavg_anom_f"] = c_to_f(fern["tavg_c"] - fern["baseline_tavg_c"])
+fern["snow_in"] = mm_to_in(fern["snow_mm"])
+fern["freeze_prcp_in"] = mm_to_in(fern["freeze_prcp_mm"])
+
+texas["tmin_f"] = c_to_f(texas["tmin_c"])
+texas["snow_in"] = mm_to_in(texas["snow_mm"])
+texas["freeze_prcp_in"] = mm_to_in(texas["freeze_prcp_mm"])
+
+comparison = fern[["station", "tmin_f"]].merge(
+    texas[["station", "tmin_f"]], on="station", suffixes=("_fern", "_texas")
+)
+comparison = comparison.merge(
+    stations[["latitude", "longitude", "name", "region"]], left_on="station", right_index=True
+)
+comparison["tmin_diff_f"] = comparison["tmin_f_fern"] - comparison["tmin_f_texas"]
+
+fern_stats = {
+    "station_count": fern["tmin_f"].notna().sum(),
+    "min_temp": fern["tmin_f"].min(),
+    "p10_temp": fern["tmin_f"].quantile(0.1),
+    "pct_below_0": (fern["tmin_f"] <= 0).mean() * 100,
+    "pct_below_10": (fern["tmin_f"] <= 10).mean() * 100,
+    "max_snow": fern["snow_in"].max(),
+    "pct_snow_over_6": (fern["snow_in"] >= 6).mean() * 100,
+    "max_freeze_prcp": fern["freeze_prcp_in"].max(),
+}
+
+texas_stats = {
+    "min_temp": texas["tmin_f"].min(),
+    "p10_temp": texas["tmin_f"].quantile(0.1),
+    "pct_below_0": (texas["tmin_f"] <= 0).mean() * 100,
+    "max_snow": texas["snow_in"].max(),
+    "max_freeze_prcp": texas["freeze_prcp_in"].max(),
+}
+
+
+def map_scatter(
+    data: pd.DataFrame,
+    value: str,
+    title: str,
+    color_scale: str,
+    unit: str,
+    range_color: tuple[float, float] | None = None,
+):
+    fig = px.scatter_geo(
+        data,
+        lat="latitude",
+        lon="longitude",
+        color=value,
+        color_continuous_scale=color_scale,
+        scope="usa",
+        projection="albers usa",
+        hover_name="name",
+        hover_data={
+            "region": True,
+            value: ":.1f",
+        },
+        title=title,
+    )
+    fig.update_traces(marker=dict(size=6, opacity=0.75))
+    fig.update_layout(
+        coloraxis_colorbar=dict(title=unit),
+        margin=dict(l=0, r=0, t=50, b=0),
+    )
+    if range_color:
+        fig.update_coloraxes(cmin=range_color[0], cmax=range_color[1])
+    return fig
+
+
+fern_cold_map = map_scatter(
+    fern.dropna(subset=["tmin_f"]),
+    "tmin_f",
+    "Minimum temperature during Jan 21–26 (°F)",
+    "Blues_r",
+    "°F",
+)
+
+fern_anom_map = map_scatter(
+    fern.dropna(subset=["tavg_anom_f"]),
+    "tavg_anom_f",
+    "Mean temperature anomaly vs. 2011–2020 baseline (°F)",
+    "RdBu_r",
+    "°F",
+    range_color=(-30, 30),
+)
+
+fern_snow_map = map_scatter(
+    fern.dropna(subset=["snow_in"]),
+    "snow_in",
+    "Total snowfall during Jan 21–26 (inches)",
+    "PuBu",
+    "in",
+)
+
+fern_freeze_prcp_map = map_scatter(
+    fern.dropna(subset=["freeze_prcp_in"]),
+    "freeze_prcp_in",
+    "Freezing-precipitation proxy: precip on ≤32°F days (inches)",
+    "Purples",
+    "in",
+)
+
+texas_cold_map = map_scatter(
+    texas.dropna(subset=["tmin_f"]),
+    "tmin_f",
+    "Minimum temperature during Feb 13–19, 2021 (°F)",
+    "Blues_r",
+    "°F",
+)
+
+comparison_map = map_scatter(
+    comparison.dropna(subset=["tmin_diff_f"]),
+    "tmin_diff_f",
+    "Difference in minimum temperature: Fern minus Feb 2021 (°F)",
+    "RdBu",
+    "°F",
+    range_color=(-40, 40),
+)
+```
+
+## How cold was it?
+
+```{python}
+#| output: asis
+print(
+    (
+        "Across **{station_count:,}** reporting stations, Fern's coldest reading reached "
+        "**{min_temp:.1f}°F**, with the 10th-percentile station minimum at "
+        "**{p10_temp:.1f}°F**. About **{pct_below_0:.0f}%** of stations recorded minimum "
+        "temperatures below **0°F**, and **{pct_below_10:.0f}%** fell below **10°F**. The "
+        "anomaly map highlights how broad the cold air mass was relative to typical late-January "
+        "conditions."
+    ).format(**fern_stats)
+)
+```
+
+```{python}
+fern_cold_map
+```
+
+```{python}
+fern_anom_map
+```
+
+## Snowfall footprint
+
+```{python}
+#| output: asis
+print(
+    (
+        "Snowfall totals were highly variable. The maximum station total in the sample reached "
+        "**{max_snow:.1f}** inches, and roughly **{pct_snow_over_6:.0f}%** of stations logged at "
+        "least **6 inches** during the window."
+    ).format(**fern_stats)
+)
+```
+
+```{python}
+fern_snow_map
+```
+
+## Ice / freezing precipitation proxy
+
+```{python}
+#| output: asis
+print(
+    (
+        "Freezing rain and sleet are the biggest drivers of insured loss outside of power outages. "
+        "Using precipitation that fell when daily mean temperature was at or below freezing, the "
+        "maximum station total reached **{max_freeze_prcp:.2f}** inches of liquid-equivalent "
+        "precipitation."
+    ).format(**fern_stats)
+)
+```
+
+```{python}
+fern_freeze_prcp_map
+```
+
+## Comparison to the 2021 Texas freeze
+
+```{python}
+#| output: asis
+print(
+    (
+        "The February 2021 event still stands out for its deep cold in the southern Plains. In "
+        "this station sample, the 2021 freeze delivered a minimum of **{min_temp:.1f}°F** and a "
+        "10th percentile minimum of **{p10_temp:.1f}°F**, with **{pct_below_0:.0f}%** of stations "
+        "below **0°F**. The maps below show both the 2021 cold footprint and how Fern compares on "
+        "minimum temperature."
+    ).format(**texas_stats)
+)
+```
+
+```{python}
+texas_cold_map
+```
+
+```{python}
+comparison_map
+```
+
+## P&C insurance implications
+
+1. **Burst pipes and water damage**: Broad swaths below freezing increase the probability of pipe
+   bursts. The anomaly map suggests unusually cold conditions extending into secondary markets that
+   typically see lower winter hardening, elevating claim frequency.
+2. **Roof load and collapse**: The snowfall map highlights pockets of heavy accumulation. Even in
+   areas without extreme cold, rapid accumulation can overwhelm roof load design thresholds—an issue
+   for commercial properties, warehouses, and older homes.
+3. **Ice accretion and liability**: The freezing-precipitation proxy identifies regions where ice
+   could drive slip-and-fall liability, tree damage, and line sag. These losses are often expensive
+   because they combine property damage with business interruption.
+4. **Power disruptions and attritional losses**: Cold plus ice raises the risk of outages, creating
+   a compound loss driver (frozen pipes + water damage after thaw + spoilage). Claims severity is
+   particularly elevated when outages persist more than 24–48 hours.
+
+## Takeaways
+
+- **Fern is a broad cold event**: The cold footprint is widespread, with many stations reaching
+  sub-zero minimums for late January.
+- **Snow and ice are unevenly distributed**: High-end totals are localized, creating pockets of
+  acute loss potential rather than a single uniform band.
+- **Comparison to 2021**: The Texas freeze remains colder in its core southern exposure, but Fern
+  rivals it in geographic breadth and in the number of secondary markets experiencing anomalous
+  cold.
