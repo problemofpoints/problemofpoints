@@ -36,7 +36,8 @@ from datetime import date
 import numpy as np
 import pandas as pd
 import plotly.express as px
-from meteostat import Daily, Stations
+from meteostat import Stations
+from meteostat.daily import Daily
 
 EVENT_START = pd.Timestamp("2026-01-21")
 EVENT_END = pd.Timestamp("2026-01-26")
