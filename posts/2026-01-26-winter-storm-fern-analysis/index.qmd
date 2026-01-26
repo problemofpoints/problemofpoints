@@ -1,0 +1,1074 @@
+---
+title: "Winter Storm Fern: Analyzing the Historic January 2026 Freeze"
+date: 2026-01-26
+categories: [analysis, severe-weather, insurance, visualization]
+subtitle: "A comprehensive analysis of the multi-billion dollar winter storm and comparison to the 2021 Texas Freeze"
+draft: false
+freeze: true
+---
+
+Winter Storm Fern—unofficially named by The Weather Channel—is delivering one of the most widespread winter weather events in U.S. history. Spanning over 2,000 miles from the Texas-Mexico border to Maine, the storm has prompted emergency declarations in 24 states and placed over 230 million Americans under winter weather alerts. This interactive analysis examines the meteorological impact and insurance implications of this potentially historic event.
+
+## Storm overview
+
+Winter Storm Fern originated from an elongated polar vortex that pushed Arctic air deep into the continental United States. The cold air mass interacted with Gulf of Mexico moisture to produce a dangerous combination of heavy snow, freezing rain, and ice accumulation across a massive swath of the country. Early estimates suggest this could become a **billion-dollar insured loss event**, though final tallies will take weeks to emerge.
+
+```{=html}
+<div id="winter-storm-root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+<script>
+(function() {
+  const { useState, useEffect, useRef, createElement: h } = React;
+
+  // US State paths for SVG map (simplified paths for continental US)
+  const statePaths = {
+    'AL': { d: 'M628,396 L631,442 L633,467 L605,470 L602,456 L589,455 L589,391 L628,388 Z', name: 'Alabama' },
+    'AZ': { d: 'M205,340 L270,350 L260,420 L245,445 L175,435 L175,340 Z', name: 'Arizona' },
+    'AR': { d: 'M520,380 L585,378 L588,390 L588,435 L520,438 L515,395 Z', name: 'Arkansas' },
+    'CA': { d: 'M120,240 L175,250 L185,340 L175,435 L140,430 L95,350 L95,280 Z', name: 'California' },
+    'CO': { d: 'M280,280 L370,285 L370,345 L280,340 Z', name: 'Colorado' },
+    'CT': { d: 'M795,205 L820,200 L822,218 L798,225 Z', name: 'Connecticut' },
+    'DE': { d: 'M765,265 L775,260 L778,285 L765,290 Z', name: 'Delaware' },
+    'FL': { d: 'M635,470 L695,465 L730,520 L700,565 L660,540 L635,505 L620,475 Z', name: 'Florida' },
+    'GA': { d: 'M635,395 L690,390 L695,465 L635,470 L630,445 Z', name: 'Georgia' },
+    'ID': { d: 'M195,120 L240,130 L235,220 L195,215 L180,180 Z', name: 'Idaho' },
+    'IL': { d: 'M570,250 L600,248 L610,330 L585,375 L555,375 L555,290 Z', name: 'Illinois' },
+    'IN': { d: 'M605,255 L640,252 L645,340 L605,345 L600,290 Z', name: 'Indiana' },
+    'IA': { d: 'M490,230 L560,225 L565,280 L490,285 Z', name: 'Iowa' },
+    'KS': { d: 'M375,295 L470,290 L475,350 L375,355 Z', name: 'Kansas' },
+    'KY': { d: 'M590,330 L680,315 L690,345 L615,365 L590,360 Z', name: 'Kentucky' },
+    'LA': { d: 'M520,445 L580,440 L590,500 L550,510 L515,495 Z', name: 'Louisiana' },
+    'ME': { d: 'M820,100 L850,90 L855,165 L820,180 L815,140 Z', name: 'Maine' },
+    'MD': { d: 'M720,275 L765,265 L770,295 L725,305 Z', name: 'Maryland' },
+    'MA': { d: 'M800,185 L840,178 L842,198 L802,205 Z', name: 'Massachusetts' },
+    'MI': { d: 'M580,150 L635,145 L650,220 L600,240 L575,215 Z', name: 'Michigan' },
+    'MN': { d: 'M480,120 L545,115 L555,200 L485,205 Z', name: 'Minnesota' },
+    'MS': { d: 'M570,395 L600,392 L605,470 L570,473 Z', name: 'Mississippi' },
+    'MO': { d: 'M490,295 L565,290 L575,370 L490,375 Z', name: 'Missouri' },
+    'MT': { d: 'M220,95 L330,100 L330,170 L220,165 Z', name: 'Montana' },
+    'NE': { d: 'M355,235 L460,230 L465,285 L355,290 Z', name: 'Nebraska' },
+    'NV': { d: 'M150,200 L200,210 L195,330 L145,320 Z', name: 'Nevada' },
+    'NH': { d: 'M805,140 L820,135 L822,180 L805,185 Z', name: 'New Hampshire' },
+    'NJ': { d: 'M770,230 L785,225 L790,275 L772,280 Z', name: 'New Jersey' },
+    'NM': { d: 'M270,355 L350,360 L345,450 L265,445 Z', name: 'New Mexico' },
+    'NY': { d: 'M720,175 L795,160 L800,215 L730,235 L715,210 Z', name: 'New York' },
+    'NC': { d: 'M690,345 L780,330 L785,365 L695,380 Z', name: 'North Carolina' },
+    'ND': { d: 'M355,115 L450,110 L455,170 L355,175 Z', name: 'North Dakota' },
+    'OH': { d: 'M645,255 L700,245 L705,310 L650,325 Z', name: 'Ohio' },
+    'OK': { d: 'M375,360 L470,355 L480,400 L400,420 L375,395 Z', name: 'Oklahoma' },
+    'OR': { d: 'M105,135 L190,145 L195,215 L100,205 Z', name: 'Oregon' },
+    'PA': { d: 'M700,220 L770,210 L775,260 L705,275 Z', name: 'Pennsylvania' },
+    'RI': { d: 'M810,200 L822,198 L823,215 L812,218 Z', name: 'Rhode Island' },
+    'SC': { d: 'M690,380 L745,365 L750,410 L700,420 Z', name: 'South Carolina' },
+    'SD': { d: 'M360,175 L455,170 L460,230 L360,235 Z', name: 'South Dakota' },
+    'TN': { d: 'M580,360 L690,345 L695,380 L585,395 Z', name: 'Tennessee' },
+    'TX': { d: 'M315,390 L400,420 L480,405 L515,445 L510,520 L420,545 L340,510 L280,450 L290,400 Z', name: 'Texas' },
+    'UT': { d: 'M225,220 L280,225 L280,320 L225,315 Z', name: 'Utah' },
+    'VT': { d: 'M790,135 L805,132 L807,180 L792,183 Z', name: 'Vermont' },
+    'VA': { d: 'M695,300 L770,285 L780,325 L700,345 Z', name: 'Virginia' },
+    'WA': { d: 'M120,80 L195,90 L195,145 L120,135 Z', name: 'Washington' },
+    'WV': { d: 'M695,280 L735,270 L745,315 L700,330 Z', name: 'West Virginia' },
+    'WI': { d: 'M545,155 L595,150 L600,230 L545,235 Z', name: 'Wisconsin' },
+    'WY': { d: 'M260,175 L350,180 L350,250 L260,245 Z', name: 'Wyoming' },
+  };
+
+  // Emergency declaration states (Fern 2026)
+  const emergencyStates = ['TX', 'OK', 'KS', 'AR', 'LA', 'MS', 'AL', 'TN', 'KY', 'MO', 'IL', 'IN', 'OH', 'WV', 'VA', 'NC', 'SC', 'GA', 'PA', 'NJ', 'NY', 'CT', 'MA', 'MD'];
+
+  // Uri 2021 emergency states for comparison
+  const uriStates = ['TX', 'OK', 'KS', 'AR', 'LA', 'MS', 'AL', 'TN', 'KY', 'MO', 'OR', 'WV', 'VA', 'NC', 'OH', 'NM', 'NE', 'IA', 'IL', 'IN', 'WI', 'MI', 'CO'];
+
+  // Temperature anomalies (degrees below normal)
+  const tempAnomalies = {
+    'TX': -25, 'OK': -30, 'KS': -28, 'AR': -22, 'LA': -18, 'MS': -15, 'AL': -12,
+    'TN': -18, 'KY': -20, 'MO': -25, 'IL': -22, 'IN': -20, 'OH': -18, 'MI': -25,
+    'WI': -20, 'MN': -15, 'IA': -22, 'NE': -25, 'SD': -18, 'ND': -12,
+    'WV': -15, 'VA': -12, 'NC': -10, 'SC': -8, 'GA': -10, 'FL': -5,
+    'PA': -15, 'NJ': -12, 'NY': -14, 'CT': -12, 'MA': -10, 'VT': -8, 'NH': -8, 'ME': -5,
+    'CO': -18, 'NM': -15, 'AZ': -8, 'UT': -12, 'NV': -8, 'WY': -15, 'MT': -10, 'ID': -8,
+    'MD': -12, 'DE': -10, 'RI': -10
+  };
+
+  // Power outage severity (thousands of customers)
+  const outageData = {
+    'TN': 290, 'TX': 105, 'MS': 100, 'LA': 95, 'GA': 85, 'AL': 80, 'AR': 65, 'KY': 55,
+    'MO': 45, 'IL': 35, 'IN': 30, 'OH': 25, 'OK': 40, 'SC': 20, 'NC': 25, 'VA': 15,
+    'WV': 10, 'PA': 8, 'NJ': 5, 'NY': 12
+  };
+
+  // Snowfall data by state (max reported as of Jan 26)
+  const snowfallByState = {
+    'PA': 15, 'IN': 13, 'CT': 13, 'MO': 12, 'NJ': 12, 'OH': 11, 'IL': 11, 'NY': 11,
+    'AR': 8, 'KS': 8, 'OK': 7, 'TX': 6, 'TN': 5, 'KY': 6, 'WV': 8, 'VA': 4, 'NC': 3,
+    'MA': 10, 'RI': 9, 'NH': 8, 'VT': 7, 'ME': 5, 'MD': 6, 'DE': 5, 'MI': 9, 'WI': 7,
+    'IA': 6, 'NE': 5, 'SD': 4, 'ND': 3, 'MN': 5, 'CO': 4, 'NM': 3
+  };
+
+  // Snowfall data by state (max reported as of Jan 26)
+  const snowfallData = [
+    { state: 'Pennsylvania', snow: 15, status: 'record' },
+    { state: 'Indiana', snow: 13, status: 'above' },
+    { state: 'Connecticut', snow: 13, status: 'above' },
+    { state: 'Missouri', snow: 12, status: 'above' },
+    { state: 'New Jersey', snow: 12, status: 'above' },
+    { state: 'Ohio', snow: 11, status: 'above' },
+    { state: 'Illinois', snow: 11, status: 'above' },
+    { state: 'New York', snow: 11, status: 'above' },
+    { state: 'Arkansas', snow: 8, status: 'average' },
+    { state: 'Kansas', snow: 8, status: 'average' },
+    { state: 'Oklahoma', snow: 7, status: 'average' },
+    { state: 'Texas', snow: 6, status: 'average' },
+    { state: 'Tennessee', snow: 5, status: 'below' },
+  ];
+
+  // Temperature records during the storm
+  const temperatureData = [
+    { location: 'Flint, MI', low: -24, record: -25, unit: '°F', note: '1 degree above all-time record' },
+    { location: 'Grand Rapids, MI', low: -19, record: -22, unit: '°F', note: 'Coldest since 1994' },
+    { location: 'Oklahoma City, OK', low: -15, record: -17, unit: '°F', note: 'Near-record cold' },
+    { location: 'Little Rock, AR', low: 8, record: 5, unit: '°F', note: 'Rare single digits' },
+    { location: 'Dallas, TX', low: 6, record: -1, unit: '°F', note: 'Wind chill: -6°F' },
+    { location: 'New York City, NY', low: 12, record: -6, unit: '°F', note: 'Extended freeze' },
+  ];
+
+  // Daily snowfall records broken
+  const recordsData = [
+    { city: 'Wichita, KS', amount: 5.2, prevRecord: 1.8, year: 1966 },
+    { city: 'Kansas City, MO', amount: 5.2, prevRecord: 2.2, year: 1956 },
+    { city: 'Oklahoma City, OK', amount: 4.4, prevRecord: 4.0, year: 1948 },
+    { city: 'Little Rock, AR', amount: 4.3, prevRecord: 4.0, year: 1899 },
+    { city: 'North Little Rock, AR', amount: 7.8, prevRecord: 6.5, year: 1918 },
+  ];
+
+  // Comparison: Fern vs Uri (2021)
+  const comparisonData = {
+    metric: ['States with Emergencies', 'Peak Power Outages', 'Population Affected', 'Est. Insured Loss', 'Duration (Days)', 'Fatalities'],
+    fern: ['24', '~1,000,000', '230+ million', '$1-2B (est.)', '5-6', '10+ (ongoing)'],
+    uri: ['23', '4,500,000+', '~150 million', '$15B', '5', '246'],
+    fern_value: [24, 1, 230, 1.5, 5.5, 10],
+    uri_value: [23, 4.5, 150, 15, 5, 246],
+  };
+
+  // Historical winter storm losses
+  const historicalLosses = [
+    { event: 'Uri (Feb 2021)', loss: 15.0, states: 'TX, OK, LA', highlight: false },
+    { event: 'Dec 2022 Storm', loss: 3.5, states: 'Multiple', highlight: false },
+    { event: 'Fern (Jan 2026)', loss: 1.5, states: '24 states', highlight: true, estimated: true },
+    { event: 'Jan 2022 Storm', loss: 1.2, states: 'Southeast', highlight: false },
+    { event: 'Feb 2022 Storm', loss: 1.1, states: 'Midwest', highlight: false },
+  ];
+
+  // Power outages by state
+  const powerOutages = [
+    { state: 'Tennessee', outages: 290000 },
+    { state: 'Texas', outages: 105000 },
+    { state: 'Mississippi', outages: 100000 },
+    { state: 'Louisiana', outages: 95000 },
+    { state: 'Georgia', outages: 85000 },
+    { state: 'Alabama', outages: 80000 },
+    { state: 'Arkansas', outages: 65000 },
+    { state: 'Kentucky', outages: 55000 },
+  ];
+
+  const maxSnow = Math.max(...snowfallData.map(d => d.snow));
+  const maxOutage = Math.max(...powerOutages.map(d => d.outages));
+
+  function WinterStormApp() {
+    const [activeTab, setActiveTab] = useState('impact-map');
+    const [hoveredState, setHoveredState] = useState(null);
+    const [hoveredBar, setHoveredBar] = useState(null);
+    const [animated, setAnimated] = useState(false);
+    const [mapType, setMapType] = useState('emergency');
+
+    useEffect(() => {
+      const timer = setTimeout(() => setAnimated(true), 100);
+      return () => clearTimeout(timer);
+    }, []);
+
+    const getStatusColor = (status) => {
+      switch(status) {
+        case 'record': return '#3b82f6';
+        case 'above': return '#06b6d4';
+        case 'average': return '#64748b';
+        case 'below': return '#94a3b8';
+        default: return '#64748b';
+      }
+    };
+
+    // Get color for emergency declaration map
+    const getEmergencyColor = (stateCode) => {
+      const inFern = emergencyStates.includes(stateCode);
+      const inUri = uriStates.includes(stateCode);
+      if (inFern && inUri) return '#8b5cf6'; // Both
+      if (inFern) return '#3b82f6'; // Fern only
+      if (inUri) return '#f97316'; // Uri only
+      return '#1e293b'; // Neither
+    };
+
+    // Get color for temperature anomaly map
+    const getTempColor = (stateCode) => {
+      const anomaly = tempAnomalies[stateCode] || 0;
+      if (anomaly <= -25) return '#1e3a8a'; // Extreme cold
+      if (anomaly <= -20) return '#1d4ed8';
+      if (anomaly <= -15) return '#3b82f6';
+      if (anomaly <= -10) return '#60a5fa';
+      if (anomaly <= -5) return '#93c5fd';
+      return '#1e293b';
+    };
+
+    // Get color for power outage map
+    const getOutageColor = (stateCode) => {
+      const outages = outageData[stateCode] || 0;
+      if (outages >= 200) return '#dc2626';
+      if (outages >= 100) return '#ef4444';
+      if (outages >= 50) return '#f97316';
+      if (outages >= 20) return '#fb923c';
+      if (outages > 0) return '#fdba74';
+      return '#1e293b';
+    };
+
+    // Get color for snowfall map
+    const getSnowColor = (stateCode) => {
+      const snow = snowfallByState[stateCode] || 0;
+      if (snow >= 12) return '#eff6ff';
+      if (snow >= 9) return '#bfdbfe';
+      if (snow >= 6) return '#60a5fa';
+      if (snow >= 3) return '#3b82f6';
+      if (snow > 0) return '#1d4ed8';
+      return '#1e293b';
+    };
+
+    const getStateColor = (stateCode) => {
+      switch(mapType) {
+        case 'emergency': return getEmergencyColor(stateCode);
+        case 'temperature': return getTempColor(stateCode);
+        case 'outages': return getOutageColor(stateCode);
+        case 'snowfall': return getSnowColor(stateCode);
+        default: return '#1e293b';
+      }
+    };
+
+    const getStateTooltip = (stateCode) => {
+      const state = statePaths[stateCode];
+      if (!state) return null;
+
+      switch(mapType) {
+        case 'emergency':
+          const inFern = emergencyStates.includes(stateCode);
+          const inUri = uriStates.includes(stateCode);
+          return {
+            title: state.name,
+            lines: [
+              inFern ? 'Fern (2026): Emergency declared' : 'Fern (2026): No emergency',
+              inUri ? 'Uri (2021): Emergency declared' : 'Uri (2021): No emergency'
+            ]
+          };
+        case 'temperature':
+          const anomaly = tempAnomalies[stateCode];
+          return {
+            title: state.name,
+            lines: [anomaly ? `${anomaly}°F below normal` : 'Data unavailable']
+          };
+        case 'outages':
+          const outages = outageData[stateCode];
+          return {
+            title: state.name,
+            lines: [outages ? `${outages.toLocaleString()}K customers affected` : 'Minimal outages']
+          };
+        case 'snowfall':
+          const snow = snowfallByState[stateCode];
+          return {
+            title: state.name,
+            lines: [snow ? `Max: ${snow}" snowfall` : 'Trace or none']
+          };
+        default:
+          return { title: state.name, lines: [] };
+      }
+    };
+
+    const styles = {
+      container: {
+        background: 'linear-gradient(135deg, #0c1929 0%, #162033 50%, #0c1929 100%)',
+        padding: '40px 20px',
+        fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+        borderRadius: '12px',
+        marginBottom: '24px',
+      },
+      innerContainer: {
+        maxWidth: '1100px',
+        margin: '0 auto',
+      },
+      header: {
+        marginBottom: '32px',
+        textAlign: 'center',
+      },
+      badge: {
+        display: 'inline-block',
+        padding: '6px 16px',
+        background: 'rgba(59, 130, 246, 0.15)',
+        borderRadius: '20px',
+        marginBottom: '16px',
+        border: '1px solid rgba(59, 130, 246, 0.3)',
+      },
+      badgeText: {
+        color: '#3b82f6',
+        fontSize: '13px',
+        fontWeight: '600',
+        letterSpacing: '0.5px',
+      },
+      title: {
+        fontSize: '36px',
+        fontWeight: '700',
+        color: '#f8fafc',
+        margin: '0 0 8px 0',
+        letterSpacing: '-0.5px',
+      },
+      subtitle: {
+        fontSize: '16px',
+        color: '#94a3b8',
+        margin: 0,
+      },
+      statsGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '16px',
+        marginBottom: '32px',
+      },
+      statCard: {
+        background: 'rgba(255,255,255,0.03)',
+        backdropFilter: 'blur(10px)',
+        borderRadius: '16px',
+        padding: '20px',
+        border: '1px solid rgba(255,255,255,0.08)',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+      },
+      statLabel: {
+        fontSize: '12px',
+        color: '#64748b',
+        fontWeight: '500',
+        marginBottom: '8px',
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px',
+      },
+      statValue: {
+        fontSize: '28px',
+        fontWeight: '700',
+        fontFamily: "'JetBrains Mono', monospace",
+      },
+      statSublabel: {
+        fontSize: '13px',
+        color: '#94a3b8',
+        marginTop: '4px',
+      },
+      tabContainer: {
+        display: 'flex',
+        gap: '8px',
+        marginBottom: '24px',
+        padding: '4px',
+        background: 'rgba(255,255,255,0.03)',
+        borderRadius: '12px',
+        width: 'fit-content',
+        flexWrap: 'wrap',
+      },
+      tab: {
+        padding: '10px 20px',
+        borderRadius: '8px',
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: '14px',
+        fontWeight: '500',
+        transition: 'all 0.2s ease',
+      },
+      chartContainer: {
+        background: 'rgba(255,255,255,0.02)',
+        borderRadius: '20px',
+        border: '1px solid rgba(255,255,255,0.06)',
+        padding: '24px',
+      },
+      mapContainer: {
+        position: 'relative',
+        width: '100%',
+        marginBottom: '20px',
+      },
+      mapControls: {
+        display: 'flex',
+        gap: '8px',
+        marginBottom: '16px',
+        flexWrap: 'wrap',
+      },
+      mapButton: {
+        padding: '8px 16px',
+        borderRadius: '8px',
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: '13px',
+        fontWeight: '500',
+        transition: 'all 0.2s ease',
+      },
+      barChart: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+      },
+      barRow: {
+        display: 'grid',
+        gridTemplateColumns: '120px 1fr 60px',
+        alignItems: 'center',
+        gap: '16px',
+        padding: '8px 0',
+      },
+      barLabel: {
+        fontSize: '13px',
+        color: '#94a3b8',
+        fontWeight: '500',
+        textAlign: 'right',
+      },
+      barTrack: {
+        height: '24px',
+        background: 'rgba(255,255,255,0.05)',
+        borderRadius: '6px',
+        overflow: 'hidden',
+        position: 'relative',
+      },
+      bar: {
+        height: '100%',
+        borderRadius: '6px',
+        transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+        display: 'flex',
+        alignItems: 'center',
+        paddingLeft: '8px',
+      },
+      barValue: {
+        fontSize: '14px',
+        fontWeight: '600',
+        fontFamily: "'JetBrains Mono', monospace",
+        color: '#f8fafc',
+      },
+      comparisonGrid: {
+        display: 'grid',
+        gap: '12px',
+      },
+      comparisonRow: {
+        display: 'grid',
+        gridTemplateColumns: '180px 1fr 1fr',
+        gap: '16px',
+        padding: '16px',
+        background: 'rgba(255,255,255,0.02)',
+        borderRadius: '12px',
+        border: '1px solid rgba(255,255,255,0.04)',
+      },
+      comparisonHeader: {
+        display: 'grid',
+        gridTemplateColumns: '180px 1fr 1fr',
+        gap: '16px',
+        padding: '12px 16px',
+        marginBottom: '8px',
+      },
+      legend: {
+        display: 'flex',
+        gap: '20px',
+        marginTop: '20px',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+      },
+      legendItem: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        fontSize: '12px',
+        color: '#94a3b8',
+      },
+      legendDot: {
+        width: '10px',
+        height: '10px',
+        borderRadius: '2px',
+      },
+      recordCard: {
+        background: 'rgba(59, 130, 246, 0.1)',
+        borderRadius: '12px',
+        padding: '16px',
+        border: '1px solid rgba(59, 130, 246, 0.2)',
+        marginBottom: '12px',
+      },
+      tooltip: {
+        position: 'absolute',
+        background: 'rgba(15, 23, 42, 0.98)',
+        padding: '12px 16px',
+        borderRadius: '8px',
+        border: '1px solid rgba(255,255,255,0.15)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+        zIndex: 1000,
+        pointerEvents: 'none',
+        minWidth: '180px',
+      },
+      footer: {
+        marginTop: '24px',
+        textAlign: 'center',
+        color: '#475569',
+        fontSize: '12px',
+      },
+    };
+
+    const stats = [
+      { label: 'States in Emergency', value: '24', sublabel: 'Governors declared', color: '#ef4444' },
+      { label: 'Peak Outages', value: '~1M', sublabel: 'Customers without power', color: '#f97316' },
+      { label: 'Est. Insured Loss', value: '$1-2B', sublabel: 'Industry estimates', color: '#3b82f6' },
+      { label: 'Flights Canceled', value: '11K+', sublabel: 'Record cancellation day', color: '#8b5cf6' },
+    ];
+
+    const renderUSMap = () => {
+      const tooltipData = hoveredState ? getStateTooltip(hoveredState) : null;
+
+      return h('div', { style: styles.mapContainer },
+        // Map type controls
+        h('div', { style: styles.mapControls },
+          ['emergency', 'temperature', 'snowfall', 'outages'].map(type =>
+            h('button', {
+              key: type,
+              style: {
+                ...styles.mapButton,
+                background: mapType === type ? 'rgba(59, 130, 246, 0.3)' : 'rgba(255,255,255,0.05)',
+                color: mapType === type ? '#3b82f6' : '#94a3b8',
+                border: mapType === type ? '1px solid rgba(59, 130, 246, 0.5)' : '1px solid transparent',
+              },
+              onClick: () => setMapType(type)
+            }, type === 'emergency' ? 'Emergency Declarations' :
+               type === 'temperature' ? 'Temperature Anomaly' :
+               type === 'snowfall' ? 'Snowfall Totals' :
+               'Power Outages')
+          )
+        ),
+
+        // SVG Map
+        h('svg', {
+          viewBox: '80 70 800 520',
+          style: { width: '100%', height: 'auto', minHeight: '400px' },
+        },
+          // Background
+          h('rect', { x: 80, y: 70, width: 800, height: 520, fill: '#0f172a' }),
+
+          // State paths
+          Object.entries(statePaths).map(([code, state]) =>
+            h('path', {
+              key: code,
+              d: state.d,
+              fill: getStateColor(code),
+              stroke: hoveredState === code ? '#fff' : '#334155',
+              strokeWidth: hoveredState === code ? 2 : 0.5,
+              style: {
+                transition: 'fill 0.3s ease, stroke-width 0.2s ease',
+                cursor: 'pointer',
+              },
+              onMouseEnter: () => setHoveredState(code),
+              onMouseLeave: () => setHoveredState(null),
+            })
+          ),
+
+          // Map title
+          h('text', {
+            x: 450,
+            y: 100,
+            fill: '#f8fafc',
+            fontSize: '18',
+            fontWeight: '600',
+            textAnchor: 'middle',
+          }, mapType === 'emergency' ? 'Emergency Declarations: Fern (2026) vs Uri (2021)' :
+             mapType === 'temperature' ? 'Temperature Departure from Normal (°F)' :
+             mapType === 'snowfall' ? 'Maximum Snowfall Totals (inches)' :
+             'Peak Power Outages by State')
+        ),
+
+        // Tooltip
+        hoveredState && tooltipData && h('div', {
+          style: {
+            ...styles.tooltip,
+            left: '50%',
+            top: '20px',
+            transform: 'translateX(-50%)',
+          }
+        },
+          h('div', { style: { color: '#f8fafc', fontWeight: '600', marginBottom: '8px' } }, tooltipData.title),
+          tooltipData.lines.map((line, i) =>
+            h('div', { key: i, style: { color: '#94a3b8', fontSize: '13px' } }, line)
+          )
+        ),
+
+        // Legend based on map type
+        h('div', { style: { ...styles.legend, marginTop: '16px' } },
+          mapType === 'emergency' && [
+            h('div', { key: 1, style: styles.legendItem },
+              h('div', { style: { ...styles.legendDot, background: '#8b5cf6' } }),
+              h('span', null, 'Both Storms')
+            ),
+            h('div', { key: 2, style: styles.legendItem },
+              h('div', { style: { ...styles.legendDot, background: '#3b82f6' } }),
+              h('span', null, 'Fern Only (2026)')
+            ),
+            h('div', { key: 3, style: styles.legendItem },
+              h('div', { style: { ...styles.legendDot, background: '#f97316' } }),
+              h('span', null, 'Uri Only (2021)')
+            ),
+          ],
+          mapType === 'temperature' && [
+            h('div', { key: 1, style: styles.legendItem },
+              h('div', { style: { ...styles.legendDot, background: '#1e3a8a' } }),
+              h('span', null, '25°+ below normal')
+            ),
+            h('div', { key: 2, style: styles.legendItem },
+              h('div', { style: { ...styles.legendDot, background: '#3b82f6' } }),
+              h('span', null, '15-25° below')
+            ),
+            h('div', { key: 3, style: styles.legendItem },
+              h('div', { style: { ...styles.legendDot, background: '#60a5fa' } }),
+              h('span', null, '10-15° below')
+            ),
+            h('div', { key: 4, style: styles.legendItem },
+              h('div', { style: { ...styles.legendDot, background: '#93c5fd' } }),
+              h('span', null, '5-10° below')
+            ),
+          ],
+          mapType === 'snowfall' && [
+            h('div', { key: 1, style: styles.legendItem },
+              h('div', { style: { ...styles.legendDot, background: '#eff6ff' } }),
+              h('span', null, '12"+ snow')
+            ),
+            h('div', { key: 2, style: styles.legendItem },
+              h('div', { style: { ...styles.legendDot, background: '#bfdbfe' } }),
+              h('span', null, '9-12"')
+            ),
+            h('div', { key: 3, style: styles.legendItem },
+              h('div', { style: { ...styles.legendDot, background: '#60a5fa' } }),
+              h('span', null, '6-9"')
+            ),
+            h('div', { key: 4, style: styles.legendItem },
+              h('div', { style: { ...styles.legendDot, background: '#3b82f6' } }),
+              h('span', null, '3-6"')
+            ),
+          ],
+          mapType === 'outages' && [
+            h('div', { key: 1, style: styles.legendItem },
+              h('div', { style: { ...styles.legendDot, background: '#dc2626' } }),
+              h('span', null, '200K+ customers')
+            ),
+            h('div', { key: 2, style: styles.legendItem },
+              h('div', { style: { ...styles.legendDot, background: '#ef4444' } }),
+              h('span', null, '100-200K')
+            ),
+            h('div', { key: 3, style: styles.legendItem },
+              h('div', { style: { ...styles.legendDot, background: '#f97316' } }),
+              h('span', null, '50-100K')
+            ),
+            h('div', { key: 4, style: styles.legendItem },
+              h('div', { style: { ...styles.legendDot, background: '#fdba74' } }),
+              h('span', null, '<50K')
+            ),
+          ]
+        )
+      );
+    };
+
+    const renderOverview = () => (
+      h('div', null,
+        h('div', { style: { marginBottom: '24px' } },
+          h('div', { style: { color: '#f8fafc', fontSize: '18px', fontWeight: '600', marginBottom: '12px' } },
+            'Storm Impact Summary'
+          ),
+          h('div', { style: { color: '#94a3b8', fontSize: '14px', lineHeight: '1.6' } },
+            'Winter Storm Fern represents one of the most geographically expansive winter weather events in recent U.S. history. ' +
+            'The number of counties under winter storm warnings reached an all-time high, with alerts spanning nearly 2,000 miles ' +
+            'from the Four Corners region to Maine.'
+          )
+        ),
+        h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' } },
+          h('div', { style: styles.recordCard },
+            h('div', { style: { color: '#3b82f6', fontSize: '14px', fontWeight: '600', marginBottom: '8px' } },
+              'Record Winter Storm Warnings'
+            ),
+            h('div', { style: { color: '#f8fafc', fontSize: '24px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" } },
+              '2,000+ Miles'
+            ),
+            h('div', { style: { color: '#94a3b8', fontSize: '13px', marginTop: '8px' } },
+              'Longest continuous winter weather alert zone ever recorded'
+            )
+          ),
+          h('div', { style: styles.recordCard },
+            h('div', { style: { color: '#3b82f6', fontSize: '14px', fontWeight: '600', marginBottom: '8px' } },
+              'Population Under Alerts'
+            ),
+            h('div', { style: { color: '#f8fafc', fontSize: '24px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" } },
+              '230+ Million'
+            ),
+            h('div', { style: { color: '#94a3b8', fontSize: '13px', marginTop: '8px' } },
+              'Over 70% of the U.S. population affected'
+            )
+          ),
+          h('div', { style: styles.recordCard },
+            h('div', { style: { color: '#f97316', fontSize: '14px', fontWeight: '600', marginBottom: '8px' } },
+              'Confirmed Fatalities'
+            ),
+            h('div', { style: { color: '#f8fafc', fontSize: '24px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" } },
+              '10+'
+            ),
+            h('div', { style: { color: '#94a3b8', fontSize: '13px', marginTop: '8px' } },
+              'Deaths in TX, LA, NY, TN, MI (ongoing count)'
+            )
+          ),
+          h('div', { style: styles.recordCard },
+            h('div', { style: { color: '#8b5cf6', fontSize: '14px', fontWeight: '600', marginBottom: '8px' } },
+              'Flight Cancellations'
+            ),
+            h('div', { style: { color: '#f8fafc', fontSize: '24px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" } },
+              '11,000+'
+            ),
+            h('div', { style: { color: '#94a3b8', fontSize: '13px', marginTop: '8px' } },
+              'One of the largest weather-related cancellation days in history'
+            )
+          )
+        )
+      )
+    );
+
+    const renderRecords = () => (
+      h('div', null,
+        h('div', { style: { marginBottom: '20px' } },
+          h('div', { style: { color: '#f8fafc', fontSize: '18px', fontWeight: '600', marginBottom: '8px' } },
+            'Daily Snowfall Records Broken'
+          ),
+          h('div', { style: { color: '#94a3b8', fontSize: '14px' } },
+            'Several cities set new daily snowfall records on January 24, 2026'
+          )
+        ),
+        h('div', { style: { display: 'grid', gap: '12px' } },
+          recordsData.map((record, i) =>
+            h('div', {
+              key: i,
+              style: {
+                display: 'grid',
+                gridTemplateColumns: '150px 1fr 1fr 120px',
+                alignItems: 'center',
+                padding: '16px 20px',
+                background: 'rgba(59, 130, 246, 0.1)',
+                borderRadius: '12px',
+                border: '1px solid rgba(59, 130, 246, 0.2)',
+              }
+            },
+              h('div', { style: { color: '#f8fafc', fontWeight: '600' } }, record.city),
+              h('div', null,
+                h('div', { style: { color: '#3b82f6', fontSize: '20px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" } },
+                  `${record.amount}"`
+                ),
+                h('div', { style: { color: '#64748b', fontSize: '11px' } }, 'NEW RECORD')
+              ),
+              h('div', null,
+                h('div', { style: { color: '#94a3b8', fontSize: '16px', fontFamily: "'JetBrains Mono', monospace" } },
+                  `${record.prevRecord}"`
+                ),
+                h('div', { style: { color: '#64748b', fontSize: '11px' } }, 'PREVIOUS')
+              ),
+              h('div', { style: { color: '#64748b', fontSize: '13px', textAlign: 'right' } },
+                `Set in ${record.year}`
+              )
+            )
+          )
+        ),
+        h('div', { style: { marginTop: '24px' } },
+          h('div', { style: { color: '#f8fafc', fontSize: '18px', fontWeight: '600', marginBottom: '12px' } },
+            'Notable Temperature Records'
+          ),
+          h('div', { style: { display: 'grid', gap: '8px' } },
+            temperatureData.map((temp, i) =>
+              h('div', {
+                key: i,
+                style: {
+                  display: 'grid',
+                  gridTemplateColumns: '150px 80px 1fr',
+                  alignItems: 'center',
+                  padding: '12px 16px',
+                  background: 'rgba(255,255,255,0.02)',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255,255,255,0.04)',
+                }
+              },
+                h('div', { style: { color: '#f8fafc', fontWeight: '500', fontSize: '14px' } }, temp.location),
+                h('div', { style: { color: '#06b6d4', fontSize: '18px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" } },
+                  `${temp.low}${temp.unit}`
+                ),
+                h('div', { style: { color: '#64748b', fontSize: '13px' } }, temp.note)
+              )
+            )
+          )
+        )
+      )
+    );
+
+    const renderComparison = () => (
+      h('div', null,
+        h('div', { style: { marginBottom: '20px' } },
+          h('div', { style: { color: '#f8fafc', fontSize: '18px', fontWeight: '600', marginBottom: '8px' } },
+            'Winter Storm Fern vs. Uri (2021 Texas Freeze)'
+          ),
+          h('div', { style: { color: '#94a3b8', fontSize: '14px' } },
+            'Early comparison of key metrics between the two major winter events'
+          )
+        ),
+        h('div', { style: styles.comparisonHeader },
+          h('div', { style: { color: '#64748b', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' } }, 'Metric'),
+          h('div', { style: { color: '#3b82f6', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', textAlign: 'center' } }, 'Fern (2026)'),
+          h('div', { style: { color: '#f97316', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', textAlign: 'center' } }, 'Uri (2021)')
+        ),
+        h('div', { style: styles.comparisonGrid },
+          comparisonData.metric.map((metric, i) =>
+            h('div', { key: i, style: styles.comparisonRow },
+              h('div', { style: { color: '#f8fafc', fontWeight: '500', fontSize: '14px' } }, metric),
+              h('div', { style: { color: '#3b82f6', fontWeight: '600', fontFamily: "'JetBrains Mono', monospace", textAlign: 'center', fontSize: '15px' } },
+                comparisonData.fern[i]
+              ),
+              h('div', { style: { color: '#f97316', fontWeight: '600', fontFamily: "'JetBrains Mono', monospace", textAlign: 'center', fontSize: '15px' } },
+                comparisonData.uri[i]
+              )
+            )
+          )
+        ),
+        h('div', { style: { marginTop: '24px', padding: '16px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '12px', border: '1px solid rgba(34, 197, 94, 0.2)' } },
+          h('div', { style: { color: '#22c55e', fontSize: '14px', fontWeight: '600', marginBottom: '8px' } },
+            'Key Difference: Grid Resilience'
+          ),
+          h('div', { style: { color: '#94a3b8', fontSize: '14px', lineHeight: '1.6' } },
+            'Unlike Uri, the Texas power grid has remained stable during Fern. ERCOT reports adequate capacity with over 17,000 MW of battery storage now online—virtually none of which existed in 2021. Natural gas infrastructure weatherization mandates following Uri appear to be working as intended.'
+          )
+        )
+      )
+    );
+
+    const renderInsurance = () => (
+      h('div', null,
+        h('div', { style: { marginBottom: '20px' } },
+          h('div', { style: { color: '#f8fafc', fontSize: '18px', fontWeight: '600', marginBottom: '8px' } },
+            'Estimated Insured Losses: Historical Comparison'
+          ),
+          h('div', { style: { color: '#94a3b8', fontSize: '14px' } },
+            'Major U.S. winter storm insured losses ($ billions)'
+          )
+        ),
+        h('div', { style: styles.barChart },
+          historicalLosses.map((item, i) =>
+            h('div', {
+              key: item.event,
+              style: {
+                ...styles.barRow,
+                gridTemplateColumns: '180px 1fr 80px',
+              }
+            },
+              h('div', { style: { ...styles.barLabel, color: item.highlight ? '#3b82f6' : '#94a3b8' } },
+                item.event,
+                item.estimated && h('span', { style: { color: '#64748b', fontSize: '10px', marginLeft: '4px' } }, '(est.)')
+              ),
+              h('div', { style: styles.barTrack },
+                h('div', {
+                  style: {
+                    ...styles.bar,
+                    width: animated ? `${(item.loss / 15) * 100}%` : '0%',
+                    background: item.highlight
+                      ? 'linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%)'
+                      : 'linear-gradient(90deg, #64748b 0%, #475569 100%)',
+                    transitionDelay: `${i * 100}ms`,
+                  }
+                })
+              ),
+              h('div', {
+                style: {
+                  ...styles.barValue,
+                  color: item.highlight ? '#3b82f6' : '#94a3b8',
+                }
+              }, `$${item.loss}B`)
+            )
+          )
+        ),
+        h('div', { style: { marginTop: '24px' } },
+          h('div', { style: { color: '#f8fafc', fontSize: '16px', fontWeight: '600', marginBottom: '12px' } },
+            'Power Outages by State (Peak)'
+          ),
+          h('div', { style: styles.barChart },
+            powerOutages.map((item, i) =>
+              h('div', {
+                key: item.state,
+                style: {
+                  ...styles.barRow,
+                  gridTemplateColumns: '100px 1fr 100px',
+                }
+              },
+                h('div', { style: styles.barLabel }, item.state),
+                h('div', { style: styles.barTrack },
+                  h('div', {
+                    style: {
+                      ...styles.bar,
+                      width: animated ? `${(item.outages / maxOutage) * 100}%` : '0%',
+                      background: 'linear-gradient(90deg, #f97316 0%, #ea580c 100%)',
+                      transitionDelay: `${i * 50}ms`,
+                    }
+                  })
+                ),
+                h('div', { style: { ...styles.barValue, color: '#f97316' } },
+                  (item.outages / 1000).toFixed(0) + 'K'
+                )
+              )
+            )
+          )
+        ),
+        h('div', { style: { marginTop: '20px', padding: '16px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)' } },
+          h('div', { style: { color: '#3b82f6', fontSize: '14px', fontWeight: '600', marginBottom: '8px' } },
+            'Loss Estimate Context'
+          ),
+          h('div', { style: { color: '#94a3b8', fontSize: '14px', lineHeight: '1.6' } },
+            'Industry analysts estimate Fern could become a billion-dollar insured loss event. Final losses depend heavily on the extent of frozen pipe damage and ice-related property claims, which will emerge over the coming weeks as temperatures normalize.'
+          )
+        )
+      )
+    );
+
+    return h('div', { style: styles.container },
+      h('style', null, `
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+        @keyframes slideIn {
+          from { transform: translateX(-20px); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @media (max-width: 768px) {
+          #winter-storm-root .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+      `),
+      h('div', { style: styles.innerContainer },
+        // Header
+        h('div', { style: styles.header },
+          h('div', { style: styles.badge },
+            h('span', { style: styles.badgeText }, 'ONGOING WEATHER EVENT')
+          ),
+          h('h1', { style: styles.title }, 'Winter Storm Fern'),
+          h('p', { style: styles.subtitle }, 'January 21-26, 2026 | Data updated through January 26')
+        ),
+
+        // Stats Cards
+        h('div', { style: styles.statsGrid, className: 'stats-grid' },
+          stats.map((stat, i) =>
+            h('div', { key: i, className: 'stat-card', style: styles.statCard },
+              h('div', { style: styles.statLabel }, stat.label),
+              h('div', { style: { ...styles.statValue, color: stat.color } }, stat.value),
+              h('div', { style: styles.statSublabel }, stat.sublabel)
+            )
+          )
+        ),
+
+        // Tabs
+        h('div', { style: styles.tabContainer },
+          ['impact-map', 'overview', 'records', 'comparison', 'insurance'].map(tab =>
+            h('button', {
+              key: tab,
+              style: {
+                ...styles.tab,
+                background: activeTab === tab ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                color: activeTab === tab ? '#3b82f6' : '#64748b',
+              },
+              onClick: () => setActiveTab(tab)
+            }, tab === 'impact-map' ? 'Impact Maps' :
+               tab === 'overview' ? 'Overview' :
+               tab === 'records' ? 'Records' :
+               tab === 'comparison' ? 'Fern vs Uri' :
+               'Insurance Impact')
+          )
+        ),
+
+        // Chart Container
+        h('div', { style: styles.chartContainer },
+          activeTab === 'impact-map' && renderUSMap(),
+          activeTab === 'overview' && renderOverview(),
+          activeTab === 'records' && renderRecords(),
+          activeTab === 'comparison' && renderComparison(),
+          activeTab === 'insurance' && renderInsurance()
+        ),
+
+        // Footer
+        h('div', { style: styles.footer },
+          'Data compiled from NWS, NOAA, PowerOutage.us, and industry sources. Storm ongoing; figures subject to change.'
+        )
+      )
+    );
+  }
+
+  const root = ReactDOM.createRoot(document.getElementById('winter-storm-root'));
+  root.render(h(WinterStormApp));
+})();
+</script>
+```
+
+## Comparison to Winter Storm Uri (2021)
+
+The 2021 Texas Freeze—officially Winter Storm Uri—remains the costliest winter storm in U.S. history with approximately **$15 billion in insured losses** and 246 fatalities. While Fern shares some similarities with Uri, key differences have emerged:
+
+### Similarities
+
+- **Geographic scope**: Both storms affected a massive portion of the continental U.S., with emergency declarations spanning over 20 states
+- **Polar vortex involvement**: Both events resulted from Arctic air masses pushing unusually far south
+- **Ice accumulation danger**: Significant freezing rain and ice created hazardous conditions across the South in both events
+- **Prolonged freeze duration**: Extended periods of sub-freezing temperatures (75+ hours in many locations during Fern)
+
+### Critical differences
+
+- **Power grid performance**: Unlike Uri, the Texas grid has remained stable during Fern. ERCOT reports adequate reserve margins, with 17,000 MW of battery storage now online and weatherized natural gas infrastructure performing as designed
+- **Loss magnitude**: Early estimates suggest Fern losses in the $1-2 billion range—a fraction of Uri's $15 billion impact
+- **Mortality**: Fern's death toll, while tragic, appears significantly lower than Uri's 246 fatalities, thanks in part to improved grid resilience and emergency preparedness
+- **Storm duration**: Fern is a more "transient" event moving through quickly, versus Uri's sustained 5-day assault on Texas
+
+## Insurance implications
+
+### Expected claim types
+
+Based on historical winter storm patterns and early reports, insurers should anticipate:
+
+1. **Frozen pipe and water damage** (typically 80-90% of claims) — Extended freezing periods create burst pipe risk, particularly in the South where homes are less insulated for extreme cold
+2. **Ice dam roof damage** — Ice accumulation on roofs causes water intrusion as ice backs up under shingles
+3. **Tree/limb damage** — Ice-weighted trees falling on structures and vehicles
+4. **Auto claims** — Vehicle damage from accidents, falling debris, and ice
+5. **Business interruption** — Flight cancellations, power outages, and facility closures
+
+### Claims handling considerations
+
+- **Delayed emergence**: Many frozen pipe claims won't materialize until temperatures warm and pipes thaw
+- **Geographic concentration**: The heaviest claims will likely emerge from Tennessee, Mississippi, Louisiana, Texas, and Arkansas based on power outage patterns
+- **Documentation challenges**: With over a million customers losing power, some policyholders may lack proof of temperature maintenance efforts
+
+### Rate adequacy perspective
+
+For property-casualty insurers, Winter Storm Fern reinforces several pricing considerations:
+
+- **Winter peril volatility** remains elevated, with average annual winter storm losses nearly doubling since the 1980s
+- **Southern exposure** to freeze events continues to grow as polar vortex disruptions become more frequent
+- **Building code differences** between Northern and Southern states create materially different loss potentials for similar temperature events
+
+## Key takeaways
+
+1. **Grid investments paid off** — Texas's $8+ billion investment in grid weatherization following Uri appears to have prevented a repeat catastrophe
+
+2. **Geographic breadth ≠ loss severity** — Despite affecting more states than Uri, Fern's losses will likely be a fraction of the 2021 event due to shorter duration and functioning power infrastructure
+
+3. **Claim lag expected** — Insurers should prepare for a wave of frozen pipe claims as temperatures normalize in the coming days
+
+4. **Mortality reduction** — Improved emergency response and infrastructure resilience have likely saved lives compared to what a similar event would have caused five years ago
+
+5. **Climate pattern concerns** — Two major polar vortex disruption events in five years raises questions about changing winter storm frequency and severity
+
+## Data sources
+
+- [National Weather Service](https://www.weather.gov/) — Storm warnings and weather data
+- [NOAA Storm Prediction Center](https://www.spc.noaa.gov/) — Historical weather records
+- [PowerOutage.us](https://poweroutage.us/) — Real-time power outage tracking
+- [Insurance Information Institute](https://www.iii.org/fact-statistic/facts-statistics-winter-storms) — Historical loss data
+- [Texas Department of Insurance](https://www.tdi.texas.gov/) — Uri loss data
+- [ERCOT](https://www.ercot.com/) — Texas grid status
+
+---
+
+*This analysis will be updated as final storm data and loss estimates become available. For real-time severe weather tracking, visit our [Severe Weather Tracker](/tools/severe-weather-tracker/).*
