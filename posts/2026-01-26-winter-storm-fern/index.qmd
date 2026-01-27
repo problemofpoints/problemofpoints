@@ -1,0 +1,359 @@
+---
+title: "Winter Storm Fern (Jan 21–26): Cold, Snow, and Insurance-Relevant Impacts"
+date: 2026-01-26
+categories: [analysis, insurance]
+subtitle: "Station-level diagnostics, exposure-weighted severity, and a comparison to the 2021 Texas freeze"
+draft: false
+freeze: false
+---
+
+```{python}
+from __future__ import annotations
+
+from datetime import date, datetime
+
+import numpy as np
+import pandas as pd
+import plotly.express as px
+import requests
+from IPython.display import Markdown, display
+from meteostat import config, daily, stations
+
+config.block_large_requests = False
+
+EVENT_START = date(2026, 1, 21)
+EVENT_END = date(2026, 1, 26)
+TEXAS_FREEZE_START = date(2021, 2, 10)
+TEXAS_FREEZE_END = date(2021, 2, 19)
+
+STATE_ABBR = {
+    "Alabama": "AL",
+    "Alaska": "AK",
+    "Arizona": "AZ",
+    "Arkansas": "AR",
+    "California": "CA",
+    "Colorado": "CO",
+    "Connecticut": "CT",
+    "Delaware": "DE",
+    "District of Columbia": "DC",
+    "Florida": "FL",
+    "Georgia": "GA",
+    "Hawaii": "HI",
+    "Idaho": "ID",
+    "Illinois": "IL",
+    "Indiana": "IN",
+    "Iowa": "IA",
+    "Kansas": "KS",
+    "Kentucky": "KY",
+    "Louisiana": "LA",
+    "Maine": "ME",
+    "Maryland": "MD",
+    "Massachusetts": "MA",
+    "Michigan": "MI",
+    "Minnesota": "MN",
+    "Mississippi": "MS",
+    "Missouri": "MO",
+    "Montana": "MT",
+    "Nebraska": "NE",
+    "Nevada": "NV",
+    "New Hampshire": "NH",
+    "New Jersey": "NJ",
+    "New Mexico": "NM",
+    "New York": "NY",
+    "North Carolina": "NC",
+    "North Dakota": "ND",
+    "Ohio": "OH",
+    "Oklahoma": "OK",
+    "Oregon": "OR",
+    "Pennsylvania": "PA",
+    "Rhode Island": "RI",
+    "South Carolina": "SC",
+    "South Dakota": "SD",
+    "Tennessee": "TN",
+    "Texas": "TX",
+    "Utah": "UT",
+    "Vermont": "VT",
+    "Virginia": "VA",
+    "Washington": "WA",
+    "West Virginia": "WV",
+    "Wisconsin": "WI",
+    "Wyoming": "WY",
+}
+
+
+def sample_stations(per_state: int = 10) -> pd.DataFrame:
+    station_df = stations.query(
+        "SELECT id, region, latitude, longitude FROM stations WHERE country='US'"
+    )
+    sampled = (
+        station_df.groupby("region", group_keys=False)
+        .apply(lambda x: x.sample(min(len(x), per_state), random_state=42))
+        .reset_index(drop=True)
+    )
+    sampled = sampled.rename(columns={"region": "state"})
+    return sampled
+
+
+def fetch_daily(ids: list[str], start: date, end: date) -> pd.DataFrame:
+    frames = []
+    chunk_size = 100
+    for i in range(0, len(ids), chunk_size):
+        chunk = ids[i : i + chunk_size]
+        frames.append(daily(chunk, start, end).fetch())
+    return pd.concat(frames)
+
+
+def summarize_event(sampled: pd.DataFrame, start: date, end: date) -> pd.DataFrame:
+    data = fetch_daily(sampled["id"].tolist(), start, end).reset_index()
+    data = data.merge(sampled, left_on="station", right_on="id", how="left")
+
+    data["tavg_f"] = data["temp"] * 9 / 5 + 32
+    data["tmin_f"] = data["tmin"] * 9 / 5 + 32
+    data["snow_in"] = data["snwd"].fillna(0) * 0.0393701
+    data["freezing_prcp_in"] = data["prcp"].fillna(0) * 0.0393701
+    data.loc[data["tmax"] > 0, "freezing_prcp_in"] = 0
+    data["cold_degree_days"] = (32 - data["tavg_f"]).clip(lower=0)
+
+    station_summary = (
+        data.groupby(["station", "state"], as_index=False)
+        .agg(
+            min_tmin_f=("tmin_f", "min"),
+            max_snow_in=("snow_in", "max"),
+            freeze_prcp_in=("freezing_prcp_in", "sum"),
+            cold_degree_days=("cold_degree_days", "sum"),
+        )
+        .dropna(subset=["state"])
+    )
+
+    state_summary = (
+        station_summary.groupby("state")
+        .median(numeric_only=True)
+        .reset_index()
+        .sort_values("cold_degree_days", ascending=False)
+    )
+
+    return state_summary
+
+
+def load_exposure() -> pd.DataFrame:
+    url = (
+        "https://api.census.gov/data/2022/acs/acs5"
+        "?get=NAME,B25077_001E,B25001_001E&for=state:*"
+    )
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
+    payload = response.json()
+    df = pd.DataFrame(payload[1:], columns=payload[0])
+    df["median_home_value"] = pd.to_numeric(df["B25077_001E"], errors="coerce")
+    df["housing_units"] = pd.to_numeric(df["B25001_001E"], errors="coerce")
+    df["state"] = df["NAME"].map(STATE_ABBR)
+    df["exposure_proxy"] = df["median_home_value"] * df["housing_units"]
+    return df[["state", "median_home_value", "housing_units", "exposure_proxy"]]
+
+
+def build_map(df: pd.DataFrame, column: str, title: str, color_scale: str):
+    fig = px.choropleth(
+        df,
+        locations="state",
+        locationmode="USA-states",
+        color=column,
+        scope="usa",
+        color_continuous_scale=color_scale,
+        title=title,
+    )
+    fig.update_layout(margin=dict(l=0, r=0, t=50, b=0))
+    return fig
+
+
+sampled_stations = sample_stations(per_state=10)
+fern_summary = summarize_event(sampled_stations, EVENT_START, EVENT_END)
+texas_summary = summarize_event(sampled_stations, TEXAS_FREEZE_START, TEXAS_FREEZE_END)
+
+exposure = load_exposure()
+
+fern_summary = fern_summary.merge(exposure, on="state", how="left")
+texas_summary = texas_summary.merge(exposure, on="state", how="left")
+
+fern_summary["exposure_weighted_cold"] = (
+    fern_summary["cold_degree_days"] * fern_summary["exposure_proxy"]
+)
+texas_summary["exposure_weighted_cold"] = (
+    texas_summary["cold_degree_days"] * texas_summary["exposure_proxy"]
+)
+
+comparison = fern_summary[["state", "cold_degree_days", "exposure_weighted_cold"]].merge(
+    texas_summary[["state", "cold_degree_days", "exposure_weighted_cold"]],
+    on="state",
+    suffixes=("_fern", "_texas"),
+)
+comparison["cold_ratio_fern_vs_texas"] = (
+    comparison["cold_degree_days_fern"] / comparison["cold_degree_days_texas"]
+)
+comparison["exposure_ratio_fern_vs_texas"] = (
+    comparison["exposure_weighted_cold_fern"] / comparison["exposure_weighted_cold_texas"]
+)
+
+fern_summary["event"] = "Fern (2026-01-21 to 2026-01-26)"
+texas_summary["event"] = "Texas Freeze (2021-02-10 to 2021-02-19)"
+
+fern_summary.head()
+```
+
+## Executive summary
+
+Winter Storm Fern brought a broad swath of sub-freezing temperatures to the U.S. between
+Jan 21–26, with the deepest cold concentrated across the Upper Midwest and Northern Plains.
+To understand the insurance-relevant footprint, I assembled station-level temperature and
+snow-depth observations, aggregated them to state medians, and paired the meteorology with
+an exposure proxy (housing units × median home value). The charts below focus on three
+coverage drivers: extreme cold, snow load, and freezing-precipitation potential.
+
+```{python}
+fern_summary.sort_values("min_tmin_f").head(10)
+```
+
+### Key observations
+
+```{python}
+fern_min_temp = fern_summary["min_tmin_f"].min()
+fern_max_snow = fern_summary["max_snow_in"].max()
+fern_max_freezing_prcp = fern_summary["freeze_prcp_in"].max()
+fern_top_exposure = (
+    fern_summary.sort_values("exposure_weighted_cold", ascending=False)
+    .head(5)
+    .loc[:, ["state", "exposure_weighted_cold"]]
+)
+
+display(
+    Markdown(
+        ""
+        + f"- The coldest station-level minimum temperatures during the event dipped below **{fern_min_temp:.1f}°F** in the sampled station network.\n"
+        + f"- The maximum observed snow depth in the same window topped **{fern_max_snow:.1f} inches**.\n"
+        + f"- The largest freezing-precipitation proxy (precipitation on days with max temps ≤ 32°F) reached **{fern_max_freezing_prcp:.2f} inches** at the station level.\n"
+    )
+)
+```
+
+### Exposure-weighted hot spots
+
+```{python}
+fern_top_exposure
+```
+
+The exposure-weighted cold index highlights states where cold intensity intersects with
+larger residential values, making them disproportionately relevant for personal lines and
+small commercial freeze losses.
+
+## Event footprint: cold and snow maps
+
+```{python}
+fig = build_map(
+    fern_summary,
+    "min_tmin_f",
+    "Fern: Median of Station-Level Minimum Temperatures (°F)",
+    "blues_r",
+)
+fig
+```
+
+```{python}
+fig = build_map(
+    fern_summary,
+    "cold_degree_days",
+    "Fern: Median Cold Degree Days (Base 32°F)",
+    "purples",
+)
+fig
+```
+
+```{python}
+fig = build_map(
+    fern_summary,
+    "max_snow_in",
+    "Fern: Median of Station-Level Maximum Snow Depth (inches)",
+    "ice",
+)
+fig
+```
+
+```{python}
+fig = build_map(
+    fern_summary,
+    "freeze_prcp_in",
+    "Fern: Median Freezing-Precipitation Proxy (inches)",
+    "oranges",
+)
+fig
+```
+
+## Comparison to the 2021 Texas freeze
+
+The February 2021 Texas freeze combined extreme cold and prolonged outages in a
+region with lower winterization and high exposure density. I used Feb 10–19, 2021
+as a comparison window to align with the peak cold in Texas and the central U.S.
+
+```{python}
+fig = build_map(
+    comparison,
+    "cold_ratio_fern_vs_texas",
+    "Cold Intensity Ratio (Fern ÷ Texas Freeze)",
+    "rdylgn",
+)
+fig
+```
+
+```{python}
+fig = build_map(
+    comparison,
+    "exposure_ratio_fern_vs_texas",
+    "Exposure-Weighted Cold Ratio (Fern ÷ Texas Freeze)",
+    "rdylbu",
+)
+fig
+```
+
+### What stands out for P&C insurance
+
+```{python}
+texas_rank = texas_summary.sort_values("exposure_weighted_cold", ascending=False)
+texas_rank.head(5)
+```
+
+- The 2021 freeze produced a different exposure mix: more cold intensity in the
+  southern tier relative to its typical baseline, increasing the likelihood of
+  burst pipes, water damage, and business interruption.
+- Winter Storm Fern shows broader cold intensity across the northern tier, but
+  the exposure-weighted maps help isolate where insured values line up with the
+  coldest conditions.
+- States that rise in the exposure-weighted rankings are places where claims teams
+  can expect higher concentrations of freeze-related losses (personal lines water
+  damage, roof loading, and frozen equipment failures).
+
+## Detailed tables
+
+```{python}
+fern_summary.sort_values("cold_degree_days", ascending=False).head(10)
+```
+
+```{python}
+fern_summary.sort_values("max_snow_in", ascending=False).head(10)
+```
+
+```{python}
+fern_summary.sort_values("freeze_prcp_in", ascending=False).head(10)
+```
+
+## Methodology and limitations
+
+- Station coverage: I sampled 10 stations per state from the Meteostat daily station
+  inventory to create a comparable, nationwide footprint. This is directional rather
+  than exhaustive.
+- Snow and ice: The Meteostat daily dataset provides snow depth and precipitation.
+  I used maximum snow depth as a snow-load indicator and precipitation on sub-freezing
+  days as a proxy for freezing rain/ice accumulation.
+- Exposure proxy: The exposure-weighted metrics use housing units × median home value
+  (2022 ACS 5-year). This approximates where insured residential values concentrate,
+  but it is not a replacement for carrier-specific exposure data.
+
+If you want a deeper carrier-specific view, we can replace the exposure proxy with
+portfolio data or county-level insured values.
