@@ -97,7 +97,8 @@
     margin-bottom: 8px;
   }
 
-  .swt-input {
+  .swt-input,
+  .swt-select {
     width: 220px;
     font-size: 1rem;
     padding: 10px 14px;
@@ -109,7 +110,8 @@
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
 
-  .swt-input:focus {
+  .swt-input:focus,
+  .swt-select:focus {
     border-color: rgba(59, 130, 246, 0.6);
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
   }
@@ -117,6 +119,20 @@
   .swt-event-toggle-group {
     display: flex;
     gap: 10px;
+  }
+
+  .swt-chart-filters {
+    margin-top: 12px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .swt-chart-filters label {
+    font-size: 0.92rem;
+    color: #475569;
+    font-weight: 600;
   }
 
   .swt-toggle {
@@ -617,8 +633,10 @@
       activeTypes: new Set(["tornado", "wind", "hail"]),
       reportsResponse: null,
       tornadoResponse: null,
-    chart: null
-  };
+      selectedState: "ALL",
+      availableStates: [],
+      chart: null
+    };
     const CHART_ANCHOR_YEAR = 2000;
     const Y_AXIS_MAX = 2000;
 
@@ -688,6 +706,12 @@
         </section>
         <section class="swt-chart-panel" aria-label="Tornado trends">
           <h2>Tornado Activity Benchmark</h2>
+          <div class="swt-chart-filters">
+            <label for="swt-state-select">Benchmark region:</label>
+            <select id="swt-state-select" class="swt-select" aria-label="Select state for tornado benchmark">
+              <option value="ALL">All states</option>
+            </select>
+          </div>
           <div class="swt-chart-meta" id="swt-chart-meta">
             <span class="swt-loader">Loading tornado history…</span>
           </div>
@@ -717,6 +741,7 @@
           dateInput: root.querySelector("#swt-date-input"),
           status: root.querySelector("#swt-status"),
           toggleButtons: Array.from(root.querySelectorAll(".swt-toggle")),
+          stateSelect: root.querySelector("#swt-state-select"),
           mapSummary: root.querySelector("#swt-map-summary"),
           summaryDate: root.querySelector("#swt-summary-date"),
           mapSource: root.querySelector("#swt-map-source"),
@@ -1105,8 +1130,12 @@
       return response.json();
     }
 
-    async function fetchTornadoTrends() {
-      const response = await fetch(API_ENDPOINTS.tornado);
+    async function fetchTornadoTrends(stateCode) {
+      const url = new URL(API_ENDPOINTS.tornado, window.location.origin);
+      if (stateCode && stateCode !== "ALL") {
+        url.searchParams.set("state", stateCode);
+      }
+      const response = await fetch(url.toString());
       if (!response.ok) {
         const text = await response.text();
         throw new Error(text || `Failed to load tornado history (${response.status})`);
@@ -1290,6 +1319,7 @@
       target.innerHTML = "";
 
       const { currentYear, comparisonYear, currentLatestPoint, years, ensembleStats } = data;
+      const regionLabel = data.stateLabel || "All states";
       const comparisonSeries = years.find((entry) => entry.year === comparisonYear);
       const currentSeries = years.find((entry) => entry.year === currentYear);
       const dayOfYear = currentLatestPoint?.dayOfYear;
@@ -1299,19 +1329,19 @@
         {
           label: `${currentYear} Reports`,
           value: formatNumber(currentLatestPoint?.cumulative || 0),
-          detail: `As of ${formatDisplayDate(currentLatestPoint?.date) || "latest available"}`
+          detail: `${regionLabel} • As of ${formatDisplayDate(currentLatestPoint?.date) || "latest available"}`
         },
         {
           label: `${comparisonYear || currentYear - 1} Reports`,
           value: formatNumber(comparisonPoint?.cumulative || comparisonSeries?.totalReports || 0),
           detail: comparisonPoint
-            ? `Same time last year`
-            : `Total for ${comparisonYear || currentYear - 1}`
+            ? `Same time last year • ${regionLabel}`
+            : `Total for ${comparisonYear || currentYear - 1} • ${regionLabel}`
         },
         {
           label: "Historical Average",
           value: formatNumber(Math.round(ensembleStats?.averageTotal || 0)),
-          detail: `${ensembleStats?.count || 0} seasons since ${data.startYear}`
+          detail: `${regionLabel} • ${ensembleStats?.count || 0} seasons since ${data.startYear}`
         }
       ];
 
@@ -1333,6 +1363,7 @@
       target.innerHTML = "";
 
       const { currentYear, currentLatestPoint, comparisonYear, years } = data;
+      const regionLabel = data.stateLabel || "All states";
       const comparisonSeries = years.find((entry) => entry.year === comparisonYear);
       const comparisonPoint = comparisonSeries
         ? findValueOnOrBefore(comparisonSeries.series, currentLatestPoint?.dayOfYear || 0)
@@ -1354,7 +1385,7 @@
 
       const paragraph = document.createElement("p");
       paragraph.innerHTML = `
-        <strong>${currentYear} tornado reports:</strong> ${formatNumber(currentLatestPoint?.cumulative || 0)} total as of ${formatDisplayDate(currentLatestPoint?.date)} — ${diffText}.
+        <strong>${currentYear} ${regionLabel} tornado reports:</strong> ${formatNumber(currentLatestPoint?.cumulative || 0)} total as of ${formatDisplayDate(currentLatestPoint?.date)} — ${diffText}.
       `;
       target.appendChild(paragraph);
     }
@@ -1370,8 +1401,16 @@
       const ctx = SELECTORS.chartCanvas.getContext("2d");
       if (!ctx) return;
 
-      const ySuggestedMax = Y_AXIS_MAX;
-      const tickStep = 200;
+      const maxValue = datasets.reduce((max, ds) => {
+        const datasetMax = ds.data.reduce((dMax, point) => Math.max(dMax, point.y || 0), 0);
+        return Math.max(max, datasetMax);
+      }, 0);
+
+      const margin = Math.max(50, maxValue * 0.12);
+      const suggestedCeiling = maxValue + margin;
+      const roundedCeiling = Math.max(100, Math.ceil(suggestedCeiling / 50) * 50);
+      const ySuggestedMax = roundedCeiling;
+      const tickStep = ySuggestedMax > 1000 ? 200 : ySuggestedMax > 400 ? 100 : 50;
 
       if (state.chart) {
         state.chart.destroy();
@@ -1511,11 +1550,30 @@
       }
     }
 
+    function populateStateOptions(result) {
+      const select = SELECTORS.stateSelect;
+      if (!select || !Array.isArray(result?.availableStates)) return;
+      if (select.dataset.populated !== "true") {
+        const fragment = document.createDocumentFragment();
+        result.availableStates.forEach((state) => {
+          const option = document.createElement("option");
+          option.value = state.code;
+          option.textContent = state.name || state.code;
+          fragment.appendChild(option);
+        });
+        select.appendChild(fragment);
+        select.dataset.populated = "true";
+      }
+      select.value = state.selectedState || "ALL";
+    }
+
     async function loadTornadoHistory() {
       try {
         SELECTORS.chartMeta.innerHTML = `<span class="swt-loader">Loading tornado history…</span>`;
-        const result = await fetchTornadoTrends();
+        const result = await fetchTornadoTrends(state.selectedState);
         state.tornadoResponse = result;
+        state.availableStates = result.availableStates || [];
+        populateStateOptions(result);
         renderTornadoChart();
         renderChartMeta(result);
         renderChartSummary(result);
@@ -1561,6 +1619,12 @@
 
       SELECTORS.dateInput?.addEventListener("change", () => {
         loadStormReports();
+        loadTornadoHistory();
+      });
+
+      SELECTORS.stateSelect?.addEventListener("change", (event) => {
+        const value = event.target.value || "ALL";
+        state.selectedState = value;
         loadTornadoHistory();
       });
     }
