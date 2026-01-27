@@ -1,0 +1,1063 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+<div class="wsc-app" id="winter-storm-compare">
+  <header class="wsc-header">
+    <div>
+      <p class="wsc-eyebrow">Winter Storm Toolkit</p>
+      <h1>Winter Storm Event Comparator</h1>
+      <p class="wsc-subhead">
+        Compare two winter events with hourly temperature and snowfall data. Explore time-lapse maps,
+        freezing-duration footprints, and summary metrics across major U.S. metros.
+      </p>
+    </div>
+    <div class="wsc-header-card">
+      <div>
+        <h2>How to use</h2>
+        <ol>
+          <li>Select two events or set custom date ranges.</li>
+          <li>Load the data and review snowfall + freezing-duration summaries.</li>
+          <li>Use the time-lapse controls to animate temperature and snowfall maps.</li>
+        </ol>
+      </div>
+    </div>
+  </header>
+
+  <section class="wsc-controls">
+    <div class="wsc-control-panel">
+      <h3>Event A</h3>
+      <label for="event-a-select">Preset event</label>
+      <select id="event-a-select" class="wsc-select"></select>
+      <div class="wsc-date-grid">
+        <label>
+          Start date
+          <input type="date" id="event-a-start" class="wsc-input">
+        </label>
+        <label>
+          End date
+          <input type="date" id="event-a-end" class="wsc-input">
+        </label>
+      </div>
+      <p class="wsc-helper" id="event-a-note"></p>
+    </div>
+
+    <div class="wsc-control-panel">
+      <h3>Event B</h3>
+      <label for="event-b-select">Preset event</label>
+      <select id="event-b-select" class="wsc-select"></select>
+      <div class="wsc-date-grid">
+        <label>
+          Start date
+          <input type="date" id="event-b-start" class="wsc-input">
+        </label>
+        <label>
+          End date
+          <input type="date" id="event-b-end" class="wsc-input">
+        </label>
+      </div>
+      <p class="wsc-helper" id="event-b-note"></p>
+    </div>
+
+    <div class="wsc-control-panel wsc-control-actions">
+      <h3>Data Controls</h3>
+      <label for="interval-hours">Time step</label>
+      <select id="interval-hours" class="wsc-select">
+        <option value="3">Every 3 hours</option>
+        <option value="6" selected>Every 6 hours</option>
+        <option value="12">Every 12 hours</option>
+        <option value="24">Daily</option>
+      </select>
+      <button class="wsc-button" id="load-data">Load event data</button>
+      <p class="wsc-helper" id="data-status"></p>
+    </div>
+  </section>
+
+  <section class="wsc-summary">
+    <div class="wsc-summary-card">
+      <h3>Event A overview</h3>
+      <div class="wsc-summary-grid" id="event-a-summary"></div>
+    </div>
+    <div class="wsc-summary-card">
+      <h3>Event B overview</h3>
+      <div class="wsc-summary-grid" id="event-b-summary"></div>
+    </div>
+    <div class="wsc-summary-card">
+      <h3>Comparison highlights</h3>
+      <div class="wsc-summary-grid" id="event-compare-summary"></div>
+    </div>
+  </section>
+
+  <section class="wsc-charts">
+    <div class="wsc-chart-card">
+      <h3>Average temperature profile</h3>
+      <canvas id="temp-chart" height="140"></canvas>
+    </div>
+    <div class="wsc-chart-card">
+      <h3>Cumulative snowfall profile</h3>
+      <canvas id="snow-chart" height="140"></canvas>
+    </div>
+  </section>
+
+  <section class="wsc-map-section">
+    <header>
+      <div>
+        <h3>Temperature time-lapse</h3>
+        <p>Colors represent average temperature in each time step. Marker outlines indicate freezing-hour
+          duration for the full event.</p>
+        <div class="wsc-legend">
+          <span>Freezing hours:</span>
+          <span class="wsc-legend-dot small"></span><span>0–12</span>
+          <span class="wsc-legend-dot medium"></span><span>24–48</span>
+          <span class="wsc-legend-dot large"></span><span>72+</span>
+        </div>
+      </div>
+      <div class="wsc-timeline-controls" data-metric="temp">
+        <button class="wsc-icon-button" data-action="play">Play</button>
+        <input type="range" min="0" max="100" value="0" step="1" class="wsc-slider" data-action="slider">
+        <button class="wsc-icon-button" data-action="pause">Pause</button>
+      </div>
+    </header>
+    <div class="wsc-map-grid">
+      <div class="wsc-map-card">
+        <div class="wsc-map-header">
+          <span>Event A</span>
+          <span class="wsc-map-time" id="temp-time-a">--</span>
+        </div>
+        <div class="wsc-map" id="temp-map-a"></div>
+      </div>
+      <div class="wsc-map-card">
+        <div class="wsc-map-header">
+          <span>Event B</span>
+          <span class="wsc-map-time" id="temp-time-b">--</span>
+        </div>
+        <div class="wsc-map" id="temp-map-b"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wsc-map-section">
+    <header>
+      <div>
+        <h3>Snowfall time-lapse</h3>
+        <p>Colors represent cumulative snowfall totals for each time step. Marker outlines show how long
+          each metro stayed below freezing.</p>
+        <div class="wsc-legend">
+          <span>Freezing hours:</span>
+          <span class="wsc-legend-dot small"></span><span>0–12</span>
+          <span class="wsc-legend-dot medium"></span><span>24–48</span>
+          <span class="wsc-legend-dot large"></span><span>72+</span>
+        </div>
+      </div>
+      <div class="wsc-timeline-controls" data-metric="snow">
+        <button class="wsc-icon-button" data-action="play">Play</button>
+        <input type="range" min="0" max="100" value="0" step="1" class="wsc-slider" data-action="slider">
+        <button class="wsc-icon-button" data-action="pause">Pause</button>
+      </div>
+    </header>
+    <div class="wsc-map-grid">
+      <div class="wsc-map-card">
+        <div class="wsc-map-header">
+          <span>Event A</span>
+          <span class="wsc-map-time" id="snow-time-a">--</span>
+        </div>
+        <div class="wsc-map" id="snow-map-a"></div>
+      </div>
+      <div class="wsc-map-card">
+        <div class="wsc-map-header">
+          <span>Event B</span>
+          <span class="wsc-map-time" id="snow-time-b">--</span>
+        </div>
+        <div class="wsc-map" id="snow-map-b"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wsc-table-section">
+    <h3>Metro-level summary</h3>
+    <p>Sort columns to see how snowfall totals and freezing hours differ by location.</p>
+    <div class="wsc-table-wrap">
+      <table id="location-table">
+        <thead>
+          <tr>
+            <th>Metro</th>
+            <th>Event A snowfall (mm)</th>
+            <th>Event B snowfall (mm)</th>
+            <th>Event A freezing hours</th>
+            <th>Event B freezing hours</th>
+            <th>Snowfall difference (A - B)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<style>
+  :root {
+    color-scheme: light;
+  }
+
+  .wsc-app {
+    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: linear-gradient(180deg, rgba(243, 246, 255, 0.96) 0%, rgba(232, 238, 250, 0.92) 100%);
+    color: #0f172a;
+    padding: clamp(20px, 5vw, 48px);
+    border-radius: 26px;
+    box-shadow: 0 32px 70px rgba(15, 23, 42, 0.12);
+  }
+
+  .wsc-app * {
+    box-sizing: border-box;
+  }
+
+  .wsc-header {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 24px;
+    align-items: start;
+  }
+
+  .wsc-eyebrow {
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    font-weight: 600;
+    color: #64748b;
+    margin: 0 0 8px;
+  }
+
+  .wsc-header h1 {
+    margin: 0 0 12px;
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 700;
+  }
+
+  .wsc-subhead {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: #475569;
+  }
+
+  .wsc-header-card {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 18px;
+    padding: 18px 20px;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+  }
+
+  .wsc-header-card h2 {
+    margin: 0 0 8px;
+    font-size: 1.1rem;
+  }
+
+  .wsc-header-card ol {
+    margin: 0;
+    padding-left: 18px;
+    color: #475569;
+    line-height: 1.5;
+  }
+
+  .wsc-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+    margin-top: 28px;
+  }
+
+  .wsc-control-panel {
+    background: rgba(255, 255, 255, 0.94);
+    border-radius: 18px;
+    padding: 16px 18px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 0 14px 36px rgba(15, 23, 42, 0.12);
+    display: grid;
+    gap: 10px;
+  }
+
+  .wsc-control-panel h3 {
+    margin: 0 0 4px;
+    font-size: 1.05rem;
+  }
+
+  .wsc-control-panel label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    display: grid;
+    gap: 6px;
+  }
+
+  .wsc-select,
+  .wsc-input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    background: rgba(250, 253, 255, 0.96);
+    font-size: 0.95rem;
+  }
+
+  .wsc-date-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+  }
+
+  .wsc-helper {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.85rem;
+    min-height: 1.2em;
+  }
+
+  .wsc-control-actions {
+    align-content: start;
+  }
+
+  .wsc-button {
+    border: none;
+    padding: 12px 18px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 16px 36px rgba(37, 99, 235, 0.3);
+  }
+
+  .wsc-button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+
+  .wsc-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+    margin-top: 28px;
+  }
+
+  .wsc-summary-card {
+    background: rgba(255, 255, 255, 0.94);
+    border-radius: 18px;
+    padding: 18px 20px;
+    box-shadow: 0 14px 36px rgba(15, 23, 42, 0.1);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+  }
+
+  .wsc-summary-card h3 {
+    margin: 0 0 12px;
+  }
+
+  .wsc-summary-grid {
+    display: grid;
+    gap: 10px;
+  }
+
+  .wsc-summary-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.95rem;
+    color: #334155;
+  }
+
+  .wsc-summary-item span:last-child {
+    font-weight: 600;
+  }
+
+  .wsc-charts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+    margin-top: 28px;
+  }
+
+  .wsc-chart-card {
+    background: rgba(255, 255, 255, 0.94);
+    border-radius: 18px;
+    padding: 18px 20px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 0 14px 36px rgba(15, 23, 42, 0.1);
+  }
+
+  .wsc-map-section {
+    margin-top: 30px;
+    display: grid;
+    gap: 16px;
+  }
+
+  .wsc-map-section header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .wsc-map-section h3 {
+    margin: 0 0 6px;
+  }
+
+  .wsc-map-section p {
+    margin: 0;
+    color: #475569;
+    max-width: 680px;
+  }
+
+  .wsc-legend {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: #475569;
+    flex-wrap: wrap;
+  }
+
+  .wsc-legend-dot {
+    display: inline-block;
+    border-radius: 999px;
+    border: 2px solid rgba(15, 23, 42, 0.45);
+    background: rgba(59, 130, 246, 0.3);
+  }
+
+  .wsc-legend-dot.small {
+    width: 10px;
+    height: 10px;
+  }
+
+  .wsc-legend-dot.medium {
+    width: 16px;
+    height: 16px;
+  }
+
+  .wsc-legend-dot.large {
+    width: 22px;
+    height: 22px;
+  }
+
+  .wsc-timeline-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .wsc-icon-button {
+    border: none;
+    padding: 8px 14px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.08);
+    color: #0f172a;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .wsc-slider {
+    width: min(320px, 60vw);
+  }
+
+  .wsc-map-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+  }
+
+  .wsc-map-card {
+    background: rgba(255, 255, 255, 0.94);
+    border-radius: 18px;
+    padding: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 0 14px 36px rgba(15, 23, 42, 0.12);
+  }
+
+  .wsc-map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6px 6px 10px;
+    font-weight: 600;
+    color: #1e293b;
+  }
+
+  .wsc-map {
+    height: 320px;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .wsc-map-time {
+    font-size: 0.85rem;
+    color: #475569;
+  }
+
+  .wsc-table-section {
+    margin-top: 32px;
+  }
+
+  .wsc-table-wrap {
+    background: rgba(255, 255, 255, 0.94);
+    border-radius: 18px;
+    padding: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  th,
+  td {
+    text-align: left;
+    padding: 10px 8px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  }
+
+  th {
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+  }
+
+  tbody tr:hover {
+    background: rgba(148, 163, 184, 0.1);
+  }
+</style>
+
+<script>
+  const PRESET_EVENTS = [
+    {
+      label: "Custom range",
+      start: "2024-01-10",
+      end: "2024-01-18"
+    },
+    {
+      label: "Uri (Feb 2021)",
+      start: "2021-02-10",
+      end: "2021-02-19"
+    },
+    {
+      label: "Feb 2010", 
+      start: "2010-02-04",
+      end: "2010-02-14"
+    },
+    {
+      label: "Groundhog (Feb 2011)",
+      start: "2011-01-28",
+      end: "2011-02-06"
+    },
+    {
+      label: "Jan 2024",
+      start: "2024-01-11",
+      end: "2024-01-21"
+    },
+    {
+      label: "Fern (Jan 2026)",
+      start: "2026-01-08",
+      end: "2026-01-18",
+      dataStart: "2024-01-11",
+      dataEnd: "2024-01-21",
+      note: "Fern 2026 uses a Jan 2024 analog until real data is available."
+    }
+  ];
+
+  const LOCATIONS = [
+    { id: "sea", name: "Seattle, WA", lat: 47.6062, lon: -122.3321 },
+    { id: "por", name: "Portland, OR", lat: 45.5152, lon: -122.6784 },
+    { id: "boi", name: "Boise, ID", lat: 43.6150, lon: -116.2023 },
+    { id: "den", name: "Denver, CO", lat: 39.7392, lon: -104.9903 },
+    { id: "slc", name: "Salt Lake City, UT", lat: 40.7608, lon: -111.8910 },
+    { id: "phi", name: "Philadelphia, PA", lat: 39.9526, lon: -75.1652 },
+    { id: "chi", name: "Chicago, IL", lat: 41.8781, lon: -87.6298 },
+    { id: "min", name: "Minneapolis, MN", lat: 44.9778, lon: -93.2650 },
+    { id: "det", name: "Detroit, MI", lat: 42.3314, lon: -83.0458 },
+    { id: "cle", name: "Cleveland, OH", lat: 41.4993, lon: -81.6944 },
+    { id: "atl", name: "Atlanta, GA", lat: 33.7490, lon: -84.3880 },
+    { id: "dal", name: "Dallas, TX", lat: 32.7767, lon: -96.7970 },
+    { id: "hou", name: "Houston, TX", lat: 29.7604, lon: -95.3698 },
+    { id: "aus", name: "Austin, TX", lat: 30.2672, lon: -97.7431 },
+    { id: "kc", name: "Kansas City, MO", lat: 39.0997, lon: -94.5786 },
+    { id: "stl", name: "St. Louis, MO", lat: 38.6270, lon: -90.1994 },
+    { id: "nash", name: "Nashville, TN", lat: 36.1627, lon: -86.7816 },
+    { id: "dc", name: "Washington, DC", lat: 38.9072, lon: -77.0369 },
+    { id: "bos", name: "Boston, MA", lat: 42.3601, lon: -71.0589 },
+    { id: "nyc", name: "New York, NY", lat: 40.7128, lon: -74.0060 },
+    { id: "buf", name: "Buffalo, NY", lat: 42.8864, lon: -78.8784 },
+    { id: "oma", name: "Omaha, NE", lat: 41.2565, lon: -95.9345 },
+    { id: "phx", name: "Phoenix, AZ", lat: 33.4484, lon: -112.0740 },
+    { id: "la", name: "Los Angeles, CA", lat: 34.0522, lon: -118.2437 }
+  ];
+
+  const eventState = {
+    A: null,
+    B: null
+  };
+
+  const charts = {
+    temp: null,
+    snow: null
+  };
+
+  const mapState = {
+    temp: { A: null, B: null },
+    snow: { A: null, B: null }
+  };
+
+  const timelines = {
+    temp: { progress: 0, timer: null },
+    snow: { progress: 0, timer: null }
+  };
+
+  const statusEl = document.getElementById("data-status");
+  const loadButton = document.getElementById("load-data");
+
+  function formatNumber(value, digits = 1) {
+    if (value == null || Number.isNaN(value)) return "--";
+    return value.toLocaleString(undefined, { maximumFractionDigits: digits });
+  }
+
+  function formatDateLabel(value) {
+    if (!value) return "--";
+    const date = new Date(value);
+    return date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit" });
+  }
+
+  function buildPresetSelect(selectEl, startInput, endInput, noteEl) {
+    PRESET_EVENTS.forEach((preset, index) => {
+      const option = document.createElement("option");
+      option.value = index;
+      option.textContent = preset.label;
+      selectEl.appendChild(option);
+    });
+
+    const applyPreset = () => {
+      const preset = PRESET_EVENTS[Number(selectEl.value)];
+      startInput.value = preset.start;
+      endInput.value = preset.end;
+      noteEl.textContent = preset.note || "";
+    };
+
+    selectEl.addEventListener("change", applyPreset);
+    applyPreset();
+  }
+
+  function initMaps() {
+    mapState.temp.A = createMap("temp-map-a");
+    mapState.temp.B = createMap("temp-map-b");
+    mapState.snow.A = createMap("snow-map-a");
+    mapState.snow.B = createMap("snow-map-b");
+  }
+
+  function createMap(containerId) {
+    const map = L.map(containerId, { scrollWheelZoom: false }).setView([39.5, -98.35], 4);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+      attribution: "&copy; OpenStreetMap &copy; CARTO"
+    }).addTo(map);
+
+    const markers = new Map();
+    LOCATIONS.forEach((location) => {
+      const marker = L.circleMarker([location.lat, location.lon], {
+        radius: 8,
+        color: "rgba(15, 23, 42, 0.4)",
+        weight: 2,
+        fillColor: "rgba(59, 130, 246, 0.6)",
+        fillOpacity: 0.8
+      }).addTo(map);
+      marker.bindTooltip(`${location.name}`);
+      markers.set(location.id, marker);
+    });
+
+    return { map, markers };
+  }
+
+  function tempColor(value) {
+    if (value == null) return "rgba(148, 163, 184, 0.5)";
+    const clamped = Math.max(-20, Math.min(20, value));
+    const ratio = (clamped + 20) / 40;
+    const r = Math.round(59 + ratio * 196);
+    const g = Math.round(130 + ratio * 40);
+    const b = Math.round(246 - ratio * 180);
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+
+  function snowColor(value) {
+    if (value == null) return "rgba(148, 163, 184, 0.5)";
+    const clamped = Math.max(0, Math.min(200, value));
+    const ratio = clamped / 200;
+    const r = Math.round(227 - ratio * 120);
+    const g = Math.round(243 - ratio * 90);
+    const b = Math.round(252 - ratio * 40);
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+
+  function updateMapMarkers(metric, eventKey, index, progress) {
+    const eventData = eventState[eventKey];
+    if (!eventData) return;
+    const mapEntry = mapState[metric][eventKey];
+    if (!mapEntry) return;
+
+    const stepIndex = Math.min(index, eventData.steps.length - 1);
+    const step = eventData.steps[stepIndex];
+    const values = metric === "temp" ? step.tempC : step.snowfallCumulative;
+
+    LOCATIONS.forEach((location, idx) => {
+      const marker = mapEntry.markers.get(location.id);
+      if (!marker) return;
+      const value = values[idx];
+      const color = metric === "temp" ? tempColor(value) : snowColor(value);
+      const freezingHours = eventData.locationSummaries[idx]?.belowFreezingHours ?? 0;
+      const radius = 5 + Math.min(6, (freezingHours / 12) * 2);
+      marker.setStyle({
+        fillColor: color,
+        color: "rgba(15, 23, 42, 0.35)",
+        weight: 2,
+        radius
+      });
+      const detail = metric === "temp"
+        ? `${formatNumber(value, 1)}°C`
+        : `${formatNumber(value, 1)} mm`;
+      marker.setTooltipContent(`
+        <strong>${location.name}</strong><br>
+        ${detail}<br>
+        Freezing hours: ${formatNumber(freezingHours, 0)}
+      `);
+    });
+
+    if (metric === "temp") {
+      document.getElementById(`temp-time-${eventKey.toLowerCase()}`).textContent =
+        formatDateLabel(step.time);
+    } else {
+      document.getElementById(`snow-time-${eventKey.toLowerCase()}`).textContent =
+        formatDateLabel(step.time);
+    }
+  }
+
+  function computeEventSummary(eventData) {
+    const totals = eventData.locationSummaries.map((item) => item.totalSnowfallMm);
+    const freezing = eventData.locationSummaries.map((item) => item.belowFreezingHours);
+    const avgTemp = eventData.locationSummaries.map((item) => item.avgTempC);
+
+    const totalSnow = totals.reduce((sum, value) => sum + value, 0);
+    const avgSnow = totalSnow / totals.length;
+    const maxSnow = Math.max(...totals);
+    const avgFreezing = freezing.reduce((sum, value) => sum + value, 0) / freezing.length;
+    const maxFreezing = Math.max(...freezing);
+    const avgTempOverall = avgTemp.reduce((sum, value) => sum + value, 0) / avgTemp.length;
+
+    return {
+      totalSnow,
+      avgSnow,
+      maxSnow,
+      avgFreezing,
+      maxFreezing,
+      avgTempOverall
+    };
+  }
+
+  function renderSummary(eventKey, targetId) {
+    const container = document.getElementById(targetId);
+    container.innerHTML = "";
+    const eventData = eventState[eventKey];
+    if (!eventData) return;
+    const summary = computeEventSummary(eventData);
+
+    const rows = [
+      ["Avg temp (°C)", formatNumber(summary.avgTempOverall, 1)],
+      ["Avg snowfall (mm)", formatNumber(summary.avgSnow, 1)],
+      ["Max snowfall (mm)", formatNumber(summary.maxSnow, 1)],
+      ["Avg freezing hours", formatNumber(summary.avgFreezing, 0)],
+      ["Max freezing hours", formatNumber(summary.maxFreezing, 0)]
+    ];
+
+    rows.forEach(([label, value]) => {
+      const item = document.createElement("div");
+      item.className = "wsc-summary-item";
+      item.innerHTML = `<span>${label}</span><span>${value}</span>`;
+      container.appendChild(item);
+    });
+  }
+
+  function renderComparison() {
+    const container = document.getElementById("event-compare-summary");
+    container.innerHTML = "";
+    if (!eventState.A || !eventState.B) return;
+    const summaryA = computeEventSummary(eventState.A);
+    const summaryB = computeEventSummary(eventState.B);
+
+    const rows = [
+      ["Avg temp delta (A - B)", formatNumber(summaryA.avgTempOverall - summaryB.avgTempOverall, 1)],
+      ["Avg snowfall delta (mm)", formatNumber(summaryA.avgSnow - summaryB.avgSnow, 1)],
+      ["Max snowfall delta (mm)", formatNumber(summaryA.maxSnow - summaryB.maxSnow, 1)],
+      ["Avg freezing hours delta", formatNumber(summaryA.avgFreezing - summaryB.avgFreezing, 0)]
+    ];
+
+    rows.forEach(([label, value]) => {
+      const item = document.createElement("div");
+      item.className = "wsc-summary-item";
+      item.innerHTML = `<span>${label}</span><span>${value}</span>`;
+      container.appendChild(item);
+    });
+  }
+
+  function buildCharts() {
+    const tempCtx = document.getElementById("temp-chart");
+    const snowCtx = document.getElementById("snow-chart");
+
+    charts.temp = new Chart(tempCtx, {
+      type: "line",
+      data: {
+        labels: [],
+        datasets: [
+          { label: "Event A", data: [], borderColor: "#2563eb", backgroundColor: "rgba(37,99,235,0.2)" },
+          { label: "Event B", data: [], borderColor: "#7c3aed", backgroundColor: "rgba(124,58,237,0.2)" }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: "bottom" }
+        },
+        scales: {
+          y: { title: { display: true, text: "Temp (°C)" } }
+        }
+      }
+    });
+
+    charts.snow = new Chart(snowCtx, {
+      type: "line",
+      data: {
+        labels: [],
+        datasets: [
+          { label: "Event A", data: [], borderColor: "#0ea5e9", backgroundColor: "rgba(14,165,233,0.2)" },
+          { label: "Event B", data: [], borderColor: "#f97316", backgroundColor: "rgba(249,115,22,0.2)" }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: "bottom" } },
+        scales: {
+          y: { title: { display: true, text: "Cumulative snowfall (mm)" } }
+        }
+      }
+    });
+  }
+
+  function updateCharts() {
+    if (!eventState.A || !eventState.B) return;
+    const eventA = eventState.A;
+    const eventB = eventState.B;
+    const maxSteps = Math.max(eventA.steps.length, eventB.steps.length);
+
+    const labels = Array.from({ length: maxSteps }, (_, index) => {
+      const step = eventA.steps[index] || eventB.steps[index];
+      return step ? formatDateLabel(step.time) : \"--\";
+    });
+
+    const series = (eventData, accessor) =>
+      Array.from({ length: maxSteps }, (_, index) => {
+        const step = eventData.steps[index];
+        return step ? step[accessor] : null;
+      });
+
+    charts.temp.data.labels = labels;
+    charts.temp.data.datasets[0].data = series(eventA, \"avgTempC\");
+    charts.temp.data.datasets[1].data = series(eventB, \"avgTempC\");
+    charts.temp.update();
+
+    charts.snow.data.labels = labels;
+    charts.snow.data.datasets[0].data = series(eventA, \"avgSnowfallCumulative\");
+    charts.snow.data.datasets[1].data = series(eventB, \"avgSnowfallCumulative\");
+    charts.snow.update();
+  }
+
+  function renderLocationTable() {
+    const tbody = document.querySelector("#location-table tbody");
+    tbody.innerHTML = "";
+    if (!eventState.A || !eventState.B) return;
+
+    LOCATIONS.forEach((location, idx) => {
+      const row = document.createElement("tr");
+      const a = eventState.A.locationSummaries[idx];
+      const b = eventState.B.locationSummaries[idx];
+      const diff = a.totalSnowfallMm - b.totalSnowfallMm;
+      row.innerHTML = `
+        <td>${location.name}</td>
+        <td>${formatNumber(a.totalSnowfallMm, 1)}</td>
+        <td>${formatNumber(b.totalSnowfallMm, 1)}</td>
+        <td>${formatNumber(a.belowFreezingHours, 0)}</td>
+        <td>${formatNumber(b.belowFreezingHours, 0)}</td>
+        <td>${formatNumber(diff, 1)}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+
+  function attachTableSorting() {
+    const table = document.getElementById("location-table");
+    const headers = table.querySelectorAll("th");
+    headers.forEach((header, index) => {
+      header.addEventListener("click", () => {
+        const rows = Array.from(table.querySelectorAll("tbody tr"));
+        const isNumeric = index !== 0;
+        const sorted = rows.sort((a, b) => {
+          const aText = a.children[index].textContent;
+          const bText = b.children[index].textContent;
+          if (isNumeric) {
+            return parseFloat(bText) - parseFloat(aText);
+          }
+          return aText.localeCompare(bText);
+        });
+        const tbody = table.querySelector("tbody");
+        tbody.innerHTML = "";
+        sorted.forEach((row) => tbody.appendChild(row));
+      });
+    });
+  }
+
+  function updateTimeline(metric) {
+    const eventA = eventState.A;
+    const eventB = eventState.B;
+    if (!eventA || !eventB) return;
+
+    const progress = timelines[metric].progress;
+    const indexA = Math.round(progress * (eventA.steps.length - 1));
+    const indexB = Math.round(progress * (eventB.steps.length - 1));
+
+    updateMapMarkers(metric, "A", indexA, progress);
+    updateMapMarkers(metric, "B", indexB, progress);
+  }
+
+  function setTimelineProgress(metric, progress) {
+    timelines[metric].progress = Math.max(0, Math.min(1, progress));
+    updateTimeline(metric);
+  }
+
+  function startTimeline(metric) {
+    stopTimeline(metric);
+    timelines[metric].timer = setInterval(() => {
+      const next = timelines[metric].progress + 0.02;
+      if (next >= 1) {
+        setTimelineProgress(metric, 0);
+      } else {
+        setTimelineProgress(metric, next);
+      }
+      const slider = document.querySelector(`.wsc-timeline-controls[data-metric="${metric}"] .wsc-slider`);
+      slider.value = Math.round(timelines[metric].progress * 100);
+    }, 600);
+  }
+
+  function stopTimeline(metric) {
+    if (timelines[metric].timer) {
+      clearInterval(timelines[metric].timer);
+      timelines[metric].timer = null;
+    }
+  }
+
+  function attachTimelineControls() {
+    document.querySelectorAll(".wsc-timeline-controls").forEach((control) => {
+      const metric = control.dataset.metric;
+      const slider = control.querySelector(".wsc-slider");
+      slider.addEventListener("input", (event) => {
+        setTimelineProgress(metric, event.target.value / 100);
+      });
+      control.querySelector('[data-action="play"]').addEventListener("click", () => startTimeline(metric));
+      control.querySelector('[data-action="pause"]').addEventListener("click", () => stopTimeline(metric));
+    });
+  }
+
+  async function fetchEventData(config) {
+    const response = await fetch("/.netlify/functions/winter-storm-compare", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        start: config.dataStart || config.start,
+        end: config.dataEnd || config.end,
+        intervalHours: Number(document.getElementById("interval-hours").value),
+        locations: LOCATIONS
+      })
+    });
+
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || "Unable to load weather data.");
+    }
+
+    return response.json();
+  }
+
+  async function loadEvents() {
+    const eventAIndex = Number(document.getElementById("event-a-select").value);
+    const eventBIndex = Number(document.getElementById("event-b-select").value);
+    const eventAConfig = {
+      ...PRESET_EVENTS[eventAIndex],
+      start: document.getElementById("event-a-start").value,
+      end: document.getElementById("event-a-end").value
+    };
+    const eventBConfig = {
+      ...PRESET_EVENTS[eventBIndex],
+      start: document.getElementById("event-b-start").value,
+      end: document.getElementById("event-b-end").value
+    };
+
+    loadButton.disabled = true;
+    statusEl.textContent = "Loading hourly data from Open-Meteo...";
+
+    try {
+      const [dataA, dataB] = await Promise.all([
+        fetchEventData(eventAConfig),
+        fetchEventData(eventBConfig)
+      ]);
+
+      eventState.A = { ...dataA, display: eventAConfig };
+      eventState.B = { ...dataB, display: eventBConfig };
+
+      renderSummary("A", "event-a-summary");
+      renderSummary("B", "event-b-summary");
+      renderComparison();
+      updateCharts();
+      renderLocationTable();
+      setTimelineProgress("temp", 0);
+      setTimelineProgress("snow", 0);
+      statusEl.textContent = "Data loaded. Drag the sliders or press play to animate maps.";
+    } catch (error) {
+      statusEl.textContent = error.message;
+    } finally {
+      loadButton.disabled = false;
+    }
+  }
+
+  function init() {
+    buildPresetSelect(
+      document.getElementById("event-a-select"),
+      document.getElementById("event-a-start"),
+      document.getElementById("event-a-end"),
+      document.getElementById("event-a-note")
+    );
+    buildPresetSelect(
+      document.getElementById("event-b-select"),
+      document.getElementById("event-b-start"),
+      document.getElementById("event-b-end"),
+      document.getElementById("event-b-note")
+    );
+
+    initMaps();
+    buildCharts();
+    attachTimelineControls();
+    attachTableSorting();
+
+    document.getElementById("load-data").addEventListener("click", loadEvents);
+  }
+
+  init();
+</script>
