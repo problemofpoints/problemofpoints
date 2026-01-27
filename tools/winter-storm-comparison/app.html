@@ -1,0 +1,1160 @@
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+/* ── reset ── */
+#wsc-app *,#wsc-app *::before,#wsc-app *::after{box-sizing:border-box;margin:0;padding:0}
+/* ── root ── */
+:root{
+  --wsc-bg:#f1f5f9;--wsc-card:#ffffff;--wsc-card-border:rgba(148,163,184,.18);
+  --wsc-text:#0f172a;--wsc-muted:#64748b;--wsc-subtle:#94a3b8;
+  --wsc-accent:#3b82f6;--wsc-accent-hover:#2563eb;
+  --wsc-cold-deep:#581c87;--wsc-cold:#2563eb;--wsc-freeze:#60a5fa;
+  --wsc-warm:#f97316;--wsc-hot:#ef4444;
+  --wsc-positive:#10b981;--wsc-negative:#ef4444;
+  --wsc-radius:14px;--wsc-shadow:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.06);
+  --wsc-font:'Inter',system-ui,-apple-system,sans-serif;
+}
+#wsc-app{font-family:var(--wsc-font);background:var(--wsc-bg);color:var(--wsc-text);-webkit-font-smoothing:antialiased;max-width:1440px;margin:0 auto;padding:clamp(16px,3vw,40px);border-radius:26px}
+
+/* ── header ── */
+.wsc-header{text-align:center;margin-bottom:28px}
+.wsc-header h1{font-size:clamp(1.6rem,3.2vw,2.4rem);font-weight:800;letter-spacing:-.03em;background:linear-gradient(135deg,#1e3a8a,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.wsc-header p{color:var(--wsc-muted);font-size:clamp(.85rem,1.4vw,1.05rem);margin-top:6px;max-width:680px;margin-left:auto;margin-right:auto}
+
+/* ── cards ── */
+.wsc-card{background:var(--wsc-card);border:1px solid var(--wsc-card-border);border-radius:var(--wsc-radius);box-shadow:var(--wsc-shadow);padding:clamp(16px,2.5vw,28px);margin-bottom:20px}
+
+/* ── selector row ── */
+.wsc-sel-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:860px){.wsc-sel-grid{grid-template-columns:1fr}}
+.wsc-sel-col label{display:block;font-weight:700;font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:var(--wsc-muted);margin-bottom:6px}
+.wsc-sel-col select,.wsc-sel-col input[type=date]{width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:.92rem;color:var(--wsc-text);background:#f8fafc;transition:border .2s}
+.wsc-sel-col select:focus,.wsc-sel-col input[type=date]:focus{outline:none;border-color:var(--wsc-accent);box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+.wsc-date-row{display:flex;gap:10px;margin-top:8px}
+.wsc-date-row>div{flex:1}
+.wsc-date-row label{font-weight:500;font-size:.78rem;text-transform:none;letter-spacing:0}
+.wsc-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-left:6px;vertical-align:middle}
+.wsc-badge-a{background:#dbeafe;color:#1e40af}
+.wsc-badge-b{background:#fce7f3;color:#9d174d}
+
+/* ── compare button ── */
+.wsc-actions{display:flex;justify-content:center;gap:12px;margin-top:18px}
+.wsc-btn{padding:11px 32px;border:none;border-radius:10px;font:inherit;font-weight:700;font-size:.95rem;cursor:pointer;transition:all .2s}
+.wsc-btn-primary{background:var(--wsc-accent);color:#fff}
+.wsc-btn-primary:hover{background:var(--wsc-accent-hover);transform:translateY(-1px)}
+.wsc-btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* ── tabs ── */
+.wsc-tabs{display:flex;gap:4px;border-bottom:2px solid #e2e8f0;margin-bottom:0;padding-bottom:0;overflow-x:auto}
+.wsc-tab{padding:10px 18px;font-size:.85rem;font-weight:600;color:var(--wsc-muted);border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:color .2s,border-color .2s}
+.wsc-tab:hover{color:var(--wsc-text)}
+.wsc-tab.active{color:var(--wsc-accent);border-bottom-color:var(--wsc-accent)}
+
+/* ── map area ── */
+.wsc-map-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+@media(max-width:860px){.wsc-map-row{grid-template-columns:1fr}}
+.wsc-map-wrap{position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--wsc-card-border)}
+.wsc-map-label{position:absolute;top:10px;left:10px;z-index:800;padding:5px 12px;border-radius:8px;font-size:.78rem;font-weight:700;letter-spacing:.02em;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.wsc-map-label-a{background:rgba(219,234,254,.88);color:#1e40af}
+.wsc-map-label-b{background:rgba(252,231,243,.88);color:#9d174d}
+.wsc-map-container{height:420px;width:100%}
+@media(max-width:600px){.wsc-map-container{height:300px}}
+
+/* ── animation controls ── */
+.wsc-controls{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+.wsc-ctrl-btn{width:36px;height:36px;border-radius:8px;border:1px solid #cbd5e1;background:#f8fafc;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;flex-shrink:0}
+.wsc-ctrl-btn:hover{background:#e2e8f0;border-color:#94a3b8}
+.wsc-ctrl-btn.playing{background:var(--wsc-accent);border-color:var(--wsc-accent);color:#fff}
+.wsc-ctrl-btn svg{width:16px;height:16px;fill:currentColor}
+.wsc-slider-wrap{flex:1;min-width:120px}
+.wsc-slider{width:100%;accent-color:var(--wsc-accent);cursor:pointer}
+.wsc-time-label{font-size:.82rem;font-weight:600;color:var(--wsc-text);min-width:180px;text-align:right;white-space:nowrap}
+.wsc-speed-sel{padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:.78rem;background:#f8fafc}
+
+/* ── legend ── */
+.wsc-legend{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
+.wsc-legend-bar{height:14px;border-radius:4px;flex:1;min-width:200px;max-width:400px}
+.wsc-legend-labels{display:flex;justify-content:space-between;font-size:.7rem;color:var(--wsc-muted);min-width:200px;max-width:400px;flex:1}
+.wsc-legend-title{font-size:.78rem;font-weight:700;color:var(--wsc-text);white-space:nowrap}
+.wsc-legend-freeze{display:flex;align-items:center;gap:6px;font-size:.75rem;font-weight:600;color:#1e40af;margin-left:auto}
+.wsc-legend-freeze span{display:inline-block;width:14px;height:14px;border-radius:3px;border:2px solid #1e40af;background:rgba(37,99,235,.2)}
+
+/* ── map snapshot stats ── */
+.wsc-snap-stats{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px}
+@media(max-width:860px){.wsc-snap-stats{grid-template-columns:1fr}}
+.wsc-snap-card{padding:12px 16px;border-radius:10px;border:1px solid var(--wsc-card-border);background:#f8fafc}
+.wsc-snap-card h4{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--wsc-muted);margin-bottom:8px}
+.wsc-snap-row{display:flex;justify-content:space-between;font-size:.85rem;padding:3px 0;border-bottom:1px solid #f1f5f9}
+.wsc-snap-row:last-child{border-bottom:none}
+.wsc-snap-val{font-weight:700}
+
+/* ── stats grid ── */
+.wsc-stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:16px}
+.wsc-stat-card{padding:18px;border-radius:12px;border:1px solid var(--wsc-card-border);background:#fafbff;text-align:center}
+.wsc-stat-card h4{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--wsc-muted);margin-bottom:10px}
+.wsc-stat-vals{display:flex;justify-content:center;gap:28px}
+.wsc-stat-evt{display:flex;flex-direction:column;align-items:center}
+.wsc-stat-num{font-size:1.5rem;font-weight:800;letter-spacing:-.02em}
+.wsc-stat-label{font-size:.7rem;font-weight:600;margin-top:2px}
+.wsc-stat-label-a{color:#1e40af}
+.wsc-stat-label-b{color:#9d174d}
+.wsc-stat-compare{margin-top:8px;font-size:.76rem;font-weight:600;padding:3px 10px;border-radius:6px;display:inline-block}
+.wsc-stat-worse{background:#fef2f2;color:#b91c1c}
+.wsc-stat-better{background:#ecfdf5;color:#065f46}
+.wsc-stat-same{background:#f1f5f9;color:#64748b}
+
+/* ── freezing table ── */
+.wsc-freeze-tbl{width:100%;border-collapse:collapse;margin-top:14px;font-size:.82rem}
+.wsc-freeze-tbl th{text-align:left;padding:8px 10px;font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--wsc-muted);border-bottom:2px solid #e2e8f0;position:sticky;top:0;background:var(--wsc-card)}
+.wsc-freeze-tbl td{padding:6px 10px;border-bottom:1px solid #f1f5f9}
+.wsc-freeze-tbl tr:hover td{background:#f8fafc}
+.wsc-freeze-tbl .dur-bar{height:8px;border-radius:4px;display:inline-block;vertical-align:middle;margin-right:6px}
+.wsc-tbl-scroll{max-height:500px;overflow-y:auto;border:1px solid var(--wsc-card-border);border-radius:10px}
+
+/* ── location detail ── */
+.wsc-loc-sel{margin-top:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.wsc-loc-sel select{padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:.88rem;min-width:220px}
+.wsc-chart-wrap{margin-top:16px;position:relative;height:320px}
+
+/* ── loading ── */
+.wsc-loading{text-align:center;padding:60px 20px}
+.wsc-spinner{width:40px;height:40px;border:4px solid #e2e8f0;border-top-color:var(--wsc-accent);border-radius:50%;animation:wsc-spin .7s linear infinite;margin:0 auto 16px}
+@keyframes wsc-spin{to{transform:rotate(360deg)}}
+.wsc-load-msg{font-size:.92rem;color:var(--wsc-muted)}
+.wsc-load-bar{width:260px;height:6px;background:#e2e8f0;border-radius:4px;margin:12px auto 0;overflow:hidden}
+.wsc-load-bar-fill{height:100%;background:var(--wsc-accent);border-radius:4px;transition:width .3s}
+
+/* ── error ── */
+.wsc-error{text-align:center;padding:40px 20px;color:var(--wsc-negative);font-weight:600;font-size:.92rem}
+
+/* ── duration section ── */
+.wsc-dur-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+@media(max-width:860px){.wsc-dur-grid{grid-template-columns:1fr}}
+.wsc-dur-chart-wrap{height:400px;position:relative;margin-top:16px}
+
+/* ── section titles ── */
+.wsc-section-title{font-size:1rem;font-weight:700;color:var(--wsc-text);margin:20px 0 4px}
+.wsc-section-sub{font-size:.82rem;color:var(--wsc-muted);margin-bottom:12px}
+
+/* ── utils ── */
+.wsc-hidden{display:none!important}
+.wsc-cold-text{color:#1e40af}
+.wsc-warm-text{color:#c2410c}
+</style>
+<div id="wsc-app"></div>
+<script>
+(function(){
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════════
+   CONFIGURATION
+   ═══════════════════════════════════════════════════════════════ */
+var PRESET_EVENTS = [
+  {id:"uri-2021",name:"Winter Storm Uri",sub:"Feb 2021",start:"2021-02-10",end:"2021-02-20",desc:"Historic cold outbreak across the southern US with record-low temperatures and widespread power outages in Texas."},
+  {id:"snowmageddon-2010",name:"Snowmageddon",sub:"Feb 2010",start:"2010-02-04",end:"2010-02-12",desc:"Two massive back-to-back blizzards hit the Mid-Atlantic and Northeast, burying Washington DC under 30+ inches."},
+  {id:"groundhog-2011",name:"Groundhog Day Blizzard",sub:"Feb 2011",start:"2011-01-30",end:"2011-02-06",desc:"Massive winter storm from the Rockies to New England with blizzard conditions across the Midwest."},
+  {id:"arctic-2024",name:"January 2024 Arctic Blast",sub:"Jan 2024",start:"2024-01-12",end:"2024-01-22",desc:"Severe arctic air mass brought dangerous wind chills and heavy snow across central and eastern US."},
+  {id:"fern-2026",name:"Winter Storm Fern",sub:"Jan 2026",start:"2026-01-19",end:"2026-01-27",desc:"Major winter storm with historic ice and snow totals across the southern Plains and Gulf Coast states."}
+];
+
+var TABS = [
+  {id:"temp",label:"Temperature",icon:"🌡"},
+  {id:"snow",label:"Snowfall",icon:"❄"},
+  {id:"freeze",label:"Freezing Duration",icon:"🧊"},
+  {id:"stats",label:"Summary Stats",icon:"📊"},
+  {id:"detail",label:"Location Detail",icon:"📍"}
+];
+
+var TEMP_STOPS = [
+  {val:-10,color:"#4c1d95"},{val:0,color:"#581c87"},{val:10,color:"#1e3a8a"},
+  {val:20,color:"#1d4ed8"},{val:32,color:"#60a5fa"},{val:33,color:"#86efac"},
+  {val:40,color:"#22c55e"},{val:50,color:"#eab308"},{val:60,color:"#f97316"},
+  {val:70,color:"#ef4444"},{val:85,color:"#881337"}
+];
+
+var SNOW_STOPS = [
+  {val:0,color:"#f0f9ff"},{val:0.5,color:"#bae6fd"},{val:2,color:"#38bdf8"},
+  {val:4,color:"#0284c7"},{val:8,color:"#1e40af"},{val:12,color:"#581c87"},
+  {val:20,color:"#3b0764"}
+];
+
+var FREEZE_STOPS = [
+  {val:0,color:"#dcfce7"},{val:6,color:"#86efac"},{val:12,color:"#fde68a"},
+  {val:24,color:"#fb923c"},{val:48,color:"#ef4444"},{val:72,color:"#991b1b"},
+  {val:120,color:"#450a0a"}
+];
+
+var TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+var TILE_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>';
+
+/* ═══════════════════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════════════════ */
+var state = {
+  selA:{preset:"uri-2021",start:"2021-02-10",end:"2021-02-20"},
+  selB:{preset:"fern-2026",start:"2026-01-19",end:"2026-01-27"},
+  dataA:null,dataB:null,
+  loading:false,loadMsg:"",loadPct:0,error:null,
+  tab:"temp",
+  frame:0,maxFrames:0,playing:false,speed:500,
+  detailLoc:0,
+  mapsA:{},mapsB:{},markersA:{},markersB:{},
+  charts:{}
+};
+
+var root = document.getElementById("wsc-app");
+var animTimer = null;
+var syncingMap = false;
+
+/* ═══════════════════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════════════════ */
+function h(tag,attrs){
+  var el=document.createElement(tag);
+  if(attrs)Object.keys(attrs).forEach(function(k){
+    if(k==="className")el.className=attrs[k];
+    else if(k==="style"&&typeof attrs[k]==="object")Object.assign(el.style,attrs[k]);
+    else if(k.slice(0,2)==="on")el.addEventListener(k.slice(2).toLowerCase(),attrs[k]);
+    else el.setAttribute(k,attrs[k]);
+  });
+  for(var i=2;i<arguments.length;i++){
+    var c=arguments[i];
+    if(c==null)continue;
+    if(typeof c==="string"||typeof c==="number")el.appendChild(document.createTextNode(c));
+    else if(Array.isArray(c))c.forEach(function(x){if(x)el.appendChild(x);});
+    else el.appendChild(c);
+  }
+  return el;
+}
+
+function lerp(a,b,t){return a+(b-a)*t;}
+function clamp01(v){return Math.max(0,Math.min(1,v));}
+
+function colorForValue(val,stops){
+  if(val<=stops[0].val)return stops[0].color;
+  if(val>=stops[stops.length-1].val)return stops[stops.length-1].color;
+  for(var i=1;i<stops.length;i++){
+    if(val<=stops[i].val){
+      var t=(val-stops[i-1].val)/(stops[i].val-stops[i-1].val);
+      return lerpColor(stops[i-1].color,stops[i].color,t);
+    }
+  }
+  return stops[stops.length-1].color;
+}
+
+function lerpColor(a,b,t){
+  var ar=parseInt(a.slice(1,3),16),ag=parseInt(a.slice(3,5),16),ab=parseInt(a.slice(5,7),16);
+  var br=parseInt(b.slice(1,3),16),bg=parseInt(b.slice(3,5),16),bb=parseInt(b.slice(5,7),16);
+  var rr=Math.round(lerp(ar,br,t)),rg=Math.round(lerp(ag,bg,t)),rb=Math.round(lerp(ab,bb,t));
+  return "#"+(rr<16?"0":"")+rr.toString(16)+(rg<16?"0":"")+rg.toString(16)+(rb<16?"0":"")+rb.toString(16);
+}
+
+function fmt(n,d){return n==null?"—":d!=null?n.toFixed(d):Math.round(n).toString();}
+
+function fmtTemp(v){return v==null?"—":fmt(v,1)+"°F";}
+function fmtSnow(v){return v==null?"—":fmt(v,1)+'"';}
+function fmtHrs(v){return v==null?"—":fmt(v,0)+"h";}
+
+function parseTime(s){
+  var p=s.split("T");
+  var d=p[0].split("-");
+  var t=(p[1]||"00:00").split(":");
+  return new Date(+d[0],+d[1]-1,+d[2],+t[0],+t[1]||0);
+}
+
+function shortDate(s){
+  var d=parseTime(s);
+  var mo=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return mo[d.getMonth()]+" "+d.getDate();
+}
+
+function shortDateTime(s){
+  var d=parseTime(s);
+  var mo=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var hr=d.getHours();
+  var ampm=hr>=12?"PM":"AM";
+  hr=hr%12||12;
+  return mo[d.getMonth()]+" "+d.getDate()+", "+hr+ampm+" CT";
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DATA PROCESSING
+   ═══════════════════════════════════════════════════════════════ */
+function processData(raw){
+  if(!raw||!raw.locations)return null;
+  var locs=raw.locations.map(function(loc){
+    var temps=loc.hourly.temperature||[];
+    var snows=loc.hourly.snowfall||[];
+    var times=loc.hourly.time||[];
+    var freezeHrs=0;
+    var cumSnow=[];
+    var run=0;
+    for(var i=0;i<temps.length;i++){
+      if(temps[i]!=null&&temps[i]<=32)freezeHrs++;
+      run+=(snows[i]||0);
+      cumSnow.push(+run.toFixed(3));
+    }
+    var validTemps=temps.filter(function(t){return t!=null;});
+    var minTemp=validTemps.length?Math.min.apply(null,validTemps):null;
+    var maxTemp=validTemps.length?Math.max.apply(null,validTemps):null;
+    var avgTemp=validTemps.length?(validTemps.reduce(function(a,b){return a+b;},0)/validTemps.length):null;
+    var totalSnow=cumSnow.length?cumSnow[cumSnow.length-1]:0;
+    return {
+      name:loc.name,state:loc.state,lat:loc.lat,lon:loc.lon,
+      times:times,temperature:temps,snowfall:snows,cumSnow:cumSnow,
+      freezeHrs:freezeHrs,minTemp:minTemp,maxTemp:maxTemp,avgTemp:avgTemp,totalSnow:totalSnow
+    };
+  });
+  var allTemps=[];var allSnow=[];var totalFreezeHrs=0;
+  locs.forEach(function(l){
+    if(l.minTemp!=null)allTemps.push(l.minTemp);
+    allSnow.push(l.totalSnow);
+    totalFreezeHrs+=l.freezeHrs;
+  });
+  var belowFreezeCount=locs.filter(function(l){return l.freezeHrs>0;}).length;
+  return {
+    locs:locs,
+    times:locs.length?locs[0].times:[],
+    overallMin:allTemps.length?Math.min.apply(null,allTemps):null,
+    overallMax:allTemps.length?Math.max.apply(null,allTemps):null,
+    maxSnow:allSnow.length?Math.max.apply(null,allSnow):0,
+    avgFreezeHrs:locs.length?(totalFreezeHrs/locs.length):0,
+    maxFreezeHrs:locs.length?Math.max.apply(null,locs.map(function(l){return l.freezeHrs;})):0,
+    belowFreezeCount:belowFreezeCount,
+    totalFreezeHrs:totalFreezeHrs
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   API
+   ═══════════════════════════════════════════════════════════════ */
+function fetchEvent(start,end){
+  var url="/.netlify/functions/winter-storm-data?start_date="+encodeURIComponent(start)+"&end_date="+encodeURIComponent(end);
+  return fetch(url).then(function(r){
+    if(!r.ok)return r.json().then(function(j){throw new Error(j.error||"HTTP "+r.status);});
+    return r.json();
+  });
+}
+
+async function loadComparison(){
+  state.loading=true;state.error=null;state.loadPct=0;state.loadMsg="Fetching Event A data…";
+  state.dataA=null;state.dataB=null;state.frame=0;state.playing=false;
+  stopAnim();render();
+  try{
+    state.loadMsg="Fetching Event A data…";state.loadPct=10;render();
+    var rawA=await fetchEvent(state.selA.start,state.selA.end);
+    state.loadPct=45;state.loadMsg="Processing Event A…";render();
+    state.dataA=processData(rawA);
+    state.loadPct=50;state.loadMsg="Fetching Event B data…";render();
+    var rawB=await fetchEvent(state.selB.start,state.selB.end);
+    state.loadPct=90;state.loadMsg="Processing Event B…";render();
+    state.dataB=processData(rawB);
+    state.maxFrames=Math.max(
+      state.dataA?state.dataA.times.length:0,
+      state.dataB?state.dataB.times.length:0
+    );
+    state.loadPct=100;state.loadMsg="Done!";
+    state.loading=false;render();
+    requestAnimationFrame(function(){
+      initMaps();
+      updateMapsToFrame();
+    });
+  }catch(e){
+    state.loading=false;state.error=e.message||"Unknown error";render();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MAP MANAGEMENT
+   ═══════════════════════════════════════════════════════════════ */
+function initMaps(){
+  destroyMaps();
+  if(state.tab==="temp"||state.tab==="snow"){
+    initMapPair(state.tab);
+  }else if(state.tab==="freeze"){
+    initFreezeMaps();
+  }
+}
+
+function destroyMaps(){
+  ["temp","snow","freeze"].forEach(function(k){
+    if(state.mapsA[k]){try{state.mapsA[k].remove();}catch(e){}}
+    if(state.mapsB[k]){try{state.mapsB[k].remove();}catch(e){}}
+    state.mapsA[k]=null;state.mapsB[k]=null;
+    state.markersA[k]=null;state.markersB[k]=null;
+  });
+}
+
+function makeMap(containerId){
+  var el=document.getElementById(containerId);
+  if(!el)return null;
+  var map=L.map(el,{zoomControl:true,attributionControl:false}).setView([38,-96],4);
+  L.tileLayer(TILE_URL,{attribution:TILE_ATTR,maxZoom:10,minZoom:3}).addTo(map);
+  L.control.attribution({position:"bottomright",prefix:false}).addTo(map);
+  return map;
+}
+
+function syncPair(mA,mB){
+  if(!mA||!mB)return;
+  function onMoveA(){
+    if(syncingMap)return;syncingMap=true;
+    mB.setView(mA.getCenter(),mA.getZoom(),{animate:false});
+    syncingMap=false;
+  }
+  function onMoveB(){
+    if(syncingMap)return;syncingMap=true;
+    mA.setView(mB.getCenter(),mB.getZoom(),{animate:false});
+    syncingMap=false;
+  }
+  mA.on("move",onMoveA);mB.on("move",onMoveB);
+}
+
+function createMarkers(map,data,type){
+  if(!map||!data)return[];
+  return data.locs.map(function(loc){
+    var m=L.circleMarker([loc.lat,loc.lon],{radius:9,weight:2,opacity:.9,fillOpacity:.75,color:"#fff",fillColor:"#ccc"});
+    m.bindTooltip("",{direction:"top",offset:[0,-8]});
+    m.addTo(map);
+    return m;
+  });
+}
+
+function initMapPair(type){
+  var idA="wsc-map-a-"+type;
+  var idB="wsc-map-b-"+type;
+  var mA=makeMap(idA);
+  var mB=makeMap(idB);
+  if(mA&&mB)syncPair(mA,mB);
+  state.mapsA[type]=mA;state.mapsB[type]=mB;
+  state.markersA[type]=createMarkers(mA,state.dataA,type);
+  state.markersB[type]=createMarkers(mB,state.dataB,type);
+}
+
+function initFreezeMaps(){
+  var idA="wsc-map-a-freeze";
+  var idB="wsc-map-b-freeze";
+  var mA=makeMap(idA);
+  var mB=makeMap(idB);
+  if(mA&&mB)syncPair(mA,mB);
+  state.mapsA.freeze=mA;state.mapsB.freeze=mB;
+  state.markersA.freeze=createFreezeMarkers(mA,state.dataA);
+  state.markersB.freeze=createFreezeMarkers(mB,state.dataB);
+}
+
+function createFreezeMarkers(map,data){
+  if(!map||!data)return[];
+  return data.locs.map(function(loc){
+    var hrs=loc.freezeHrs;
+    var color=colorForValue(hrs,FREEZE_STOPS);
+    var radius=Math.max(6,Math.min(18,6+hrs/8));
+    var m=L.circleMarker([loc.lat,loc.lon],{radius:radius,weight:2,opacity:.9,fillOpacity:.8,color:"#fff",fillColor:color});
+    m.bindTooltip("<b>"+loc.name+", "+loc.state+"</b><br>Hours below 32°F: <b>"+hrs+"h</b><br>Min temp: <b>"+fmtTemp(loc.minTemp)+"</b><br>Total snow: <b>"+fmtSnow(loc.totalSnow)+"</b>",{direction:"top",offset:[0,-8]});
+    m.addTo(map);
+    return m;
+  });
+}
+
+function updateMapsToFrame(){
+  var f=state.frame;
+  var type=state.tab;
+  if(type!=="temp"&&type!=="snow")return;
+  updateMarkersAtFrame(state.markersA[type],state.dataA,f,type);
+  updateMarkersAtFrame(state.markersB[type],state.dataB,f,type);
+  updateSnapStats();
+}
+
+function updateMarkersAtFrame(markers,data,frame,type){
+  if(!markers||!data)return;
+  data.locs.forEach(function(loc,i){
+    var m=markers[i];if(!m)return;
+    var fi=Math.min(frame,loc.temperature.length-1);
+    if(fi<0)fi=0;
+    if(type==="temp"){
+      var t=loc.temperature[fi];
+      var color=t!=null?colorForValue(t,TEMP_STOPS):"#ccc";
+      m.setStyle({fillColor:color,color:t!=null&&t<=32?"#1e3a8a":"#fff",weight:t!=null&&t<=32?2.5:1.5});
+      var tip="<b>"+loc.name+", "+loc.state+"</b><br>"+fmtTemp(t);
+      if(loc.times[fi])tip+="<br><span style='color:#64748b;font-size:.8em'>"+shortDateTime(loc.times[fi])+"</span>";
+      m.setTooltipContent(tip);
+    }else{
+      var s=loc.cumSnow[fi]||0;
+      var color2=colorForValue(s,SNOW_STOPS);
+      var r=Math.max(5,Math.min(20,5+s*1.2));
+      m.setStyle({fillColor:color2,color:"#fff",weight:1.5});
+      m.setRadius(r);
+      var tip2="<b>"+loc.name+", "+loc.state+"</b><br>Cumulative snow: <b>"+fmtSnow(s)+"</b>";
+      if(loc.snowfall[fi]!=null)tip2+="<br>This hour: "+fmtSnow(loc.snowfall[fi]);
+      if(loc.times[fi])tip2+="<br><span style='color:#64748b;font-size:.8em'>"+shortDateTime(loc.times[fi])+"</span>";
+      m.setTooltipContent(tip2);
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ANIMATION
+   ═══════════════════════════════════════════════════════════════ */
+function startAnim(){
+  if(state.playing)return;
+  state.playing=true;
+  animTimer=setInterval(function(){
+    if(state.frame>=state.maxFrames-1){
+      state.frame=0;
+    }else{
+      state.frame++;
+    }
+    updateMapsToFrame();
+    updateControls();
+  },state.speed);
+  updateControls();
+}
+function stopAnim(){
+  state.playing=false;
+  if(animTimer){clearInterval(animTimer);animTimer=null;}
+  updateControls();
+}
+function toggleAnim(){
+  if(state.playing)stopAnim();else startAnim();
+}
+function stepFwd(){stopAnim();if(state.frame<state.maxFrames-1)state.frame++;updateMapsToFrame();updateControls();}
+function stepBack(){stopAnim();if(state.frame>0)state.frame--;updateMapsToFrame();updateControls();}
+function seekFrame(f){state.frame=Math.max(0,Math.min(state.maxFrames-1,f));updateMapsToFrame();updateControls();}
+
+function updateControls(){
+  var slider=document.getElementById("wsc-slider");
+  if(slider)slider.value=state.frame;
+  var label=document.getElementById("wsc-time-label");
+  if(label){
+    var tA=state.dataA&&state.dataA.times[state.frame]?shortDateTime(state.dataA.times[state.frame]):"—";
+    var tB=state.dataB&&state.dataB.times[state.frame]?shortDateTime(state.dataB.times[state.frame]):"—";
+    label.textContent="A: "+tA+"  |  B: "+tB;
+  }
+  var playBtn=document.getElementById("wsc-play-btn");
+  if(playBtn)playBtn.className="wsc-ctrl-btn"+(state.playing?" playing":"");
+  updateSnapStats();
+}
+
+function updateSnapStats(){
+  if(state.tab!=="temp"&&state.tab!=="snow")return;
+  var f=state.frame;
+  var boxes=[
+    {id:"wsc-snap-a",data:state.dataA},
+    {id:"wsc-snap-b",data:state.dataB}
+  ];
+  boxes.forEach(function(box){
+    var el=document.getElementById(box.id);
+    if(!el||!box.data)return;
+    var d=box.data;
+    var fi=Math.min(f,d.times.length-1);if(fi<0)fi=0;
+    var temps=d.locs.map(function(l){return l.temperature[fi];}).filter(function(v){return v!=null;});
+    var snows=d.locs.map(function(l){return l.cumSnow[fi]||0;});
+    var belowFreeze=temps.filter(function(t){return t<=32;}).length;
+    if(state.tab==="temp"){
+      el.innerHTML="";
+      el.appendChild(snapRow("Min Temp",fmtTemp(temps.length?Math.min.apply(null,temps):null)));
+      el.appendChild(snapRow("Max Temp",fmtTemp(temps.length?Math.max.apply(null,temps):null)));
+      el.appendChild(snapRow("Avg Temp",fmtTemp(temps.length?(temps.reduce(function(a,b){return a+b;},0)/temps.length):null)));
+      el.appendChild(snapRow("Below 32°F",belowFreeze+" of "+d.locs.length+" locations"));
+    }else{
+      el.innerHTML="";
+      var maxS=Math.max.apply(null,snows);
+      var avgS=snows.reduce(function(a,b){return a+b;},0)/snows.length;
+      var snowLocs=snows.filter(function(s){return s>0.1;}).length;
+      el.appendChild(snapRow("Max Cumulative",fmtSnow(maxS)));
+      el.appendChild(snapRow("Avg Cumulative",fmtSnow(avgS)));
+      el.appendChild(snapRow("Locations w/ Snow",snowLocs+" of "+d.locs.length));
+    }
+  });
+}
+function snapRow(label,val){
+  var row=h("div",{className:"wsc-snap-row"},h("span",null,label),h("span",{className:"wsc-snap-val"},val));
+  return row;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CHARTS
+   ═══════════════════════════════════════════════════════════════ */
+function destroyCharts(){
+  Object.keys(state.charts).forEach(function(k){
+    if(state.charts[k]){state.charts[k].destroy();state.charts[k]=null;}
+  });
+}
+
+function renderDetailChart(){
+  destroyCharts();
+  if(!state.dataA||!state.dataB)return;
+  var idx=state.detailLoc;
+  var locA=state.dataA.locs[idx];
+  var locB=state.dataB.locs[idx];
+  if(!locA||!locB)return;
+
+  /* temperature chart */
+  var tCtx=document.getElementById("wsc-detail-temp-chart");
+  if(tCtx){
+    var labelsA=locA.times.map(function(t,i){return"A:hr"+i;});
+    var labelsB=locB.times.map(function(t,i){return"B:hr"+i;});
+    var maxLen=Math.max(labelsA.length,labelsB.length);
+    var labels=[];for(var i=0;i<maxLen;i++)labels.push("Hour "+i);
+    state.charts.detailTemp=new Chart(tCtx,{
+      type:"line",
+      data:{
+        labels:labels,
+        datasets:[
+          {label:eventName("A")+" Temp (°F)",data:locA.temperature,borderColor:"#2563eb",backgroundColor:"rgba(37,99,235,.08)",borderWidth:2,pointRadius:0,tension:.3,fill:false},
+          {label:eventName("B")+" Temp (°F)",data:locB.temperature,borderColor:"#db2777",backgroundColor:"rgba(219,39,119,.08)",borderWidth:2,pointRadius:0,tension:.3,fill:false},
+          {label:"Freezing (32°F)",data:labels.map(function(){return 32;}),borderColor:"rgba(30,58,138,.35)",borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false}
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:"Inter",size:11}}},tooltip:{mode:"index",intersect:false}},scales:{x:{display:true,ticks:{maxTicksLimit:12,font:{size:10}},grid:{display:false}},y:{title:{display:true,text:"Temperature (°F)",font:{family:"Inter",size:11}},grid:{color:"rgba(0,0,0,.06)"}}},interaction:{mode:"index",intersect:false}}
+    });
+  }
+
+  /* snowfall chart */
+  var sCtx=document.getElementById("wsc-detail-snow-chart");
+  if(sCtx){
+    var maxLen2=Math.max(locA.cumSnow.length,locB.cumSnow.length);
+    var labels2=[];for(var j=0;j<maxLen2;j++)labels2.push("Hour "+j);
+    state.charts.detailSnow=new Chart(sCtx,{
+      type:"line",
+      data:{
+        labels:labels2,
+        datasets:[
+          {label:eventName("A")+" Cumul. Snow",data:locA.cumSnow,borderColor:"#2563eb",backgroundColor:"rgba(37,99,235,.12)",borderWidth:2,pointRadius:0,tension:.3,fill:true},
+          {label:eventName("B")+" Cumul. Snow",data:locB.cumSnow,borderColor:"#db2777",backgroundColor:"rgba(219,39,119,.12)",borderWidth:2,pointRadius:0,tension:.3,fill:true}
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:"Inter",size:11}}},tooltip:{mode:"index",intersect:false}},scales:{x:{display:true,ticks:{maxTicksLimit:12,font:{size:10}},grid:{display:false}},y:{title:{display:true,text:"Cumulative Snowfall (in)",font:{family:"Inter",size:11}},grid:{color:"rgba(0,0,0,.06)"}}},interaction:{mode:"index",intersect:false}}
+    });
+  }
+}
+
+function renderFreezeChart(){
+  destroyCharts();
+  if(!state.dataA||!state.dataB)return;
+  var ctx=document.getElementById("wsc-freeze-bar-chart");
+  if(!ctx)return;
+  var locs=state.dataA.locs;
+  var labels=locs.map(function(l){return l.name+", "+l.state;});
+  var valsA=state.dataA.locs.map(function(l){return l.freezeHrs;});
+  var valsB=state.dataB.locs.map(function(l){return l.freezeHrs;});
+  state.charts.freeze=new Chart(ctx,{
+    type:"bar",
+    data:{
+      labels:labels,
+      datasets:[
+        {label:eventName("A"),data:valsA,backgroundColor:"rgba(37,99,235,.7)",borderColor:"#2563eb",borderWidth:1,borderRadius:3},
+        {label:eventName("B"),data:valsB,backgroundColor:"rgba(219,39,119,.7)",borderColor:"#db2777",borderWidth:1,borderRadius:3}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,indexAxis:"y",
+      plugins:{legend:{labels:{font:{family:"Inter",size:11}}},tooltip:{callbacks:{label:function(ctx2){return ctx2.dataset.label+": "+ctx2.raw+"h below 32°F";}}}},
+      scales:{x:{title:{display:true,text:"Hours Below 32°F",font:{family:"Inter",size:11}},grid:{color:"rgba(0,0,0,.06)"}},y:{ticks:{font:{size:10}},grid:{display:false}}}
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   EVENT NAME HELPER
+   ═══════════════════════════════════════════════════════════════ */
+function eventName(which){
+  var sel=which==="A"?state.selA:state.selB;
+  var pre=PRESET_EVENTS.find(function(p){return p.id===sel.preset;});
+  if(pre)return pre.name;
+  return shortDate(sel.start)+" – "+shortDate(sel.end);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RENDERING
+   ═══════════════════════════════════════════════════════════════ */
+function render(){
+  destroyMaps();destroyCharts();stopAnim();
+  root.innerHTML="";
+  root.appendChild(renderHeader());
+  root.appendChild(renderSelector());
+  if(state.loading){root.appendChild(renderLoading());return;}
+  if(state.error){root.appendChild(renderError());return;}
+  if(state.dataA&&state.dataB){root.appendChild(renderDashboard());}
+}
+
+function renderHeader(){
+  return h("div",{className:"wsc-header"},
+    h("h1",null,"Winter Storm Comparison Tool"),
+    h("p",null,"Compare temperature and snowfall between historic winter storm events. Animated maps show hourly progression with clear freezing-duration analysis across 60 U.S. locations.")
+  );
+}
+
+function renderSelector(){
+  var card=h("div",{className:"wsc-card"});
+  var grid=h("div",{className:"wsc-sel-grid"});
+  grid.appendChild(renderSelCol("A","wsc-badge-a"));
+  grid.appendChild(renderSelCol("B","wsc-badge-b"));
+  card.appendChild(grid);
+
+  var actions=h("div",{className:"wsc-actions"});
+  var btn=h("button",{className:"wsc-btn wsc-btn-primary",onClick:function(){loadComparison();}},"Compare Events");
+  if(state.loading)btn.disabled=true;
+  actions.appendChild(btn);
+  card.appendChild(actions);
+  return card;
+}
+
+function renderSelCol(which,badgeCls){
+  var sel=which==="A"?state.selA:state.selB;
+  var col=h("div",{className:"wsc-sel-col"});
+  col.appendChild(h("label",null,"Event "+which+" ",h("span",{className:"wsc-badge "+badgeCls},which)));
+
+  var select=h("select",{onChange:function(e){handlePresetChange(which,e.target.value);}});
+  PRESET_EVENTS.forEach(function(ev){
+    var opt=h("option",{value:ev.id},ev.name+" ("+ev.sub+")");
+    if(sel.preset===ev.id)opt.selected=true;
+    select.appendChild(opt);
+  });
+  var optCustom=h("option",{value:"custom"},"Custom Date Range");
+  if(sel.preset==="custom")optCustom.selected=true;
+  select.appendChild(optCustom);
+  col.appendChild(select);
+
+  var dateRow=h("div",{className:"wsc-date-row"+(sel.preset!=="custom"?" wsc-hidden":"")});
+  var dStartWrap=h("div",null);
+  dStartWrap.appendChild(h("label",null,"Start"));
+  var inpStart=h("input",{type:"date",value:sel.start,onChange:function(e){handleDateChange(which,"start",e.target.value);}});
+  dStartWrap.appendChild(inpStart);
+  dateRow.appendChild(dStartWrap);
+
+  var dEndWrap=h("div",null);
+  dEndWrap.appendChild(h("label",null,"End"));
+  var inpEnd=h("input",{type:"date",value:sel.end,onChange:function(e){handleDateChange(which,"end",e.target.value);}});
+  dEndWrap.appendChild(inpEnd);
+  dateRow.appendChild(dEndWrap);
+  col.appendChild(dateRow);
+
+  return col;
+}
+
+function renderLoading(){
+  var card=h("div",{className:"wsc-card wsc-loading"});
+  card.appendChild(h("div",{className:"wsc-spinner"}));
+  card.appendChild(h("div",{className:"wsc-load-msg"},state.loadMsg||"Loading…"));
+  var bar=h("div",{className:"wsc-load-bar"});
+  var fill=h("div",{className:"wsc-load-bar-fill",style:{width:state.loadPct+"%"}});
+  bar.appendChild(fill);
+  card.appendChild(bar);
+  return card;
+}
+
+function renderError(){
+  return h("div",{className:"wsc-card wsc-error"},"Error: "+state.error+". Please try a different date range or check your connection.");
+}
+
+/* ── dashboard ── */
+function renderDashboard(){
+  var wrap=h("div",null);
+  wrap.appendChild(renderTabs());
+  var content=h("div",{className:"wsc-card"});
+  if(state.tab==="temp")content.appendChild(renderMapTab("temp"));
+  else if(state.tab==="snow")content.appendChild(renderMapTab("snow"));
+  else if(state.tab==="freeze")content.appendChild(renderFreezeTab());
+  else if(state.tab==="stats")content.appendChild(renderStatsTab());
+  else if(state.tab==="detail")content.appendChild(renderDetailTab());
+  wrap.appendChild(content);
+  return wrap;
+}
+
+function renderTabs(){
+  var bar=h("div",{className:"wsc-tabs"});
+  TABS.forEach(function(tab){
+    var cls="wsc-tab"+(state.tab===tab.id?" active":"");
+    bar.appendChild(h("button",{className:cls,onClick:function(){handleTabChange(tab.id);}},tab.icon+" "+tab.label));
+  });
+  return bar;
+}
+
+/* ── temperature / snowfall map tab ── */
+function renderMapTab(type){
+  var frag=h("div",null);
+  frag.appendChild(h("div",{className:"wsc-section-title"},type==="temp"?"Hourly Temperature Comparison":"Cumulative Snowfall Comparison"));
+  frag.appendChild(h("div",{className:"wsc-section-sub"},type==="temp"?"Watch temperatures evolve hour-by-hour. Blue-bordered markers indicate below-freezing locations.":"See snowfall accumulate across the country. Marker size scales with total accumulation."));
+
+  /* maps */
+  var row=h("div",{className:"wsc-map-row"});
+  var wrapA=h("div",{className:"wsc-map-wrap"});
+  wrapA.appendChild(h("div",{className:"wsc-map-label wsc-map-label-a"},eventName("A")));
+  wrapA.appendChild(h("div",{className:"wsc-map-container",id:"wsc-map-a-"+type}));
+  row.appendChild(wrapA);
+
+  var wrapB=h("div",{className:"wsc-map-wrap"});
+  wrapB.appendChild(h("div",{className:"wsc-map-label wsc-map-label-b"},eventName("B")));
+  wrapB.appendChild(h("div",{className:"wsc-map-container",id:"wsc-map-b-"+type}));
+  row.appendChild(wrapB);
+  frag.appendChild(row);
+
+  /* controls */
+  frag.appendChild(renderAnimControls());
+
+  /* legend */
+  frag.appendChild(renderLegend(type));
+
+  /* snapshot stats */
+  var snap=h("div",{className:"wsc-snap-stats"});
+  var snapA=h("div",{className:"wsc-snap-card"});
+  snapA.appendChild(h("h4",null,eventName("A")+" — Current Frame"));
+  snapA.appendChild(h("div",{id:"wsc-snap-a"}));
+  snap.appendChild(snapA);
+  var snapB=h("div",{className:"wsc-snap-card"});
+  snapB.appendChild(h("h4",null,eventName("B")+" — Current Frame"));
+  snapB.appendChild(h("div",{id:"wsc-snap-b"}));
+  snap.appendChild(snapB);
+  frag.appendChild(snap);
+
+  return frag;
+}
+
+function renderAnimControls(){
+  var bar=h("div",{className:"wsc-controls"});
+
+  /* step back */
+  var btnBack=h("button",{className:"wsc-ctrl-btn",onClick:stepBack,title:"Step back"});
+  btnBack.innerHTML='<svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>';
+  bar.appendChild(btnBack);
+
+  /* play/pause */
+  var btnPlay=h("button",{className:"wsc-ctrl-btn"+(state.playing?" playing":""),id:"wsc-play-btn",onClick:toggleAnim,title:"Play/Pause"});
+  btnPlay.innerHTML=state.playing?'<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>':'<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+  bar.appendChild(btnPlay);
+
+  /* step forward */
+  var btnFwd=h("button",{className:"wsc-ctrl-btn",onClick:stepFwd,title:"Step forward"});
+  btnFwd.innerHTML='<svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>';
+  bar.appendChild(btnFwd);
+
+  /* slider */
+  var sw=h("div",{className:"wsc-slider-wrap"});
+  var slider=h("input",{type:"range",className:"wsc-slider",id:"wsc-slider",min:"0",max:String(state.maxFrames-1),value:String(state.frame),onInput:function(e){seekFrame(parseInt(e.target.value));}});
+  sw.appendChild(slider);
+  bar.appendChild(sw);
+
+  /* speed */
+  var speedSel=h("select",{className:"wsc-speed-sel",onChange:function(e){
+    stopAnim();state.speed=parseInt(e.target.value);
+  }});
+  [{l:"0.5×",v:1000},{l:"1×",v:500},{l:"2×",v:250},{l:"4×",v:125}].forEach(function(o){
+    var opt=h("option",{value:String(o.v)},o.l);
+    if(state.speed===o.v)opt.selected=true;
+    speedSel.appendChild(opt);
+  });
+  bar.appendChild(speedSel);
+
+  /* time label */
+  bar.appendChild(h("div",{className:"wsc-time-label",id:"wsc-time-label"},"Frame "+state.frame));
+
+  return bar;
+}
+
+function renderLegend(type){
+  var wrap=h("div",{className:"wsc-legend"});
+  if(type==="temp"){
+    wrap.appendChild(h("span",{className:"wsc-legend-title"},"Temperature"));
+    var bar=h("div",{className:"wsc-legend-bar",style:{background:"linear-gradient(to right,#4c1d95,#581c87,#1e3a8a,#1d4ed8,#60a5fa,#86efac,#22c55e,#eab308,#f97316,#ef4444,#881337)"}});
+    wrap.appendChild(bar);
+    var labels=h("div",{className:"wsc-legend-labels"});
+    ["-10°F","0°","10°","20°","32°","40°","50°","60°","70°","85°F"].forEach(function(l){labels.appendChild(h("span",null,l));});
+    wrap.appendChild(labels);
+    wrap.appendChild(h("div",{className:"wsc-legend-freeze"},h("span",null),"\u2264 32°F = Below Freezing"));
+  }else if(type==="snow"){
+    wrap.appendChild(h("span",{className:"wsc-legend-title"},"Cumulative Snowfall"));
+    var bar2=h("div",{className:"wsc-legend-bar",style:{background:"linear-gradient(to right,#f0f9ff,#bae6fd,#38bdf8,#0284c7,#1e40af,#581c87,#3b0764)"}});
+    wrap.appendChild(bar2);
+    var labels2=h("div",{className:"wsc-legend-labels"});
+    ['0"','0.5"','2"','4"','8"','12"','20"+'].forEach(function(l){labels2.appendChild(h("span",null,l));});
+    wrap.appendChild(labels2);
+  }else if(type==="freeze"){
+    wrap.appendChild(h("span",{className:"wsc-legend-title"},"Hours Below 32°F"));
+    var bar3=h("div",{className:"wsc-legend-bar",style:{background:"linear-gradient(to right,#dcfce7,#86efac,#fde68a,#fb923c,#ef4444,#991b1b,#450a0a)"}});
+    wrap.appendChild(bar3);
+    var labels3=h("div",{className:"wsc-legend-labels"});
+    ["0h","6h","12h","24h","48h","72h","120h+"].forEach(function(l){labels3.appendChild(h("span",null,l));});
+    wrap.appendChild(labels3);
+  }
+  return wrap;
+}
+
+/* ── freeze tab ── */
+function renderFreezeTab(){
+  var frag=h("div",null);
+  frag.appendChild(h("div",{className:"wsc-section-title"},"Below-Freezing Duration Analysis"));
+  frag.appendChild(h("div",{className:"wsc-section-sub"},"How long did each location stay at or below 32°F? Larger, darker markers indicate longer freezing periods."));
+
+  /* maps */
+  var row=h("div",{className:"wsc-map-row"});
+  var wrapA=h("div",{className:"wsc-map-wrap"});
+  wrapA.appendChild(h("div",{className:"wsc-map-label wsc-map-label-a"},eventName("A")));
+  wrapA.appendChild(h("div",{className:"wsc-map-container",id:"wsc-map-a-freeze"}));
+  row.appendChild(wrapA);
+  var wrapB=h("div",{className:"wsc-map-wrap"});
+  wrapB.appendChild(h("div",{className:"wsc-map-label wsc-map-label-b"},eventName("B")));
+  wrapB.appendChild(h("div",{className:"wsc-map-container",id:"wsc-map-b-freeze"}));
+  row.appendChild(wrapB);
+  frag.appendChild(row);
+
+  /* legend */
+  frag.appendChild(renderLegend("freeze"));
+
+  /* bar chart */
+  frag.appendChild(h("div",{className:"wsc-section-title",style:{marginTop:"24px"}},"Hours Below Freezing by Location"));
+  var chartWrap=h("div",{className:"wsc-dur-chart-wrap",style:{height:Math.max(400,state.dataA.locs.length*28)+"px"}});
+  chartWrap.appendChild(h("canvas",{id:"wsc-freeze-bar-chart"}));
+  frag.appendChild(chartWrap);
+
+  /* table */
+  frag.appendChild(h("div",{className:"wsc-section-title",style:{marginTop:"24px"}},"Detailed Freezing Comparison"));
+  frag.appendChild(renderFreezeTable());
+
+  return frag;
+}
+
+function renderFreezeTable(){
+  var scroll=h("div",{className:"wsc-tbl-scroll"});
+  var tbl=h("table",{className:"wsc-freeze-tbl"});
+  var thead=h("thead",null,h("tr",null,
+    h("th",null,"Location"),
+    h("th",null,eventName("A")+" Hrs ≤32°F"),
+    h("th",null,eventName("B")+" Hrs ≤32°F"),
+    h("th",null,"Difference"),
+    h("th",null,eventName("A")+" Min °F"),
+    h("th",null,eventName("B")+" Min °F"),
+    h("th",null,eventName("A")+" Snow"),
+    h("th",null,eventName("B")+" Snow")
+  ));
+  tbl.appendChild(thead);
+
+  var tbody=h("tbody",null);
+  var maxH=Math.max(state.dataA.maxFreezeHrs,state.dataB.maxFreezeHrs)||1;
+  var combined=state.dataA.locs.map(function(la,i){
+    var lb=state.dataB.locs[i];
+    return {
+      name:la.name+", "+la.state,
+      hrsA:la.freezeHrs,hrsB:lb.freezeHrs,
+      diff:la.freezeHrs-lb.freezeHrs,
+      minA:la.minTemp,minB:lb.minTemp,
+      snowA:la.totalSnow,snowB:lb.totalSnow
+    };
+  }).sort(function(a,b){return Math.max(b.hrsA,b.hrsB)-Math.max(a.hrsA,a.hrsB);});
+
+  combined.forEach(function(r){
+    var diffStr=(r.diff>0?"+":"")+r.diff+"h";
+    var diffCls=r.diff>0?"wsc-cold-text":(r.diff<0?"wsc-warm-text":"");
+    var barA=h("span",{className:"dur-bar",style:{width:Math.round(r.hrsA/maxH*80)+"px",background:"#2563eb"}});
+    var barB=h("span",{className:"dur-bar",style:{width:Math.round(r.hrsB/maxH*80)+"px",background:"#db2777"}});
+    tbody.appendChild(h("tr",null,
+      h("td",{style:{fontWeight:"600",whiteSpace:"nowrap"}},r.name),
+      h("td",null,barA," ",r.hrsA+"h"),
+      h("td",null,barB," ",r.hrsB+"h"),
+      h("td",{style:{fontWeight:"700"},className:diffCls},diffStr),
+      h("td",null,fmtTemp(r.minA)),
+      h("td",null,fmtTemp(r.minB)),
+      h("td",null,fmtSnow(r.snowA)),
+      h("td",null,fmtSnow(r.snowB))
+    ));
+  });
+  tbl.appendChild(tbody);
+  scroll.appendChild(tbl);
+  return scroll;
+}
+
+/* ── stats tab ── */
+function renderStatsTab(){
+  var frag=h("div",null);
+  frag.appendChild(h("div",{className:"wsc-section-title"},"Summary Statistics Comparison"));
+  frag.appendChild(h("div",{className:"wsc-section-sub"},"Side-by-side aggregate metrics for both events across all "+state.dataA.locs.length+" monitored locations."));
+
+  var grid=h("div",{className:"wsc-stats-grid"});
+  var dA=state.dataA,dB=state.dataB;
+
+  grid.appendChild(statCard("Lowest Temperature Recorded",fmtTemp(dA.overallMin),fmtTemp(dB.overallMin),dA.overallMin,dB.overallMin,true));
+  grid.appendChild(statCard("Highest Snowfall Total (single loc.)",fmtSnow(dA.maxSnow),fmtSnow(dB.maxSnow),dA.maxSnow,dB.maxSnow,false));
+  grid.appendChild(statCard("Avg Hours Below Freezing",fmtHrs(dA.avgFreezeHrs),fmtHrs(dB.avgFreezeHrs),dA.avgFreezeHrs,dB.avgFreezeHrs,false));
+  grid.appendChild(statCard("Max Hours Below Freezing (single loc.)",fmtHrs(dA.maxFreezeHrs),fmtHrs(dB.maxFreezeHrs),dA.maxFreezeHrs,dB.maxFreezeHrs,false));
+  grid.appendChild(statCard("Locations That Went Below Freezing",dA.belowFreezeCount+" / "+dA.locs.length,dB.belowFreezeCount+" / "+dB.locs.length,dA.belowFreezeCount,dB.belowFreezeCount,false));
+  grid.appendChild(statCard("Total Freeze-Hours (all locs.)",fmt(dA.totalFreezeHrs)+"h",fmt(dB.totalFreezeHrs)+"h",dA.totalFreezeHrs,dB.totalFreezeHrs,false));
+
+  /* per-location min temp extremes */
+  var extremeA=dA.locs.slice().sort(function(a,b){return(a.minTemp!=null?a.minTemp:999)-(b.minTemp!=null?b.minTemp:999);}).slice(0,5);
+  var extremeB=dB.locs.slice().sort(function(a,b){return(a.minTemp!=null?a.minTemp:999)-(b.minTemp!=null?b.minTemp:999);}).slice(0,5);
+
+  frag.appendChild(grid);
+
+  /* top 5 coldest */
+  frag.appendChild(h("div",{className:"wsc-section-title",style:{marginTop:"24px"}},"Top 5 Coldest Locations"));
+  var cols=h("div",{className:"wsc-snap-stats"});
+  var colA=h("div",{className:"wsc-snap-card"});
+  colA.appendChild(h("h4",null,eventName("A")));
+  extremeA.forEach(function(l){colA.appendChild(snapRow(l.name+", "+l.state,fmtTemp(l.minTemp)));});
+  cols.appendChild(colA);
+  var colB=h("div",{className:"wsc-snap-card"});
+  colB.appendChild(h("h4",null,eventName("B")));
+  extremeB.forEach(function(l){colB.appendChild(snapRow(l.name+", "+l.state,fmtTemp(l.minTemp)));});
+  cols.appendChild(colB);
+  frag.appendChild(cols);
+
+  /* top 5 snowiest */
+  var snowyA=dA.locs.slice().sort(function(a,b){return b.totalSnow-a.totalSnow;}).slice(0,5);
+  var snowyB=dB.locs.slice().sort(function(a,b){return b.totalSnow-a.totalSnow;}).slice(0,5);
+  frag.appendChild(h("div",{className:"wsc-section-title",style:{marginTop:"24px"}},"Top 5 Snowiest Locations"));
+  var cols2=h("div",{className:"wsc-snap-stats"});
+  var sColA=h("div",{className:"wsc-snap-card"});
+  sColA.appendChild(h("h4",null,eventName("A")));
+  snowyA.forEach(function(l){sColA.appendChild(snapRow(l.name+", "+l.state,fmtSnow(l.totalSnow)));});
+  cols2.appendChild(sColA);
+  var sColB=h("div",{className:"wsc-snap-card"});
+  sColB.appendChild(h("h4",null,eventName("B")));
+  snowyB.forEach(function(l){sColB.appendChild(snapRow(l.name+", "+l.state,fmtSnow(l.totalSnow)));});
+  cols2.appendChild(sColB);
+  frag.appendChild(cols2);
+
+  return frag;
+}
+
+function statCard(title,valA,valB,numA,numB,lowerIsWorse){
+  var card=h("div",{className:"wsc-stat-card"});
+  card.appendChild(h("h4",null,title));
+  var vals=h("div",{className:"wsc-stat-vals"});
+  vals.appendChild(h("div",{className:"wsc-stat-evt"},h("div",{className:"wsc-stat-num",style:{color:"#1e40af"}},valA),h("div",{className:"wsc-stat-label wsc-stat-label-a"},eventName("A"))));
+  vals.appendChild(h("div",{className:"wsc-stat-evt"},h("div",{className:"wsc-stat-num",style:{color:"#9d174d"}},valB),h("div",{className:"wsc-stat-label wsc-stat-label-b"},eventName("B"))));
+  card.appendChild(vals);
+
+  if(numA!=null&&numB!=null){
+    var worse,cls;
+    if(numA===numB){worse="Equal";cls="wsc-stat-same";}
+    else if(lowerIsWorse){
+      worse=numA<numB?eventName("A")+" more severe":eventName("B")+" more severe";
+      cls=numA<numB?"wsc-stat-worse":"wsc-stat-better";
+    }else{
+      worse=numA>numB?eventName("A")+" more severe":eventName("B")+" more severe";
+      cls=numA>numB?"wsc-stat-worse":"wsc-stat-better";
+    }
+    card.appendChild(h("div",{className:"wsc-stat-compare "+cls},worse));
+  }
+  return card;
+}
+
+/* ── detail tab ── */
+function renderDetailTab(){
+  var frag=h("div",null);
+  frag.appendChild(h("div",{className:"wsc-section-title"},"Location Detail Comparison"));
+  frag.appendChild(h("div",{className:"wsc-section-sub"},"Select a location to see hour-by-hour temperature and snowfall accumulation charts for both events."));
+
+  /* location selector */
+  var selWrap=h("div",{className:"wsc-loc-sel"});
+  selWrap.appendChild(h("label",{style:{fontWeight:"600",fontSize:".88rem"}},"Location:"));
+  var sel=h("select",{onChange:function(e){state.detailLoc=parseInt(e.target.value);renderDetailChart();}});
+  state.dataA.locs.forEach(function(loc,i){
+    var opt=h("option",{value:String(i)},loc.name+", "+loc.state);
+    if(i===state.detailLoc)opt.selected=true;
+    sel.appendChild(opt);
+  });
+  selWrap.appendChild(sel);
+  frag.appendChild(selWrap);
+
+  /* detail stats for selected location */
+  var idx=state.detailLoc;
+  var la=state.dataA.locs[idx],lb=state.dataB.locs[idx];
+  if(la&&lb){
+    var detGrid=h("div",{className:"wsc-snap-stats",style:{marginTop:"14px"}});
+    var dCardA=h("div",{className:"wsc-snap-card"});
+    dCardA.appendChild(h("h4",null,eventName("A")+" — "+la.name+", "+la.state));
+    dCardA.appendChild(snapRow("Min Temp",fmtTemp(la.minTemp)));
+    dCardA.appendChild(snapRow("Max Temp",fmtTemp(la.maxTemp)));
+    dCardA.appendChild(snapRow("Avg Temp",fmtTemp(la.avgTemp)));
+    dCardA.appendChild(snapRow("Hours ≤32°F",fmtHrs(la.freezeHrs)));
+    dCardA.appendChild(snapRow("Total Snow",fmtSnow(la.totalSnow)));
+    detGrid.appendChild(dCardA);
+
+    var dCardB=h("div",{className:"wsc-snap-card"});
+    dCardB.appendChild(h("h4",null,eventName("B")+" — "+lb.name+", "+lb.state));
+    dCardB.appendChild(snapRow("Min Temp",fmtTemp(lb.minTemp)));
+    dCardB.appendChild(snapRow("Max Temp",fmtTemp(lb.maxTemp)));
+    dCardB.appendChild(snapRow("Avg Temp",fmtTemp(lb.avgTemp)));
+    dCardB.appendChild(snapRow("Hours ≤32°F",fmtHrs(lb.freezeHrs)));
+    dCardB.appendChild(snapRow("Total Snow",fmtSnow(lb.totalSnow)));
+    detGrid.appendChild(dCardB);
+    frag.appendChild(detGrid);
+  }
+
+  /* temperature chart */
+  frag.appendChild(h("div",{className:"wsc-section-title",style:{marginTop:"20px"}},"Temperature Timeline"));
+  var cWrap1=h("div",{className:"wsc-chart-wrap"});
+  cWrap1.appendChild(h("canvas",{id:"wsc-detail-temp-chart"}));
+  frag.appendChild(cWrap1);
+
+  /* snowfall chart */
+  frag.appendChild(h("div",{className:"wsc-section-title",style:{marginTop:"20px"}},"Cumulative Snowfall Timeline"));
+  var cWrap2=h("div",{className:"wsc-chart-wrap"});
+  cWrap2.appendChild(h("canvas",{id:"wsc-detail-snow-chart"}));
+  frag.appendChild(cWrap2);
+
+  return frag;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   EVENT HANDLERS
+   ═══════════════════════════════════════════════════════════════ */
+function handlePresetChange(which,val){
+  var sel=which==="A"?state.selA:state.selB;
+  if(val==="custom"){
+    sel.preset="custom";
+  }else{
+    sel.preset=val;
+    var ev=PRESET_EVENTS.find(function(p){return p.id===val;});
+    if(ev){sel.start=ev.start;sel.end=ev.end;}
+  }
+  render();
+}
+function handleDateChange(which,field,val){
+  var sel=which==="A"?state.selA:state.selB;
+  sel[field]=val;
+}
+function handleTabChange(tabId){
+  stopAnim();
+  state.tab=tabId;
+  state.frame=0;
+  destroyMaps();destroyCharts();
+  /* re-render dashboard only */
+  var dashEl=document.querySelector(".wsc-card:last-child");
+  if(dashEl)dashEl.remove();
+  var tabsEl=document.querySelector(".wsc-tabs");
+  if(tabsEl)tabsEl.remove();
+  var app=document.getElementById("wsc-app");
+  if(app&&state.dataA&&state.dataB){
+    app.appendChild(renderTabs());
+    var content=h("div",{className:"wsc-card"});
+    if(state.tab==="temp")content.appendChild(renderMapTab("temp"));
+    else if(state.tab==="snow")content.appendChild(renderMapTab("snow"));
+    else if(state.tab==="freeze")content.appendChild(renderFreezeTab());
+    else if(state.tab==="stats")content.appendChild(renderStatsTab());
+    else if(state.tab==="detail")content.appendChild(renderDetailTab());
+    app.appendChild(content);
+    requestAnimationFrame(function(){
+      if(state.tab==="temp"||state.tab==="snow"){
+        initMapPair(state.tab);
+        updateMapsToFrame();
+      }else if(state.tab==="freeze"){
+        initFreezeMaps();
+        renderFreezeChart();
+      }else if(state.tab==="detail"){
+        renderDetailChart();
+      }
+    });
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════════════════ */
+render();
+
+})();
+</script>

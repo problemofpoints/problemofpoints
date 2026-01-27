@@ -1,0 +1,99 @@
+<svg width="960" height="540" viewBox="0 0 960 540" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="wsc-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#eef3ff"/>
+      <stop offset="55%" stop-color="#e8eeff"/>
+      <stop offset="100%" stop-color="#f0f4ff"/>
+    </linearGradient>
+    <linearGradient id="wsc-card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="rgba(255,255,255,0.94)"/>
+      <stop offset="1" stop-color="rgba(255,255,255,0.78)"/>
+    </linearGradient>
+    <linearGradient id="wsc-temp" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#581c87"/>
+      <stop offset="25%" stop-color="#1d4ed8"/>
+      <stop offset="40%" stop-color="#60a5fa"/>
+      <stop offset="50%" stop-color="#86efac"/>
+      <stop offset="70%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#ef4444"/>
+    </linearGradient>
+    <linearGradient id="wsc-snow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f0f9ff"/>
+      <stop offset="30%" stop-color="#38bdf8"/>
+      <stop offset="60%" stop-color="#1e40af"/>
+      <stop offset="100%" stop-color="#581c87"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="540" rx="36" fill="url(#wsc-bg)"/>
+  <rect x="60" y="80" width="840" height="380" rx="28" fill="url(#wsc-card)" stroke="rgba(148,163,184,0.18)"/>
+
+  <g fill="#0f172a" font-family="Inter, 'Segoe UI', system-ui" letter-spacing="-0.01em">
+    <text x="100" y="130" font-weight="800" font-size="36">Winter Storm Comparison</text>
+    <text x="102" y="160" font-size="16" opacity="0.6" letter-spacing="0">
+      Animated temperature &amp; snowfall maps for historic U.S. winter storms
+    </text>
+  </g>
+
+  <!-- Map A outline -->
+  <rect x="100" y="182" width="370" height="200" rx="14" fill="#f8fbff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="116" y="204" font-family="Inter" font-weight="700" font-size="12" fill="#1e40af">EVENT A: Uri (Feb 2021)</text>
+  <!-- dots on map A -->
+  <circle cx="210" cy="290" r="8" fill="#1d4ed8" opacity=".8"/>
+  <circle cx="250" cy="310" r="7" fill="#2563eb" opacity=".8"/>
+  <circle cx="190" cy="260" r="9" fill="#581c87" opacity=".8"/>
+  <circle cx="310" cy="280" r="6" fill="#60a5fa" opacity=".7"/>
+  <circle cx="340" cy="250" r="7" fill="#86efac" opacity=".7"/>
+  <circle cx="380" cy="230" r="6" fill="#22c55e" opacity=".7"/>
+  <circle cx="280" cy="240" r="7" fill="#1e3a8a" opacity=".8"/>
+  <circle cx="160" cy="310" r="8" fill="#4c1d95" opacity=".8"/>
+  <circle cx="230" cy="350" r="6" fill="#1d4ed8" opacity=".7"/>
+  <circle cx="150" cy="270" r="7" fill="#581c87" opacity=".8"/>
+  <circle cx="350" cy="310" r="5" fill="#eab308" opacity=".7"/>
+  <circle cx="420" cy="260" r="5" fill="#f97316" opacity=".7"/>
+
+  <!-- Map B outline -->
+  <rect x="490" y="182" width="370" height="200" rx="14" fill="#f8fbff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="506" y="204" font-family="Inter" font-weight="700" font-size="12" fill="#9d174d">EVENT B: Fern (Jan 2026)</text>
+  <!-- dots on map B -->
+  <circle cx="600" cy="290" r="8" fill="#1d4ed8" opacity=".8"/>
+  <circle cx="640" cy="310" r="7" fill="#2563eb" opacity=".8"/>
+  <circle cx="580" cy="260" r="8" fill="#1e3a8a" opacity=".8"/>
+  <circle cx="700" cy="280" r="6" fill="#86efac" opacity=".7"/>
+  <circle cx="730" cy="250" r="7" fill="#22c55e" opacity=".7"/>
+  <circle cx="770" cy="230" r="6" fill="#eab308" opacity=".7"/>
+  <circle cx="670" cy="240" r="7" fill="#60a5fa" opacity=".8"/>
+  <circle cx="550" cy="310" r="7" fill="#581c87" opacity=".8"/>
+  <circle cx="620" cy="350" r="6" fill="#2563eb" opacity=".7"/>
+  <circle cx="540" cy="270" r="6" fill="#1d4ed8" opacity=".8"/>
+  <circle cx="740" cy="310" r="5" fill="#f97316" opacity=".7"/>
+  <circle cx="810" cy="260" r="5" fill="#ef4444" opacity=".7"/>
+
+  <!-- Temperature legend bar -->
+  <rect x="100" y="400" width="360" height="10" rx="5" fill="url(#wsc-temp)"/>
+  <g font-family="Inter" font-size="10" fill="#64748b">
+    <text x="100" y="426">-10°F</text>
+    <text x="225" y="426">32°F</text>
+    <text x="430" y="426" text-anchor="end">85°F</text>
+  </g>
+  <text x="100" y="394" font-family="Inter" font-weight="700" font-size="11" fill="#334155">Temperature</text>
+
+  <!-- Snowfall legend bar -->
+  <rect x="500" y="400" width="360" height="10" rx="5" fill="url(#wsc-snow)"/>
+  <g font-family="Inter" font-size="10" fill="#64748b">
+    <text x="500" y="426">0"</text>
+    <text x="650" y="426">6"</text>
+    <text x="830" y="426" text-anchor="end">20"+</text>
+  </g>
+  <text x="500" y="394" font-family="Inter" font-weight="700" font-size="11" fill="#334155">Cumulative Snowfall</text>
+
+  <!-- Play button indicator -->
+  <g transform="translate(448 282)">
+    <circle cx="0" cy="0" r="20" fill="rgba(59,130,246,.12)" stroke="#3b82f6" stroke-width="2"/>
+    <polygon points="-6,-10 -6,10 10,0" fill="#3b82f6"/>
+  </g>
+
+  <!-- Footer -->
+  <g transform="translate(100 484)" font-family="Inter" font-size="13">
+    <text fill="#334155" font-weight="600">Animated hourly maps · Below-freezing duration · Side-by-side event comparison</text>
+  </g>
+</svg>
