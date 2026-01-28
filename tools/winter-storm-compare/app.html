@@ -1,0 +1,542 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+<div class="wsc-app" id="winter-storm-compare" markdown="0">
+<header class="wsc-header">
+<div>
+<p class="wsc-eyebrow">Winter Storm Toolkit</p>
+<h1>Winter Storm Event Comparator</h1>
+<p class="wsc-subhead">
+Compare two winter events with hourly temperature and snowfall data. Explore time-lapse maps,
+freezing-duration footprints, and summary metrics across major U.S. metros.
+</p>
+</div>
+<div class="wsc-header-card">
+<div>
+<h2>How to use</h2>
+<ol>
+<li>Select two events or set custom date ranges.</li>
+<li>Load the data and review snowfall + freezing-duration summaries.</li>
+<li>Use the time-lapse controls to animate temperature and snowfall maps.</li>
+</ol>
+</div>
+</div>
+</header>
+
+<section class="wsc-controls">
+<div class="wsc-control-panel">
+<h3>Event A</h3>
+<label for="event-a-select">Preset event</label>
+<select id="event-a-select" class="wsc-select"></select>
+<div class="wsc-date-grid">
+<label>
+Start date
+<input type="date" id="event-a-start" class="wsc-input">
+</label>
+<label>
+End date
+<input type="date" id="event-a-end" class="wsc-input">
+</label>
+</div>
+<p class="wsc-helper" id="event-a-note"></p>
+</div>
+
+<div class="wsc-control-panel">
+<h3>Event B</h3>
+<label for="event-b-select">Preset event</label>
+<select id="event-b-select" class="wsc-select"></select>
+<div class="wsc-date-grid">
+<label>
+Start date
+<input type="date" id="event-b-start" class="wsc-input">
+</label>
+<label>
+End date
+<input type="date" id="event-b-end" class="wsc-input">
+</label>
+</div>
+<p class="wsc-helper" id="event-b-note"></p>
+</div>
+
+<div class="wsc-control-panel wsc-control-actions">
+<h3>Data Controls</h3>
+<label for="interval-hours">Time step</label>
+<select id="interval-hours" class="wsc-select">
+<option value="3">Every 3 hours</option>
+<option value="6" selected>Every 6 hours</option>
+<option value="12">Every 12 hours</option>
+<option value="24">Daily</option>
+</select>
+<button class="wsc-button" id="load-data">Load event data</button>
+<p class="wsc-helper" id="data-status"></p>
+</div>
+</section>
+
+<section class="wsc-summary">
+<div class="wsc-summary-card">
+<h3>Event A overview</h3>
+<div class="wsc-summary-grid" id="event-a-summary"></div>
+</div>
+<div class="wsc-summary-card">
+<h3>Event B overview</h3>
+<div class="wsc-summary-grid" id="event-b-summary"></div>
+</div>
+<div class="wsc-summary-card">
+<h3>Comparison highlights</h3>
+<div class="wsc-summary-grid" id="event-compare-summary"></div>
+</div>
+</section>
+
+<section class="wsc-charts">
+<div class="wsc-chart-card">
+<h3>Average temperature profile</h3>
+<canvas id="temp-chart" height="140"></canvas>
+</div>
+<div class="wsc-chart-card">
+<h3>Cumulative snowfall profile</h3>
+<canvas id="snow-chart" height="140"></canvas>
+</div>
+</section>
+
+<section class="wsc-map-section">
+<header>
+<div>
+<h3>Temperature time-lapse</h3>
+<p>
+Colors represent average temperature in each time step. Marker outlines indicate freezing-hour
+duration for the full event.
+</p>
+<div class="wsc-legend">
+<span>Freezing hours:</span>
+<span class="wsc-legend-dot small"></span><span>0–12</span>
+<span class="wsc-legend-dot medium"></span><span>24–48</span>
+<span class="wsc-legend-dot large"></span><span>72+</span>
+</div>
+</div>
+<div class="wsc-timeline-controls" data-metric="temp">
+<button class="wsc-icon-button" data-action="play">Play</button>
+<input type="range" min="0" max="100" value="0" step="1" class="wsc-slider" data-action="slider">
+<button class="wsc-icon-button" data-action="pause">Pause</button>
+</div>
+</header>
+<div class="wsc-map-grid">
+<div class="wsc-map-card">
+<div class="wsc-map-header">
+<span>Event A</span>
+<span class="wsc-map-time" id="temp-time-a">--</span>
+</div>
+<div class="wsc-map" id="temp-map-a"></div>
+</div>
+<div class="wsc-map-card">
+<div class="wsc-map-header">
+<span>Event B</span>
+<span class="wsc-map-time" id="temp-time-b">--</span>
+</div>
+<div class="wsc-map" id="temp-map-b"></div>
+</div>
+</div>
+</section>
+
+<section class="wsc-map-section">
+<header>
+<div>
+<h3>Snowfall time-lapse</h3>
+<p>
+Colors represent cumulative snowfall totals for each time step. Marker outlines show how long
+each metro stayed below freezing.
+</p>
+<div class="wsc-legend">
+<span>Freezing hours:</span>
+<span class="wsc-legend-dot small"></span><span>0–12</span>
+<span class="wsc-legend-dot medium"></span><span>24–48</span>
+<span class="wsc-legend-dot large"></span><span>72+</span>
+</div>
+</div>
+<div class="wsc-timeline-controls" data-metric="snow">
+<button class="wsc-icon-button" data-action="play">Play</button>
+<input type="range" min="0" max="100" value="0" step="1" class="wsc-slider" data-action="slider">
+<button class="wsc-icon-button" data-action="pause">Pause</button>
+</div>
+</header>
+<div class="wsc-map-grid">
+<div class="wsc-map-card">
+<div class="wsc-map-header">
+<span>Event A</span>
+<span class="wsc-map-time" id="snow-time-a">--</span>
+</div>
+<div class="wsc-map" id="snow-map-a"></div>
+</div>
+<div class="wsc-map-card">
+<div class="wsc-map-header">
+<span>Event B</span>
+<span class="wsc-map-time" id="snow-time-b">--</span>
+</div>
+<div class="wsc-map" id="snow-map-b"></div>
+</div>
+</div>
+</section>
+
+<section class="wsc-table-section">
+<h3>Metro-level summary</h3>
+<p>Sort columns to see how snowfall totals and freezing hours differ by location.</p>
+<div class="wsc-table-wrap">
+<table id="location-table">
+<thead>
+<tr>
+<th>Metro</th>
+<th>Event A snowfall (mm)</th>
+<th>Event B snowfall (mm)</th>
+<th>Event A freezing hours</th>
+<th>Event B freezing hours</th>
+<th>Snowfall difference (A - B)</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+</section>
+</div>
+
+<style>
+  :root {
+    color-scheme: light;
+  }
+
+  .wsc-app {
+    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: linear-gradient(180deg, rgba(243, 246, 255, 0.96) 0%, rgba(232, 238, 250, 0.92) 100%);
+    color: #0f172a;
+    padding: clamp(20px, 5vw, 48px);
+    border-radius: 26px;
+    box-shadow: 0 32px 70px rgba(15, 23, 42, 0.12);
+  }
+
+  .wsc-app * {
+    box-sizing: border-box;
+  }
+
+  .wsc-header {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 24px;
+    align-items: start;
+  }
+
+  .wsc-eyebrow {
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    font-weight: 600;
+    color: #64748b;
+    margin: 0 0 8px;
+  }
+
+  .wsc-header h1 {
+    margin: 0 0 12px;
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 700;
+  }
+
+  .wsc-subhead {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: #475569;
+  }
+
+  .wsc-header-card {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 18px;
+    padding: 18px 20px;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+  }
+
+  .wsc-header-card h2 {
+    margin: 0 0 8px;
+    font-size: 1.1rem;
+  }
+
+  .wsc-header-card ol {
+    margin: 0;
+    padding-left: 18px;
+    color: #475569;
+    line-height: 1.5;
+  }
+
+  .wsc-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+    margin-top: 28px;
+  }
+
+  .wsc-control-panel {
+    background: rgba(255, 255, 255, 0.94);
+    border-radius: 18px;
+    padding: 16px 18px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 0 14px 36px rgba(15, 23, 42, 0.12);
+    display: grid;
+    gap: 10px;
+  }
+
+  .wsc-control-panel h3 {
+    margin: 0 0 4px;
+    font-size: 1.05rem;
+  }
+
+  .wsc-control-panel label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    display: grid;
+    gap: 6px;
+  }
+
+  .wsc-select,
+  .wsc-input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    background: rgba(250, 253, 255, 0.96);
+    font-size: 0.95rem;
+  }
+
+  .wsc-date-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+  }
+
+  .wsc-helper {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.85rem;
+    min-height: 1.2em;
+  }
+
+  .wsc-control-actions {
+    align-content: start;
+  }
+
+  .wsc-button {
+    border: none;
+    padding: 12px 18px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 16px 36px rgba(37, 99, 235, 0.3);
+  }
+
+  .wsc-button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+
+  .wsc-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+    margin-top: 28px;
+  }
+
+  .wsc-summary-card {
+    background: rgba(255, 255, 255, 0.94);
+    border-radius: 18px;
+    padding: 18px 20px;
+    box-shadow: 0 14px 36px rgba(15, 23, 42, 0.1);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+  }
+
+  .wsc-summary-card h3 {
+    margin: 0 0 12px;
+  }
+
+  .wsc-summary-grid {
+    display: grid;
+    gap: 10px;
+  }
+
+  .wsc-summary-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.95rem;
+    color: #334155;
+  }
+
+  .wsc-summary-item span:last-child {
+    font-weight: 600;
+  }
+
+  .wsc-charts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+    margin-top: 28px;
+  }
+
+  .wsc-chart-card {
+    background: rgba(255, 255, 255, 0.94);
+    border-radius: 18px;
+    padding: 18px 20px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 0 14px 36px rgba(15, 23, 42, 0.1);
+  }
+
+  .wsc-map-section {
+    margin-top: 30px;
+    display: grid;
+    gap: 16px;
+  }
+
+  .wsc-map-section header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .wsc-map-section h3 {
+    margin: 0 0 6px;
+  }
+
+  .wsc-map-section p {
+    margin: 0;
+    color: #475569;
+    max-width: 680px;
+  }
+
+  .wsc-legend {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: #475569;
+    flex-wrap: wrap;
+  }
+
+  .wsc-legend-dot {
+    display: inline-block;
+    border-radius: 999px;
+    border: 2px solid rgba(15, 23, 42, 0.45);
+    background: rgba(59, 130, 246, 0.3);
+  }
+
+  .wsc-legend-dot.small {
+    width: 10px;
+    height: 10px;
+  }
+
+  .wsc-legend-dot.medium {
+    width: 16px;
+    height: 16px;
+  }
+
+  .wsc-legend-dot.large {
+    width: 22px;
+    height: 22px;
+  }
+
+  .wsc-timeline-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .wsc-icon-button {
+    border: none;
+    padding: 8px 14px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.08);
+    color: #0f172a;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .wsc-slider {
+    width: min(320px, 60vw);
+  }
+
+  .wsc-map-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+  }
+
+  .wsc-map-card {
+    background: rgba(255, 255, 255, 0.94);
+    border-radius: 18px;
+    padding: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 0 14px 36px rgba(15, 23, 42, 0.12);
+  }
+
+  .wsc-map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6px 6px 10px;
+    font-weight: 600;
+    color: #1e293b;
+  }
+
+  .wsc-map {
+    height: 320px;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .wsc-map-time {
+    font-size: 0.85rem;
+    color: #475569;
+  }
+
+  .wsc-table-section {
+    margin-top: 32px;
+  }
+
+  .wsc-table-wrap {
+    background: rgba(255, 255, 255, 0.94);
+    border-radius: 18px;
+    padding: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  th,
+  td {
+    text-align: left;
+    padding: 10px 8px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  }
+
+  th {
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+  }
+
+  tbody tr:hover {
+    background: rgba(148, 163, 184, 0.1);
+  }
+</style>
+
+<script src="app.js"></script>
