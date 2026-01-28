@@ -1,0 +1,8 @@
+---
+title: "Winter Storm Comparison"
+description: "Compare temperature and snowfall between historic U.S. winter storms with animated maps, freezing-duration analysis, and location-level detail."
+page-layout: full
+image: thumbnail.svg
+---
+
+{{< include app.html >}}
