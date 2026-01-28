@@ -131,7 +131,7 @@ async function fetchLocationData(loc, startDate, endDate, apiUrl) {
     hourly: {
       time: data.hourly.time,
       temperature: data.hourly.temperature_2m,
-      snowfall: (data.hourly.snowfall || []).map((v) => (v != null ? +(v * 0.03937).toFixed(3) : 0))
+      snowfall: (data.hourly.snowfall || []).map((v) => (v != null ? +(v * 0.3937).toFixed(3) : 0))
     }
   };
 }
