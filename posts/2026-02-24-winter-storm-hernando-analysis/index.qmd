@@ -1,0 +1,718 @@
+---
+title: "Winter Storm Hernando: The Blizzard of 2026 Buries the Northeast"
+date: 2026-02-24
+categories: [analysis, severe-weather, insurance, visualization]
+subtitle: "A bomb cyclone delivers historic snowfall, hurricane-force winds, and blizzard conditions from the Mid-Atlantic to New England"
+draft: false
+freeze: true
+---
+
+Winter Storm Hernando—unofficially named by The Weather Channel—exploded into one of the most powerful nor'easters in recent memory on February 22–23, 2026. The storm rapidly intensified into a bomb cyclone with central pressure rivaling a Category 2 hurricane, burying the Northeast megalopolis under 2–3 feet of snow, producing hurricane-force wind gusts, and triggering blizzard warnings for over 40 million people. Providence, Rhode Island, shattered its all-time snowfall record, New York City recorded its 9th largest snowstorm since 1869, and over 600,000 customers lost power across the region.
+
+## Storm overview
+
+Hernando originated from a shortwave trough that moved ashore on the West Coast on February 20. The system tracked eastward across the Rockies before a new surface low formed off the North Carolina coast early on February 22 with a pressure of 1,009 mb. As it moved northeast, explosive cyclogenesis took hold—the storm "bombed out" overnight, plunging to **966 mb** by the morning of February 23, meeting the criteria for a bomb cyclone (a pressure drop exceeding 24 mb in 24 hours). At peak intensity, its central pressure was comparable to a Category 2 hurricane, though as a cold-core system rather than warm-core.
+
+The storm produced intense snowbands with rates of 1–3 inches per hour that pivoted westward into New Jersey and New York, while hurricane-force wind gusts battered southeastern New England. Blizzard warnings—the first for New York City since 2017, and for all 21 New Jersey counties since 1996—covered the corridor from Delaware to Maine.
+
+```{=html}
+<div id="hernando-root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+<script>
+(function() {
+  const { useState, useEffect, createElement: h } = React;
+
+  // Northeastern US state paths (simplified SVG paths)
+  const statePaths = {
+    'ME': { d: 'M820,100 L850,90 L855,165 L820,180 L815,140 Z', name: 'Maine' },
+    'NH': { d: 'M805,140 L820,135 L822,180 L805,185 Z', name: 'New Hampshire' },
+    'VT': { d: 'M790,135 L805,132 L807,180 L792,183 Z', name: 'Vermont' },
+    'MA': { d: 'M800,185 L840,178 L842,198 L802,205 Z', name: 'Massachusetts' },
+    'RI': { d: 'M810,200 L822,198 L823,215 L812,218 Z', name: 'Rhode Island' },
+    'CT': { d: 'M795,205 L820,200 L822,218 L798,225 Z', name: 'Connecticut' },
+    'NY': { d: 'M720,175 L795,160 L800,215 L730,235 L715,210 Z', name: 'New York' },
+    'NJ': { d: 'M770,230 L785,225 L790,275 L772,280 Z', name: 'New Jersey' },
+    'PA': { d: 'M700,220 L770,210 L775,260 L705,275 Z', name: 'Pennsylvania' },
+    'DE': { d: 'M765,265 L775,260 L778,285 L765,290 Z', name: 'Delaware' },
+    'MD': { d: 'M720,275 L765,265 L770,295 L725,305 Z', name: 'Maryland' },
+    'VA': { d: 'M695,300 L770,285 L780,325 L700,345 Z', name: 'Virginia' },
+    'WV': { d: 'M695,280 L735,270 L745,315 L700,330 Z', name: 'West Virginia' },
+    'NC': { d: 'M690,345 L780,330 L785,365 L695,380 Z', name: 'North Carolina' },
+    'OH': { d: 'M645,255 L700,245 L705,310 L650,325 Z', name: 'Ohio' },
+    'MI': { d: 'M580,150 L635,145 L650,220 L600,240 L575,215 Z', name: 'Michigan' },
+    'IN': { d: 'M605,255 L640,252 L645,340 L605,345 L600,290 Z', name: 'Indiana' },
+    'IL': { d: 'M570,250 L600,248 L610,330 L585,375 L555,375 L555,290 Z', name: 'Illinois' },
+    'WI': { d: 'M545,155 L595,150 L600,230 L545,235 Z', name: 'Wisconsin' },
+    'MN': { d: 'M480,120 L545,115 L555,200 L485,205 Z', name: 'Minnesota' },
+    'IA': { d: 'M490,230 L560,225 L565,280 L490,285 Z', name: 'Iowa' },
+    'KY': { d: 'M590,330 L680,315 L690,345 L615,365 L590,360 Z', name: 'Kentucky' },
+    'TN': { d: 'M580,360 L690,345 L695,380 L585,395 Z', name: 'Tennessee' },
+    'SC': { d: 'M690,380 L745,365 L750,410 L700,420 Z', name: 'South Carolina' },
+    'GA': { d: 'M635,395 L690,390 L695,465 L635,470 L630,445 Z', name: 'Georgia' },
+    'AL': { d: 'M628,396 L631,442 L633,467 L605,470 L602,456 L589,455 L589,391 L628,388 Z', name: 'Alabama' },
+    'FL': { d: 'M635,470 L695,465 L730,520 L700,565 L660,540 L635,505 L620,475 Z', name: 'Florida' },
+    'MS': { d: 'M570,395 L600,392 L605,470 L570,473 Z', name: 'Mississippi' },
+    'MO': { d: 'M490,295 L565,290 L575,370 L490,375 Z', name: 'Missouri' },
+  };
+
+  // Snowfall totals by state (max reported inches)
+  const snowfallByState = {
+    'RI': 33, 'CT': 31, 'NJ': 27, 'NY': 20, 'MA': 25, 'PA': 14,
+    'DE': 5, 'MD': 10, 'ME': 12, 'NH': 15, 'VT': 10,
+    'VA': 4, 'WV': 6, 'NC': 2, 'OH': 3
+  };
+
+  // Power outage data (peak customers without power, in thousands)
+  const outageData = {
+    'MA': 282, 'NJ': 135, 'NY': 80, 'CT': 45, 'RI': 30,
+    'DE': 75, 'PA': 25, 'MD': 20, 'VA': 15, 'NH': 10, 'ME': 8
+  };
+
+  // Emergency declaration states
+  const emergencyStates = ['NY', 'NJ', 'PA', 'DE', 'CT', 'RI', 'MA', 'MD'];
+
+  // Blizzard warning states
+  const blizzardWarningStates = ['NJ', 'CT', 'NY', 'DE', 'MD', 'MA', 'RI', 'NH', 'ME'];
+
+  // Top snowfall reports
+  const snowfallData = [
+    { location: 'Providence, RI', snow: 32.8, note: 'ALL-TIME RECORD', status: 'record' },
+    { location: 'North Stonington, CT', snow: 30.8, note: 'Unofficial report', status: 'record' },
+    { location: 'Central Islip, NY (LI)', snow: 31.0, note: 'Long Island peak', status: 'record' },
+    { location: 'Babylon, NY (LI)', snow: 29.0, note: 'Long Island', status: 'record' },
+    { location: 'Newark, NJ', snow: 27.0, note: '2nd largest on record', status: 'record' },
+    { location: 'Freehold, NJ', snow: 24.2, note: 'Bomb cyclone epicenter', status: 'above' },
+    { location: 'Central Park, NYC', snow: 19.7, note: '9th largest since 1869', status: 'above' },
+    { location: 'Martha\'s Vineyard, MA', snow: 18.0, note: 'With 71 mph gusts', status: 'above' },
+    { location: 'New London, CT', snow: 17.0, note: 'Coastal Connecticut', status: 'above' },
+    { location: 'Philadelphia, PA', snow: 14.0, note: '17th largest on record', status: 'average' },
+  ];
+
+  // Wind gust data
+  const windData = [
+    { location: 'Montauk Point, NY', gust: 84, note: 'Hurricane-force' },
+    { location: 'Wellfleet, MA', gust: 77, note: 'Hurricane-force' },
+    { location: 'Martha\'s Vineyard, MA', gust: 71, note: 'Near hurricane-force' },
+    { location: 'Block Island, RI', gust: 68, note: 'Storm-force' },
+    { location: 'Cape May, NJ', gust: 62, note: 'Storm-force' },
+    { location: 'Boston, MA', gust: 55, note: 'Tropical storm-force' },
+    { location: 'New York City, NY', gust: 50, note: 'Tropical storm-force' },
+    { location: 'Atlantic City, NJ', gust: 48, note: 'Gale-force' },
+  ];
+
+  // Power outage chart data
+  const powerOutages = [
+    { state: 'Massachusetts', outages: 282000 },
+    { state: 'New Jersey', outages: 135000 },
+    { state: 'New York', outages: 80000 },
+    { state: 'Delaware', outages: 75000 },
+    { state: 'Connecticut', outages: 45000 },
+    { state: 'Rhode Island', outages: 30000 },
+    { state: 'Pennsylvania', outages: 25000 },
+    { state: 'Maryland', outages: 20000 },
+  ];
+
+  // Comparison: Hernando vs Fern vs historical
+  const comparisonData = {
+    metric: ['Storm Type', 'Duration (Days)', 'Peak Snowfall', 'Wind Gusts', 'Power Outages', 'States w/ Emergencies', 'Flights Canceled', 'Est. Insured Loss'],
+    hernando: ['Bomb Cyclone / Nor\'easter', '2', '32.8" (Providence)', '84 mph', '~600,000', '8', '10,000+', '$2-4B (est.)'],
+    fern: ['Polar Vortex / Arctic Outbreak', '5-6', '15" (Pennsylvania)', '40 mph', '~1,000,000', '24', '11,000+', '$1-2B (est.)'],
+  };
+
+  // Historical Northeast blizzard losses
+  const historicalLosses = [
+    { event: 'Blizzard of 1996', loss: 3.0, snowfall: '30"+ in Mid-Atlantic' },
+    { event: 'Feb 2010 Snowmageddon', loss: 2.5, snowfall: '32" in DC area' },
+    { event: 'Jan 2016 Blizzard', loss: 1.5, snowfall: '27.5" in NYC (record)' },
+    { event: 'Hernando (Feb 2026)', loss: 3.0, snowfall: '32.8" in Providence', highlight: true, estimated: true },
+    { event: 'Fern (Jan 2026)', loss: 1.5, snowfall: '15" in Pennsylvania', estimated: true },
+    { event: 'Jan 2022 Nor\'easter', loss: 1.0, snowfall: '22" in parts of NE' },
+  ];
+
+  const maxSnow = Math.max(...snowfallData.map(d => d.snow));
+  const maxOutage = Math.max(...powerOutages.map(d => d.outages));
+  const maxGust = Math.max(...windData.map(d => d.gust));
+  const maxLoss = Math.max(...historicalLosses.map(d => d.loss));
+
+  function HernandoApp() {
+    const [activeTab, setActiveTab] = useState('impact-map');
+    const [hoveredState, setHoveredState] = useState(null);
+    const [animated, setAnimated] = useState(false);
+    const [mapType, setMapType] = useState('snowfall');
+
+    useEffect(() => {
+      const timer = setTimeout(() => setAnimated(true), 100);
+      return () => clearTimeout(timer);
+    }, []);
+
+    const getSnowColor = (stateCode) => {
+      const snow = snowfallByState[stateCode] || 0;
+      if (snow >= 25) return '#eff6ff';
+      if (snow >= 18) return '#bfdbfe';
+      if (snow >= 12) return '#60a5fa';
+      if (snow >= 6) return '#3b82f6';
+      if (snow > 0) return '#1d4ed8';
+      return '#1e293b';
+    };
+
+    const getOutageColor = (stateCode) => {
+      const outages = outageData[stateCode] || 0;
+      if (outages >= 200) return '#dc2626';
+      if (outages >= 100) return '#ef4444';
+      if (outages >= 50) return '#f97316';
+      if (outages >= 20) return '#fb923c';
+      if (outages > 0) return '#fdba74';
+      return '#1e293b';
+    };
+
+    const getEmergencyColor = (stateCode) => {
+      const isEmergency = emergencyStates.includes(stateCode);
+      const isBlizzard = blizzardWarningStates.includes(stateCode);
+      if (isEmergency && isBlizzard) return '#8b5cf6';
+      if (isEmergency) return '#3b82f6';
+      if (isBlizzard) return '#06b6d4';
+      return '#1e293b';
+    };
+
+    const getStateColor = (stateCode) => {
+      switch(mapType) {
+        case 'snowfall': return getSnowColor(stateCode);
+        case 'outages': return getOutageColor(stateCode);
+        case 'emergency': return getEmergencyColor(stateCode);
+        default: return '#1e293b';
+      }
+    };
+
+    const getStateTooltip = (stateCode) => {
+      const state = statePaths[stateCode];
+      if (!state) return null;
+      switch(mapType) {
+        case 'snowfall':
+          const snow = snowfallByState[stateCode];
+          return { title: state.name, lines: [snow ? `Max: ${snow}" snowfall` : 'Trace or none'] };
+        case 'outages':
+          const outages = outageData[stateCode];
+          return { title: state.name, lines: [outages ? `${outages.toLocaleString()}K customers affected` : 'Minimal outages'] };
+        case 'emergency':
+          const isEmergency = emergencyStates.includes(stateCode);
+          const isBlizzard = blizzardWarningStates.includes(stateCode);
+          return {
+            title: state.name,
+            lines: [
+              isEmergency ? 'State of Emergency declared' : 'No emergency declaration',
+              isBlizzard ? 'Blizzard Warning issued' : 'No blizzard warning'
+            ]
+          };
+        default:
+          return { title: state.name, lines: [] };
+      }
+    };
+
+    const getStatusColor = (status) => {
+      switch(status) {
+        case 'record': return '#ef4444';
+        case 'above': return '#3b82f6';
+        case 'average': return '#64748b';
+        default: return '#64748b';
+      }
+    };
+
+    const styles = {
+      container: {
+        background: 'linear-gradient(135deg, #0c1929 0%, #162033 50%, #0c1929 100%)',
+        padding: '40px 20px',
+        fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+        borderRadius: '12px',
+        marginBottom: '24px',
+      },
+      innerContainer: { maxWidth: '1100px', margin: '0 auto' },
+      header: { marginBottom: '32px', textAlign: 'center' },
+      badge: {
+        display: 'inline-block', padding: '6px 16px',
+        background: 'rgba(239, 68, 68, 0.15)', borderRadius: '20px',
+        marginBottom: '16px', border: '1px solid rgba(239, 68, 68, 0.3)',
+      },
+      badgeText: { color: '#ef4444', fontSize: '13px', fontWeight: '600', letterSpacing: '0.5px' },
+      title: { fontSize: '36px', fontWeight: '700', color: '#f8fafc', margin: '0 0 8px 0', letterSpacing: '-0.5px' },
+      subtitle: { fontSize: '16px', color: '#94a3b8', margin: 0 },
+      statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px' },
+      statCard: {
+        background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(10px)',
+        borderRadius: '16px', padding: '20px', border: '1px solid rgba(255,255,255,0.08)',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+      },
+      statLabel: { fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' },
+      statValue: { fontSize: '28px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" },
+      statSublabel: { fontSize: '13px', color: '#94a3b8', marginTop: '4px' },
+      tabContainer: {
+        display: 'flex', gap: '8px', marginBottom: '24px', padding: '4px',
+        background: 'rgba(255,255,255,0.03)', borderRadius: '12px', width: 'fit-content', flexWrap: 'wrap',
+      },
+      tab: { padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s ease' },
+      chartContainer: {
+        background: 'rgba(255,255,255,0.02)', borderRadius: '20px',
+        border: '1px solid rgba(255,255,255,0.06)', padding: '24px',
+      },
+      mapContainer: { position: 'relative', width: '100%', marginBottom: '20px' },
+      mapControls: { display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' },
+      mapButton: { padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.2s ease' },
+      barChart: { display: 'flex', flexDirection: 'column', gap: '12px' },
+      barRow: { display: 'grid', gridTemplateColumns: '180px 1fr 60px', alignItems: 'center', gap: '16px', padding: '8px 0' },
+      barLabel: { fontSize: '13px', color: '#94a3b8', fontWeight: '500', textAlign: 'right' },
+      barTrack: { height: '24px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', overflow: 'hidden', position: 'relative' },
+      bar: { height: '100%', borderRadius: '6px', transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)', display: 'flex', alignItems: 'center', paddingLeft: '8px' },
+      barValue: { fontSize: '14px', fontWeight: '600', fontFamily: "'JetBrains Mono', monospace", color: '#f8fafc' },
+      comparisonGrid: { display: 'grid', gap: '12px' },
+      comparisonRow: {
+        display: 'grid', gridTemplateColumns: '180px 1fr 1fr', gap: '16px', padding: '16px',
+        background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.04)',
+      },
+      comparisonHeader: { display: 'grid', gridTemplateColumns: '180px 1fr 1fr', gap: '16px', padding: '12px 16px', marginBottom: '8px' },
+      legend: { display: 'flex', gap: '20px', marginTop: '20px', flexWrap: 'wrap', justifyContent: 'center' },
+      legendItem: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#94a3b8' },
+      legendDot: { width: '10px', height: '10px', borderRadius: '2px' },
+      recordCard: {
+        background: 'rgba(59, 130, 246, 0.1)', borderRadius: '12px', padding: '16px',
+        border: '1px solid rgba(59, 130, 246, 0.2)', marginBottom: '12px',
+      },
+      tooltip: {
+        position: 'absolute', background: 'rgba(15, 23, 42, 0.98)', padding: '12px 16px',
+        borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.4)', zIndex: 1000, pointerEvents: 'none', minWidth: '180px',
+      },
+      footer: { marginTop: '24px', textAlign: 'center', color: '#475569', fontSize: '12px' },
+    };
+
+    const stats = [
+      { label: 'Peak Snowfall', value: '32.8"', sublabel: 'Providence, RI (all-time record)', color: '#eff6ff' },
+      { label: 'Max Wind Gust', value: '84 mph', sublabel: 'Montauk Point, NY', color: '#ef4444' },
+      { label: 'Peak Outages', value: '~600K', sublabel: 'Customers without power', color: '#f97316' },
+      { label: 'Lowest Pressure', value: '966 mb', sublabel: 'Category 2 equivalent', color: '#8b5cf6' },
+    ];
+
+    const renderUSMap = () => {
+      const tooltipData = hoveredState ? getStateTooltip(hoveredState) : null;
+      return h('div', { style: styles.mapContainer },
+        h('div', { style: styles.mapControls },
+          ['snowfall', 'outages', 'emergency'].map(type =>
+            h('button', {
+              key: type,
+              style: {
+                ...styles.mapButton,
+                background: mapType === type ? 'rgba(59, 130, 246, 0.3)' : 'rgba(255,255,255,0.05)',
+                color: mapType === type ? '#3b82f6' : '#94a3b8',
+                border: mapType === type ? '1px solid rgba(59, 130, 246, 0.5)' : '1px solid transparent',
+              },
+              onClick: () => setMapType(type)
+            }, type === 'snowfall' ? 'Snowfall Totals' :
+               type === 'outages' ? 'Power Outages' :
+               'Emergency Declarations')
+          )
+        ),
+        h('svg', {
+          viewBox: '430 70 460 520',
+          style: { width: '100%', height: 'auto', minHeight: '400px' },
+        },
+          h('rect', { x: 430, y: 70, width: 460, height: 520, fill: '#0f172a' }),
+          Object.entries(statePaths).map(([code, state]) =>
+            h('path', {
+              key: code,
+              d: state.d,
+              fill: getStateColor(code),
+              stroke: hoveredState === code ? '#fff' : '#334155',
+              strokeWidth: hoveredState === code ? 2 : 0.5,
+              style: { transition: 'fill 0.3s ease, stroke-width 0.2s ease', cursor: 'pointer' },
+              onMouseEnter: () => setHoveredState(code),
+              onMouseLeave: () => setHoveredState(null),
+            })
+          ),
+          h('text', {
+            x: 660, y: 100, fill: '#f8fafc', fontSize: '18', fontWeight: '600', textAnchor: 'middle',
+          }, mapType === 'snowfall' ? 'Maximum Snowfall Totals (inches)' :
+             mapType === 'outages' ? 'Peak Power Outages by State' :
+             'Emergency Declarations & Blizzard Warnings')
+        ),
+        hoveredState && tooltipData && h('div', {
+          style: { ...styles.tooltip, left: '50%', top: '20px', transform: 'translateX(-50%)' }
+        },
+          h('div', { style: { color: '#f8fafc', fontWeight: '600', marginBottom: '8px' } }, tooltipData.title),
+          tooltipData.lines.map((line, i) =>
+            h('div', { key: i, style: { color: '#94a3b8', fontSize: '13px' } }, line)
+          )
+        ),
+        h('div', { style: { ...styles.legend, marginTop: '16px' } },
+          mapType === 'snowfall' && [
+            h('div', { key: 1, style: styles.legendItem }, h('div', { style: { ...styles.legendDot, background: '#eff6ff' } }), h('span', null, '25"+ snow')),
+            h('div', { key: 2, style: styles.legendItem }, h('div', { style: { ...styles.legendDot, background: '#bfdbfe' } }), h('span', null, '18-25"')),
+            h('div', { key: 3, style: styles.legendItem }, h('div', { style: { ...styles.legendDot, background: '#60a5fa' } }), h('span', null, '12-18"')),
+            h('div', { key: 4, style: styles.legendItem }, h('div', { style: { ...styles.legendDot, background: '#3b82f6' } }), h('span', null, '6-12"')),
+            h('div', { key: 5, style: styles.legendItem }, h('div', { style: { ...styles.legendDot, background: '#1d4ed8' } }), h('span', null, '<6"')),
+          ],
+          mapType === 'outages' && [
+            h('div', { key: 1, style: styles.legendItem }, h('div', { style: { ...styles.legendDot, background: '#dc2626' } }), h('span', null, '200K+ customers')),
+            h('div', { key: 2, style: styles.legendItem }, h('div', { style: { ...styles.legendDot, background: '#ef4444' } }), h('span', null, '100-200K')),
+            h('div', { key: 3, style: styles.legendItem }, h('div', { style: { ...styles.legendDot, background: '#f97316' } }), h('span', null, '50-100K')),
+            h('div', { key: 4, style: styles.legendItem }, h('div', { style: { ...styles.legendDot, background: '#fdba74' } }), h('span', null, '<50K')),
+          ],
+          mapType === 'emergency' && [
+            h('div', { key: 1, style: styles.legendItem }, h('div', { style: { ...styles.legendDot, background: '#8b5cf6' } }), h('span', null, 'Emergency + Blizzard Warning')),
+            h('div', { key: 2, style: styles.legendItem }, h('div', { style: { ...styles.legendDot, background: '#06b6d4' } }), h('span', null, 'Blizzard Warning only')),
+          ]
+        )
+      );
+    };
+
+    const renderSnowfall = () => (
+      h('div', null,
+        h('div', { style: { marginBottom: '20px' } },
+          h('div', { style: { color: '#f8fafc', fontSize: '18px', fontWeight: '600', marginBottom: '8px' } }, 'Top Snowfall Reports'),
+          h('div', { style: { color: '#94a3b8', fontSize: '14px' } }, 'Maximum reported snowfall totals from Winter Storm Hernando')
+        ),
+        h('div', { style: styles.barChart },
+          snowfallData.map((item, i) =>
+            h('div', { key: item.location, style: { ...styles.barRow, gridTemplateColumns: '190px 1fr 80px' } },
+              h('div', { style: { ...styles.barLabel, color: item.status === 'record' ? '#ef4444' : '#94a3b8' } },
+                item.location
+              ),
+              h('div', { style: styles.barTrack },
+                h('div', {
+                  style: {
+                    ...styles.bar,
+                    width: animated ? `${(item.snow / maxSnow) * 100}%` : '0%',
+                    background: item.status === 'record'
+                      ? 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)'
+                      : item.status === 'above'
+                      ? 'linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%)'
+                      : 'linear-gradient(90deg, #64748b 0%, #475569 100%)',
+                    transitionDelay: `${i * 80}ms`,
+                  }
+                })
+              ),
+              h('div', { style: { ...styles.barValue, color: item.status === 'record' ? '#ef4444' : '#3b82f6' } },
+                `${item.snow}"`
+              )
+            )
+          )
+        ),
+        h('div', { style: { marginTop: '16px', display: 'flex', gap: '16px', flexWrap: 'wrap' } },
+          h('div', { style: styles.legendItem }, h('div', { style: { ...styles.legendDot, background: '#ef4444' } }), h('span', null, 'All-time or near-record')),
+          h('div', { style: styles.legendItem }, h('div', { style: { ...styles.legendDot, background: '#3b82f6' } }), h('span', null, 'Significantly above normal')),
+          h('div', { style: styles.legendItem }, h('div', { style: { ...styles.legendDot, background: '#64748b' } }), h('span', null, 'Notable'))
+        ),
+        h('div', { style: { marginTop: '24px', padding: '16px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' } },
+          h('div', { style: { color: '#ef4444', fontSize: '14px', fontWeight: '600', marginBottom: '8px' } }, 'Record Shattered: Providence, Rhode Island'),
+          h('div', { style: { color: '#94a3b8', fontSize: '14px', lineHeight: '1.6' } },
+            'Providence recorded 32.8 inches of snow, obliterating the city\'s all-time snowstorm record previously held by the Blizzard of 1978. This was also the snowiest single day ever recorded in Providence. The storm produced snowfall rates of 2-3 inches per hour during the peak of the event.'
+          )
+        )
+      )
+    );
+
+    const renderWind = () => (
+      h('div', null,
+        h('div', { style: { marginBottom: '20px' } },
+          h('div', { style: { color: '#f8fafc', fontSize: '18px', fontWeight: '600', marginBottom: '8px' } }, 'Peak Wind Gusts'),
+          h('div', { style: { color: '#94a3b8', fontSize: '14px' } }, 'Maximum wind gusts reported during the bomb cyclone')
+        ),
+        h('div', { style: styles.barChart },
+          windData.map((item, i) =>
+            h('div', { key: item.location, style: { ...styles.barRow, gridTemplateColumns: '190px 1fr 80px' } },
+              h('div', { style: { ...styles.barLabel, color: item.gust >= 74 ? '#ef4444' : item.gust >= 58 ? '#f97316' : '#94a3b8' } },
+                item.location
+              ),
+              h('div', { style: styles.barTrack },
+                h('div', {
+                  style: {
+                    ...styles.bar,
+                    width: animated ? `${(item.gust / maxGust) * 100}%` : '0%',
+                    background: item.gust >= 74
+                      ? 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)'
+                      : item.gust >= 58
+                      ? 'linear-gradient(90deg, #f97316 0%, #ea580c 100%)'
+                      : 'linear-gradient(90deg, #06b6d4 0%, #0891b2 100%)',
+                    transitionDelay: `${i * 80}ms`,
+                  }
+                })
+              ),
+              h('div', { style: { ...styles.barValue, color: item.gust >= 74 ? '#ef4444' : item.gust >= 58 ? '#f97316' : '#06b6d4' } },
+                `${item.gust} mph`
+              )
+            )
+          )
+        ),
+        h('div', { style: { marginTop: '16px', display: 'flex', gap: '16px', flexWrap: 'wrap' } },
+          h('div', { style: styles.legendItem }, h('div', { style: { ...styles.legendDot, background: '#ef4444' } }), h('span', null, 'Hurricane-force (74+ mph)')),
+          h('div', { style: styles.legendItem }, h('div', { style: { ...styles.legendDot, background: '#f97316' } }), h('span', null, 'Storm-force (58-73 mph)')),
+          h('div', { style: styles.legendItem }, h('div', { style: { ...styles.legendDot, background: '#06b6d4' } }), h('span', null, 'Gale/Tropical storm-force'))
+        ),
+        h('div', { style: { marginTop: '24px', padding: '16px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' } },
+          h('div', { style: { color: '#ef4444', fontSize: '14px', fontWeight: '600', marginBottom: '8px' } }, 'Bomb Cyclone Intensity'),
+          h('div', { style: { color: '#94a3b8', fontSize: '14px', lineHeight: '1.6' } },
+            'Hernando\'s central pressure bottomed out at 966 mb—equivalent to a Category 2 hurricane. The explosive deepening produced hurricane-force wind gusts across southeastern New England and Long Island, combining with heavy wet snow to produce whiteout conditions and widespread tree damage.'
+          )
+        )
+      )
+    );
+
+    const renderComparison = () => (
+      h('div', null,
+        h('div', { style: { marginBottom: '20px' } },
+          h('div', { style: { color: '#f8fafc', fontSize: '18px', fontWeight: '600', marginBottom: '8px' } }, 'Hernando vs. Fern: Two Storms, Two Threats'),
+          h('div', { style: { color: '#94a3b8', fontSize: '14px' } }, 'January and February 2026 produced two very different but significant winter events')
+        ),
+        h('div', { style: styles.comparisonHeader },
+          h('div', { style: { color: '#64748b', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' } }, 'Metric'),
+          h('div', { style: { color: '#ef4444', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', textAlign: 'center' } }, 'Hernando (Feb 2026)'),
+          h('div', { style: { color: '#3b82f6', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', textAlign: 'center' } }, 'Fern (Jan 2026)')
+        ),
+        h('div', { style: styles.comparisonGrid },
+          comparisonData.metric.map((metric, i) =>
+            h('div', { key: i, style: styles.comparisonRow },
+              h('div', { style: { color: '#f8fafc', fontWeight: '500', fontSize: '14px' } }, metric),
+              h('div', { style: { color: '#ef4444', fontWeight: '600', fontFamily: "'JetBrains Mono', monospace", textAlign: 'center', fontSize: '14px' } },
+                comparisonData.hernando[i]
+              ),
+              h('div', { style: { color: '#3b82f6', fontWeight: '600', fontFamily: "'JetBrains Mono', monospace", textAlign: 'center', fontSize: '14px' } },
+                comparisonData.fern[i]
+              )
+            )
+          )
+        ),
+        h('div', { style: { marginTop: '24px', padding: '16px', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '12px', border: '1px solid rgba(139, 92, 246, 0.2)' } },
+          h('div', { style: { color: '#8b5cf6', fontSize: '14px', fontWeight: '600', marginBottom: '8px' } }, 'Different Risk Profiles'),
+          h('div', { style: { color: '#94a3b8', fontSize: '14px', lineHeight: '1.6' } },
+            'Fern was a widespread but relatively diffuse polar vortex event affecting 24 states over nearly a week. Hernando was a concentrated, explosive nor\'easter that dumped extreme snowfall on a smaller but densely populated corridor in just 36 hours. Despite affecting fewer states, Hernando\'s concentration on the Northeast megalopolis—home to over 50 million people—may produce comparable or higher insured losses.'
+          )
+        )
+      )
+    );
+
+    const renderInsurance = () => (
+      h('div', null,
+        h('div', { style: { marginBottom: '20px' } },
+          h('div', { style: { color: '#f8fafc', fontSize: '18px', fontWeight: '600', marginBottom: '8px' } }, 'Insurance Loss Context: Historical Northeast Blizzards'),
+          h('div', { style: { color: '#94a3b8', fontSize: '14px' } }, 'Estimated insured losses from major Northeast winter storms ($ billions, inflation-adjusted)')
+        ),
+        h('div', { style: styles.barChart },
+          historicalLosses.map((item, i) =>
+            h('div', { key: item.event, style: { ...styles.barRow, gridTemplateColumns: '200px 1fr 80px' } },
+              h('div', { style: { ...styles.barLabel, color: item.highlight ? '#ef4444' : '#94a3b8' } },
+                item.event,
+                item.estimated && h('span', { style: { color: '#64748b', fontSize: '10px', marginLeft: '4px' } }, '(est.)')
+              ),
+              h('div', { style: styles.barTrack },
+                h('div', {
+                  style: {
+                    ...styles.bar,
+                    width: animated ? `${(item.loss / maxLoss) * 100}%` : '0%',
+                    background: item.highlight
+                      ? 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)'
+                      : 'linear-gradient(90deg, #64748b 0%, #475569 100%)',
+                    transitionDelay: `${i * 100}ms`,
+                  }
+                })
+              ),
+              h('div', { style: { ...styles.barValue, color: item.highlight ? '#ef4444' : '#94a3b8' } },
+                `$${item.loss}B`
+              )
+            )
+          )
+        ),
+        h('div', { style: { marginTop: '24px' } },
+          h('div', { style: { color: '#f8fafc', fontSize: '16px', fontWeight: '600', marginBottom: '12px' } }, 'Power Outages by State (Peak)'),
+          h('div', { style: styles.barChart },
+            powerOutages.map((item, i) =>
+              h('div', { key: item.state, style: { ...styles.barRow, gridTemplateColumns: '120px 1fr 100px' } },
+                h('div', { style: styles.barLabel }, item.state),
+                h('div', { style: styles.barTrack },
+                  h('div', {
+                    style: {
+                      ...styles.bar,
+                      width: animated ? `${(item.outages / maxOutage) * 100}%` : '0%',
+                      background: 'linear-gradient(90deg, #f97316 0%, #ea580c 100%)',
+                      transitionDelay: `${i * 50}ms`,
+                    }
+                  })
+                ),
+                h('div', { style: { ...styles.barValue, color: '#f97316' } },
+                  (item.outages / 1000).toFixed(0) + 'K'
+                )
+              )
+            )
+          )
+        ),
+        h('div', { style: { marginTop: '20px', padding: '16px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)' } },
+          h('div', { style: { color: '#3b82f6', fontSize: '14px', fontWeight: '600', marginBottom: '8px' } }, 'Loss Estimate Context'),
+          h('div', { style: { color: '#94a3b8', fontSize: '14px', lineHeight: '1.6' } },
+            'Initial industry estimates place Hernando in the $2-4 billion insured loss range, which would make it the costliest Northeast blizzard since 1996. The concentration of heavy snowfall and wind damage in the densely populated I-95 corridor, combined with widespread power outages and coastal flooding, drives the higher loss potential. Roof collapse, frozen pipe, and wind-driven damage claims are expected to dominate.'
+          )
+        )
+      )
+    );
+
+    return h('div', { style: styles.container },
+      h('style', null, `
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
+        .stat-card-h:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+        @media (max-width: 768px) {
+          #hernando-root .stats-grid-h { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+      `),
+      h('div', { style: styles.innerContainer },
+        h('div', { style: styles.header },
+          h('div', { style: styles.badge },
+            h('span', { style: styles.badgeText }, 'BOMB CYCLONE EVENT')
+          ),
+          h('h1', { style: styles.title }, 'Winter Storm Hernando'),
+          h('p', { style: styles.subtitle }, 'February 22\u201323, 2026 | The Blizzard of 2026')
+        ),
+        h('div', { style: styles.statsGrid, className: 'stats-grid-h' },
+          stats.map((stat, i) =>
+            h('div', { key: i, className: 'stat-card-h', style: styles.statCard },
+              h('div', { style: styles.statLabel }, stat.label),
+              h('div', { style: { ...styles.statValue, color: stat.color } }, stat.value),
+              h('div', { style: styles.statSublabel }, stat.sublabel)
+            )
+          )
+        ),
+        h('div', { style: styles.tabContainer },
+          ['impact-map', 'snowfall', 'wind', 'comparison', 'insurance'].map(tab =>
+            h('button', {
+              key: tab,
+              style: {
+                ...styles.tab,
+                background: activeTab === tab ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                color: activeTab === tab ? '#3b82f6' : '#64748b',
+              },
+              onClick: () => setActiveTab(tab)
+            }, tab === 'impact-map' ? 'Impact Maps' :
+               tab === 'snowfall' ? 'Snowfall' :
+               tab === 'wind' ? 'Wind Gusts' :
+               tab === 'comparison' ? 'Hernando vs Fern' :
+               'Insurance Impact')
+          )
+        ),
+        h('div', { style: styles.chartContainer },
+          activeTab === 'impact-map' && renderUSMap(),
+          activeTab === 'snowfall' && renderSnowfall(),
+          activeTab === 'wind' && renderWind(),
+          activeTab === 'comparison' && renderComparison(),
+          activeTab === 'insurance' && renderInsurance()
+        ),
+        h('div', { style: styles.footer },
+          'Data compiled from NWS, NOAA, PowerOutage.us, FlightAware, and media reports. Figures may be revised as final assessments are completed.'
+        )
+      )
+    );
+  }
+
+  const root = ReactDOM.createRoot(document.getElementById('hernando-root'));
+  root.render(h(HernandoApp));
+})();
+</script>
+```
+
+## Storm timeline
+
+The progression of Hernando was swift and dramatic:
+
+- **February 20**: Shortwave trough moves ashore on the West Coast; Weather Prediction Center highlights potential for significant Northeast coastal storm
+- **February 21**: System crosses the Rockies; governors in NJ, NY, and PA declare preemptive states of emergency; airlines begin canceling flights
+- **February 22 (morning)**: New surface low forms off North Carolina coast at 1,009 mb; winter storm warnings upgraded to blizzard warnings from Delaware to Maine
+- **February 22 (afternoon-overnight)**: Explosive cyclogenesis—storm "bombs out" as it races northeast; intense snowbands with 1–3"/hour rates hit the I-95 corridor; travel bans take effect in NYC and NJ
+- **February 23 (morning)**: Pressure bottoms at 966 mb; hurricane-force gusts strike Long Island and southeastern New England; Providence shatters all-time snow record
+- **February 23 (afternoon)**: Storm pulls away; 600,000+ without power; airports begin reopening
+
+## Record-breaking snowfall
+
+Hernando produced extraordinary snow totals concentrated along the densely populated I-95 corridor:
+
+- **Providence, RI**: 32.8 inches — shattered the all-time snowstorm record previously held by the Blizzard of 1978
+- **Central Islip, NY** (Long Island): 31.0 inches
+- **North Stonington, CT**: 30.8 inches (unofficial)
+- **Babylon, NY** (Long Island): 29.0 inches
+- **Newark, NJ**: 27.0 inches — second-largest snowfall on record
+- **Freehold, NJ**: 24.2 inches
+- **Central Park, NYC**: 19.7 inches — 9th largest snowstorm since records began in 1869 (Brooklyn/Queens received 20+ inches)
+- **Philadelphia, PA**: 14.0 inches — 17th largest on record
+
+Snowfall rates peaked at 2–3 inches per hour in parts of Rhode Island and eastern Connecticut during the storm's most intense phase. The NWS in New York City rated Hernando at the top of their five-step winter storm impact scale.
+
+## Wind and coastal impacts
+
+The bomb cyclone's extreme pressure gradient produced destructive winds well beyond what typical nor'easters deliver:
+
+- **Montauk Point, NY**: 84 mph gust (hurricane-force)
+- **Wellfleet, MA**: 77 mph gust (hurricane-force)
+- **Martha's Vineyard, MA**: 71 mph gust with 18+ inches of snow
+- Moderate coastal flooding with **2–4 feet of storm surge** from Delaware Bay to Cape Cod
+- The Delaware Bay river gauge approached major flood stage at high tide
+
+The combination of heavy, wet snow and sustained high winds created extreme loading on trees and power lines, producing the bulk of the 600,000+ power outages across the region.
+
+## Hernando vs. Fern: a remarkable winter
+
+The 2025–2026 winter season has now produced two billion-dollar winter weather events within a single month—an extraordinary occurrence. While both storms were significant, they represent fundamentally different types of winter hazards:
+
+**Winter Storm Fern** (January 21–26) was a broad, prolonged polar vortex event. Arctic air pushed deep into the continental U.S. over nearly a week, affecting 24 states with dangerous cold, ice accumulation, and moderate snowfall. The primary insurance peril was frozen pipes and ice damage across the South, where building stock is poorly insulated for extreme cold. Fern's geographic breadth was remarkable—but its snowfall and wind were relatively modest.
+
+**Winter Storm Hernando** (February 22–23) was a concentrated, explosive bomb cyclone. It delivered extreme snowfall and hurricane-force winds to a narrow but densely populated corridor in roughly 36 hours. The primary insurance perils are roof collapse from snow loading, wind-driven structural damage, and coastal flooding—classic nor'easter exposures. Despite affecting far fewer states, Hernando's concentration on the Northeast megalopolis (50+ million residents) may generate comparable or higher insured losses.
+
+## Insurance implications
+
+### Expected claim types
+
+Given Hernando's characteristics—extreme snowfall, hurricane-force winds, and coastal flooding—insurers should anticipate a different claim mix than Fern:
+
+1. **Roof collapse and structural damage** — 2–3 feet of heavy, wet snow creates enormous loading, particularly on flat commercial roofs and older residential structures. This is likely to be the dominant peril
+2. **Wind damage** — Hurricane-force gusts caused widespread tree falls, siding and roofing damage, and debris impacts, particularly in southeastern New England
+3. **Power outage consequential damage** — 600,000+ outages lasting hours to days create spoilage, pipe freeze, and business interruption exposure
+4. **Coastal flooding** — Storm surge of 2–4 feet along the coast from Delaware to Cape Cod may trigger flood claims in NFIP and private flood markets
+5. **Auto and commercial vehicle damage** — Over 340 crashes reported in Maryland alone; travel bans suggest widespread vehicle stranding and damage events
+6. **Business interruption** — 10,000+ flight cancellations, multi-day travel bans, and government office closures across the region
+
+### Loss estimate
+
+Initial industry estimates suggest Hernando could produce **$2–4 billion in insured losses**, which would place it among the costliest Northeast blizzards on record. Key drivers of uncertainty include:
+
+- **Roof collapse claims** that may take days or weeks to emerge as buildings are inspected
+- **The extent of coastal flood damage**, which depends heavily on timing relative to high tide cycles
+- **Commercial property exposure** in the dense I-95 corridor, where values per square mile are among the highest in the nation
+- **Demand surge** effects on repair costs, given the geographic concentration of damage
+
+### Rate adequacy perspective
+
+For property-casualty insurers, Hernando reinforces several important considerations:
+
+- **Northeast cat exposure is real** — After years of relatively quiet winter seasons, two events in a single month demonstrate that winter storm risk in the Northeast remains significant and volatile
+- **Bomb cyclone frequency** — The rapid intensification of Hernando is consistent with research suggesting that nor'easters may be intensifying faster due to increasing sea surface temperatures along the Gulf Stream
+- **Concentration risk** — The I-95 corridor contains a disproportionate share of U.S. insured property values; a single well-positioned nor'easter can generate losses rivaling broader geographic events
+- **Multi-peril events** — Hernando combined snow, wind, and coastal flood perils simultaneously, challenging traditional peril-specific pricing approaches
+
+## Key takeaways
+
+1. **Historic intensity** — Hernando's 966 mb central pressure and hurricane-force wind gusts made it one of the most powerful nor'easters in modern records, shattering Providence's all-time snowfall record from the legendary Blizzard of 1978
+
+2. **Concentrated devastation** — Unlike the geographically broad Winter Storm Fern just weeks earlier, Hernando concentrated extreme impacts on the densely populated Northeast megalopolis, potentially producing higher insured losses despite affecting fewer states
+
+3. **Two billion-dollar winter events in one month** — The Fern-Hernando combination is a stark reminder that winter storm losses can cluster, challenging annual aggregate assumptions in catastrophe models
+
+4. **Loss emergence will be slow** — Roof collapse, coastal flooding, and business interruption claims will take weeks to fully develop; early estimates of $2–4B could move in either direction
+
+5. **Infrastructure resilience tested differently** — While Fern tested power grid resilience (particularly in Texas), Hernando tested physical building stock and transportation infrastructure in the Northeast, where aging structures are vulnerable to extreme snow loads
+
+## Data sources
+
+- [National Weather Service](https://www.weather.gov/) — Storm warnings, snowfall data, and wind observations
+- [NOAA Weather Prediction Center](https://www.wpc.ncep.noaa.gov/) — Storm development and tracking
+- [PowerOutage.us](https://poweroutage.us/) — Real-time power outage tracking
+- [FlightAware](https://www.flightaware.com/) — Flight cancellation data
+- [FEMA](https://www.fema.gov/disaster/2026-winter-storm) — Emergency declaration information
+- [Insurance Information Institute](https://www.iii.org/) — Historical loss data
+
+---
+
+*This analysis will be updated as final snowfall totals, damage assessments, and insured loss estimates become available. For our analysis of Winter Storm Fern from January 2026, see [Winter Storm Fern: Analyzing the Historic January 2026 Freeze](/posts/2026-01-26-winter-storm-fern-analysis/).*
