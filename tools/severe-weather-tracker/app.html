@@ -1338,11 +1338,6 @@
       };
     }
 
-    function getSeriesForState(yearEntry, stateFilter) {
-      if (!stateFilter) return yearEntry.series;
-      return yearEntry.byState?.[stateFilter]?.series || [];
-    }
-
     function computeHistoricalAverageAtDay(years, dayOfYear, stateFilter, exclusions = []) {
       if (!Array.isArray(years)) {
         return { average: null, count: 0 };
