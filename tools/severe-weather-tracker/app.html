@@ -1515,9 +1515,15 @@
               backgroundColor: "rgba(15, 23, 42, 0.92)",
               titleColor: "#e2e8f0",
               bodyColor: "#cbd5f5",
+              footerColor: "#94a3b8",
               borderColor: "rgba(148, 163, 184, 0.4)",
               borderWidth: 1,
               padding: 12,
+              filter(tooltipItem) {
+                // Only show current year and comparison year in tooltip
+                const dsId = tooltipItem.dataset.id;
+                return dsId === "currentYear" || dsId === "comparisonYear";
+              },
               callbacks: {
                 title(items) {
                   if (!items.length) return "";
@@ -1530,12 +1536,37 @@
                   return luxon.DateTime.fromMillis(parsed.x).toFormat("MMM d");
                 },
                 label(item) {
-                  const label = item.dataset.label || "";
-                  if (item.raw && item.raw.originalDate) {
-                    const displayDate = formatDisplayDate(item.raw.originalDate);
-                    return `${label}: ${formatNumber(item.parsed.y)} reports (${displayDate})`;
+                  const dsId = item.dataset.id;
+                  let yearLabel = item.dataset.label || "";
+                  if (dsId === "currentYear") {
+                    yearLabel = `${data.currentYear} (Current)`;
+                  } else if (dsId === "comparisonYear") {
+                    yearLabel = `${data.comparisonYear} (Prior)`;
                   }
-                  return `${label}: ${formatNumber(item.parsed.y)} reports`;
+                  return `${yearLabel}: ${formatNumber(item.parsed.y)} reports`;
+                },
+                footer(items) {
+                  if (!items.length) return "";
+                  // Calculate historical average at this point in the year
+                  const hoveredDate = items[0].raw?.x;
+                  if (!hoveredDate) return "";
+
+                  const historicalDatasets = datasets.filter(
+                    (ds) => ds.id !== "currentYear" && ds.id !== "comparisonYear"
+                  );
+
+                  const values = [];
+                  for (const ds of historicalDatasets) {
+                    // Find the closest point at or before this date
+                    const point = ds.data.find((p) => p.x.getTime() === hoveredDate.getTime());
+                    if (point) {
+                      values.push(point.y);
+                    }
+                  }
+
+                  if (!values.length) return "";
+                  const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
+                  return `Historical Avg: ${formatNumber(Math.round(avg))} reports`;
                 }
               }
             },
