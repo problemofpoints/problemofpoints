@@ -1,0 +1,691 @@
+---
+title: "2025 Property-Casualty (Re)Insurance Stock Performance Review"
+date: 2026-01-02
+categories: [analysis, insurance, markets]
+subtitle: "Total returns, segment leadership, and valuation shifts across P&C insurers"
+draft: false
+freeze: false
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{python}
+import json
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import requests
+import yfinance as yf
+from datetime import datetime, timezone
+
+sns.set_theme(style="whitegrid")
+
+DATA_URL = "https://www.problemofpoints.com/.netlify/functions/pcd-dashboard"
+CACHE_PATH = Path("pcd-dashboard-cache.json")
+TICKERS = [
+    "AIG",
+    "AIZ",
+    "ALL",
+    "ACGL",
+    "AMSF",
+    "AXS",
+    "CB",
+    "CS.PA",
+    "CINF",
+    "EG",
+    "EIG",
+    "FFH.TO",
+    "FIHL",
+    "HNR1.DE",
+    "HCI",
+    "HG",
+    "HIPO",
+    "HRTG",
+    "HIG",
+    "HSX.L",
+    "IFC.TO",
+    "JRVR",
+    "KMPR",
+    "KNSL",
+    "LRE.L",
+    "LMND",
+    "MCY",
+    "MKL",
+    "MUV2.DE",
+    "ALV.DE",
+    "MAP.MC",
+    "ORI",
+    "PGR",
+    "PLMR",
+    "QBE.AX",
+    "RLI",
+    "RNR",
+    "ROOT",
+    "SCR.PA",
+    "SAFT",
+    "SKWD",
+    "SIGI",
+    "THG",
+    "TRV",
+    "SREN.SW",
+    "UFCS",
+    "UVE",
+    "UIHC",
+    "WRB",
+    "WTM",
+    "ZURN.SW",
+    "BEZ.L",
+    "BOW",
+]
+
+def build_payload_from_yfinance(tickers):
+    companies_data = []
+    prices_data = {}
+    errors = []
+    last_trade_date = None
+
+    for ticker in tickers:
+        try:
+            yf_ticker = yf.Ticker(ticker)
+            history = yf_ticker.history(start="2024-01-01", end="2026-01-01", auto_adjust=False)
+            if history.empty:
+                errors.append({"ticker": ticker, "message": "No price history from yfinance"})
+                continue
+
+            history = history.reset_index()
+            history["Date"] = pd.to_datetime(history["Date"]).dt.tz_localize(None)
+            last_date = history["Date"].max()
+            last_trade_date = (
+                last_date.strftime("%Y-%m-%d")
+                if last_trade_date is None or last_date.strftime("%Y-%m-%d") > last_trade_date
+                else last_trade_date
+            )
+
+            prices_data[ticker] = [
+                {
+                    "date": row["Date"].strftime("%Y-%m-%d"),
+                    "adj_close": row.get("Adj Close", row.get("Close")),
+                    "close": row.get("Close"),
+                }
+                for _, row in history.iterrows()
+            ]
+
+            info = yf_ticker.info or {}
+            companies_data.append({
+                "ticker": ticker,
+                "name": info.get("longName") or info.get("shortName") or ticker,
+                "market_cap": info.get("marketCap"),
+                "pb_ratio": info.get("priceToBook"),
+                "last_price": info.get("regularMarketPrice"),
+            })
+        except Exception as exc:
+            errors.append({"ticker": ticker, "message": str(exc)})
+
+    payload = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "last_trade_date": last_trade_date,
+        "companies": companies_data,
+        "prices": prices_data,
+        "benchmarks": [],
+        "aggregates": {
+            "coverage": len(companies_data),
+            "totalMarketCap": sum(
+                company.get("market_cap", 0) or 0 for company in companies_data
+            ),
+            "avgBeta": None,
+            "advancers": 0,
+            "decliners": 0,
+            "breadth1d": None,
+            "above200Count": 0,
+            "above200Ratio": None,
+        },
+        "errors": errors,
+    }
+    return payload
+
+def load_dashboard_payload(url, cache_path, timeout=60):
+    try:
+        response = requests.get(url, timeout=timeout)
+        payload = response.json()
+        if not payload.get("companies"):
+            raise ValueError("Dashboard returned empty company data.")
+        cache_path.write_text(json.dumps(payload, indent=2))
+        return payload, "live"
+    except Exception as exc:
+        if cache_path.exists():
+            return json.loads(cache_path.read_text()), f"cache (fallback after {exc})"
+        payload = build_payload_from_yfinance(TICKERS)
+        cache_path.write_text(json.dumps(payload, indent=2))
+        return payload, f"yfinance fallback ({exc})"
+
+payload, payload_source = load_dashboard_payload(DATA_URL, CACHE_PATH)
+
+companies = pd.DataFrame(payload["companies"])
+prices = payload["prices"]
+
+price_rows = []
+for ticker, series in prices.items():
+    if ticker.startswith("_"):
+        continue
+    for entry in series:
+        price_rows.append({
+            "ticker": ticker,
+            "date": pd.to_datetime(entry["date"]),
+            "adj_close": entry["adj_close"],
+            "close": entry["close"],
+        })
+
+prices_df = pd.DataFrame(price_rows)
+
+companies = companies.rename(columns={
+    "last_price": "last_price",
+    "pb_ratio": "pb_ratio",
+    "market_cap": "market_cap",
+})
+
+segment_map = {
+    "AIG": "Large commercial",
+    "ACGL": "Large commercial",
+    "AXS": "Large commercial",
+    "CB": "Large commercial",
+    "EG": "Large commercial",
+    "HIG": "Large commercial",
+    "MKL": "Large commercial",
+    "TRV": "Large commercial",
+    "WRB": "Large commercial",
+    "WTM": "Large commercial",
+    "ALV.DE": "Large commercial",
+    "ZURN.SW": "Large commercial",
+    "CS.PA": "Large commercial",
+    "IFC.TO": "Large commercial",
+    "QBE.AX": "Large commercial",
+    "MAP.MC": "Large commercial",
+    "ALL": "Personal lines",
+    "PGR": "Personal lines",
+    "AIZ": "Personal lines",
+    "KMPR": "Personal lines",
+    "MCY": "Personal lines",
+    "HCI": "Personal lines",
+    "HRTG": "Personal lines",
+    "UVE": "Personal lines",
+    "LMND": "Personal lines",
+    "ROOT": "Personal lines",
+    "HIPO": "Personal lines",
+    "SAFT": "Personal lines",
+    "CINF": "Regional / mutual",
+    "THG": "Regional / mutual",
+    "SIGI": "Regional / mutual",
+    "RLI": "Regional / mutual",
+    "UFCS": "Regional / mutual",
+    "AMSF": "Regional / mutual",
+    "ORI": "Regional / mutual",
+    "PLMR": "Specialty",
+    "KNSL": "Specialty",
+    "SKWD": "Specialty",
+    "JRVR": "Specialty",
+    "FIHL": "Specialty",
+    "HG": "Specialty",
+    "BOW": "Specialty",
+    "RNR": "Reinsurers",
+    "SREN.SW": "Reinsurers",
+    "MUV2.DE": "Reinsurers",
+    "HNR1.DE": "Reinsurers",
+    "LRE.L": "Reinsurers",
+    "HSX.L": "Reinsurers",
+    "BEZ.L": "Reinsurers",
+    "SCR.PA": "Reinsurers",
+    "FFH.TO": "Reinsurers",
+}
+
+companies["segment"] = companies["ticker"].map(segment_map).fillna("Other")
+
+prices_df = prices_df.merge(companies[["ticker", "segment"]], on="ticker", how="left")
+
+start_date = pd.Timestamp("2024-12-31")
+end_date = pd.Timestamp("2025-12-31")
+
+prices_df = prices_df.sort_values(["ticker", "date"])
+
+start_prices = (
+    prices_df[prices_df["date"] <= start_date]
+    .groupby("ticker")
+    .tail(1)[["ticker", "adj_close"]]
+    .rename(columns={"adj_close": "start_price"})
+)
+
+end_prices = (
+    prices_df[(prices_df["date"] > start_date) & (prices_df["date"] <= end_date)]
+    .groupby("ticker")
+    .tail(1)[["ticker", "adj_close", "date"]]
+    .rename(columns={"adj_close": "end_price", "date": "end_date"})
+)
+
+returns_2025 = start_prices.merge(end_prices, on="ticker", how="inner")
+returns_2025["return_2025"] = returns_2025["end_price"] / returns_2025["start_price"] - 1
+
+returns_2025 = returns_2025.merge(
+    companies[["ticker", "name", "segment", "market_cap", "pb_ratio", "last_price"]],
+    on="ticker",
+    how="left",
+)
+
+returns_2025 = returns_2025.sort_values("return_2025", ascending=False)
+
+latest_trade_date = payload.get("last_trade_date")
+```
+
+## 2025 returns leaderboard
+
+The property-casualty (re)insurance universe delivered a wide range of total returns in 2025. The
+charts below use the **adjusted close** data from the P&C Stocks Monitor (a total-return proxy that
+includes dividends) and measure performance from the last trading day of 2024 through the last
+available trading day in 2025.
+
+```{python}
+#| output: asis
+print(
+    "Latest trading day used for the 2025 return window: "
+    f"**{latest_trade_date}**."
+)
+```
+
+```{python}
+#| output: false
+TOP_N = 10
+
+leaderboard = returns_2025[["ticker", "name", "segment", "return_2025"]].copy()
+leaderboard["return_2025"] = (leaderboard["return_2025"] * 100).round(1)
+
+leaders = leaderboard.head(TOP_N)
+laggards = leaderboard.tail(TOP_N).sort_values("return_2025")
+
+fig, axes = plt.subplots(1, 2, figsize=(14, 6), constrained_layout=True)
+
+sns.barplot(
+    data=leaders,
+    x="return_2025",
+    y="ticker",
+    hue="segment",
+    dodge=False,
+    ax=axes[0],
+    palette="Blues_r",
+)
+axes[0].set_title("Top 10 P&C (Re)Insurance Stocks in 2025")
+axes[0].set_xlabel("Total return (%)")
+axes[0].set_ylabel("")
+axes[0].legend_.remove()
+for bar in axes[0].patches:
+    value = bar.get_width()
+    y_pos = bar.get_y() + bar.get_height() / 2
+    axes[0].text(
+        value + 0.6,
+        y_pos,
+        f"{value:.1f}%",
+        va="center",
+        ha="left",
+        fontsize=9,
+        color="#0f172a",
+    )
+
+sns.barplot(
+    data=laggards,
+    x="return_2025",
+    y="ticker",
+    hue="segment",
+    dodge=False,
+    ax=axes[1],
+    palette="Reds_r",
+)
+axes[1].set_title("Bottom 10 P&C (Re)Insurance Stocks in 2025")
+axes[1].set_xlabel("Total return (%)")
+axes[1].set_ylabel("")
+axes[1].legend_.remove()
+for bar in axes[1].patches:
+    value = bar.get_width()
+    y_pos = bar.get_y() + bar.get_height() / 2
+    axes[1].text(
+        value - 0.6,
+        y_pos,
+        f"{value:.1f}%",
+        va="center",
+        ha="right",
+        fontsize=9,
+        color="#0f172a",
+    )
+
+plot_path = Path("leaderboard-2025.png")
+fig.savefig(plot_path, dpi=200)
+plt.close(fig)
+```
+
+![](leaderboard-2025.png){fig-alt="Top and bottom 10 total return performers in 2025."}
+
+```{python}
+#| results: asis
+from IPython.display import HTML
+
+leaders_table = leaders.rename(columns={
+    "ticker": "Ticker",
+    "name": "Company",
+    "segment": "Segment",
+    "return_2025": "2025 Return (%)",
+})
+HTML(leaders_table.to_html(index=False, classes="table table-striped table-hover"))
+```
+
+```{python}
+#| results: asis
+laggards_table = laggards.rename(columns={
+    "ticker": "Ticker",
+    "name": "Company",
+    "segment": "Segment",
+    "return_2025": "2025 Return (%)",
+})
+HTML(laggards_table.to_html(index=False, classes="table table-striped table-hover"))
+```
+
+**Key takeaways**
+
+```{python}
+#| output: asis
+top_segment = leaders["segment"].value_counts().idxmax()
+bottom_segment = laggards["segment"].value_counts().idxmax()
+dispersion = leaders["return_2025"].median() - laggards["return_2025"].median()
+
+print(
+    "- The top performers were heavily tilted toward "
+    f"**{top_segment}** franchises, suggesting the market rewarded scaling, "
+    "underwriting leverage, and consistent pricing power into year-end."
+)
+print(
+    "- The laggards list shows stress concentrated in "
+    f"**{bottom_segment}** names where rate momentum slowed and volatility climbed."
+)
+print(
+    "- Dispersion remains high: the gap between the median return of the top decile and bottom "
+    f"decile exceeded **{dispersion:.1f} percentage points**."
+)
+```
+
+## Segment performance: reinsurers vs. primary carriers
+
+To compare segments on an apples-to-apples basis, the analysis below uses both equal-weighted and
+market-cap-weighted returns. Market caps are the latest values available from the stock monitor,
+so they approximate the segment weights investors currently own.
+
+```{python}
+#| output: false
+segment_summary = (
+    returns_2025
+    .groupby("segment")
+    .apply(
+        lambda df: pd.Series({
+            "equal_weight_return": df["return_2025"].mean(),
+            "median_return": df["return_2025"].median(),
+            "market_cap_weighted_return": np.average(
+                df["return_2025"],
+                weights=df["market_cap"].fillna(0).replace(0, np.nan)
+            ),
+            "coverage": df["ticker"].nunique(),
+        })
+    )
+    .reset_index()
+)
+
+segment_summary["market_cap_weighted_return"] = segment_summary["market_cap_weighted_return"].fillna(
+    segment_summary["equal_weight_return"]
+)
+
+segment_summary = segment_summary.sort_values("equal_weight_return", ascending=False)
+segment_summary["equal_weight_return"] = (segment_summary["equal_weight_return"] * 100).round(1)
+segment_summary["median_return"] = (segment_summary["median_return"] * 100).round(1)
+segment_summary["market_cap_weighted_return"] = (
+    segment_summary["market_cap_weighted_return"] * 100
+).round(1)
+```
+
+```{python}
+#| results: asis
+segment_table = segment_summary.rename(columns={
+    "segment": "Segment",
+    "equal_weight_return": "Equal-weighted Return (%)",
+    "median_return": "Median Return (%)",
+    "market_cap_weighted_return": "Market Cap-weighted Return (%)",
+    "coverage": "Tickers",
+})
+HTML(segment_table.to_html(index=False, classes="table table-striped table-hover"))
+```
+
+```{python}
+#| output: false
+fig_height = max(14, 0.4 * len(returns_2025))
+fig, ax = plt.subplots(figsize=(14, fig_height), constrained_layout=True)
+all_tickers = returns_2025.sort_values("return_2025", ascending=False).copy()
+all_tickers["return_pct"] = all_tickers["return_2025"] * 100
+colors = np.where(all_tickers["return_pct"] >= 0, "#16a34a", "#dc2626")
+
+bars = ax.barh(all_tickers["ticker"], all_tickers["return_pct"], color=colors)
+ax.axvline(0, color="#334155", linewidth=1)
+ax.set_xlabel("Total return (%)", fontsize=12)
+ax.set_title("2025 Total Returns by Ticker (All P&C (Re)Insurance Stocks)", fontsize=14)
+ax.invert_yaxis()
+ax.margins(x=0.1)
+ax.grid(False)
+ax.tick_params(axis="y", labelsize=10)
+ax.tick_params(axis="x", labelsize=10)
+
+for bar in bars:
+    value = bar.get_width()
+    y_pos = bar.get_y() + bar.get_height() / 2
+    offset = 0.6 if value >= 0 else -0.6
+    align = "left" if value >= 0 else "right"
+    ax.text(
+        value + offset,
+        y_pos,
+        f"{value:.1f}%",
+        va="center",
+        ha=align,
+        fontsize=9,
+        color="#0f172a",
+    )
+
+plot_path = Path("all-tickers-returns-2025.png")
+fig.savefig(plot_path, dpi=200)
+plt.close(fig)
+```
+
+![](all-tickers-returns-2025.png){fig-alt="All tickers sorted by 2025 total returns."}
+
+```{python}
+#| output: false
+fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
+segment_plot = segment_summary.copy()
+segment_plot = segment_plot.sort_values("equal_weight_return")
+
+ax.barh(segment_plot["segment"], segment_plot["equal_weight_return"], color="#2563eb", alpha=0.85)
+ax.set_xlabel("Equal-weighted total return (%)")
+ax.set_title("2025 Returns by Segment (Equal-weighted)")
+
+plot_path = Path("segment-returns-2025.png")
+fig.savefig(plot_path, dpi=200)
+plt.close(fig)
+```
+
+![](segment-returns-2025.png){fig-alt="Equal-weighted total returns by segment in 2025."}
+
+## Interactive return and valuation table
+
+Use the interactive table below to explore 2025 total returns alongside current valuation
+metrics. You can sort or search the table to drill into individual names.
+
+```{python}
+import plotly.graph_objects as go
+
+table_df = returns_2025.copy()
+table_df["return_2025_pct"] = (table_df["return_2025"] * 100).round(1)
+table_df["pb_ratio"] = table_df["pb_ratio"].round(2)
+table_df["market_cap_b"] = (table_df["market_cap"] / 1e9).round(1)
+
+table_df = table_df[[
+    "ticker",
+    "name",
+    "segment",
+    "return_2025_pct",
+    "pb_ratio",
+    "market_cap_b",
+]]
+
+table_df = table_df.sort_values("return_2025_pct", ascending=False)
+
+fig = go.Figure(
+    data=[
+        go.Table(
+            header=dict(
+                values=[
+                    "Ticker",
+                    "Company",
+                    "Segment",
+                    "2025 Return (%)",
+                    "Latest P/B",
+                    "Market Cap ($B)",
+                ],
+                fill_color="#0f172a",
+                font=dict(color="white", size=12),
+                align="left",
+            ),
+            cells=dict(
+                values=[table_df[col] for col in table_df.columns],
+                fill_color="#f8fafc",
+                align="left",
+                font=dict(color="#0f172a", size=11),
+                height=24,
+            ),
+        )
+    ]
+)
+
+fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=600)
+fig
+```
+
+**Insights by segment**
+
+```{python}
+#| output: asis
+reinsurer_return = segment_summary.loc[
+    segment_summary["segment"] == "Reinsurers", "equal_weight_return"
+].iloc[0]
+commercial_return = segment_summary.loc[
+    segment_summary["segment"] == "Large commercial", "equal_weight_return"
+].iloc[0]
+personal_return = segment_summary.loc[
+    segment_summary["segment"] == "Personal lines", "equal_weight_return"
+].iloc[0]
+
+print(
+    f"- **Reinsurers** (including listed Bermuda and European names) collectively posted "
+    f"**{reinsurer_return:.1f}%** equal-weighted gains. The group benefited from firm renewal "
+    "pricing and strong investment income."
+)
+print(
+    f"- **Large commercial carriers** delivered **{commercial_return:.1f}%** equal-weighted "
+    "returns, with the market differentiating between scale-driven balance sheet strength and "
+    "capital intensity."
+)
+print(
+    f"- **Personal lines** were more mixed, ending the year with an equal-weighted return of "
+    f"**{personal_return:.1f}%**. Performance bifurcation aligns with underwriting remediation "
+    "success and catastrophe exposure."
+)
+print(
+    "- **Specialty and regional carriers** generally sat in the middle of the pack, though "
+    "dispersion within those groups remains wide."
+)
+```
+
+## Valuation: price-to-book in 2025
+
+The P&C Stocks Monitor provides the latest reported price-to-book ratios. To analyze how
+valuations shifted through 2025, we estimate a **constant book value per share** using the latest
+price and P/B ratio, then apply that book value to historical prices. This isolates the market
+price component and offers a clean view of how investors re-rated each stock during the year.
+
+```{python}
+#| output: false
+valuations = returns_2025[["ticker", "pb_ratio", "last_price", "segment"]].copy()
+valuations = valuations.dropna(subset=["pb_ratio", "last_price"])
+valuations = valuations[valuations["pb_ratio"] > 0]
+
+valuations["book_value_per_share"] = valuations["last_price"] / valuations["pb_ratio"]
+
+prices_2025 = prices_df[(prices_df["date"] > start_date) & (prices_df["date"] <= end_date)].copy()
+prices_2025 = prices_2025.merge(
+    valuations[["ticker", "segment", "book_value_per_share"]],
+    on=["ticker", "segment"],
+    how="inner",
+)
+
+prices_2025["implied_pb"] = prices_2025["adj_close"] / prices_2025["book_value_per_share"]
+
+monthly_pb = (
+    prices_2025
+    .set_index("date")
+    .groupby(["segment", "ticker"])
+    .resample("M")["implied_pb"]
+    .last()
+    .reset_index()
+)
+
+segment_pb = (
+    monthly_pb
+    .groupby(["segment", "date"])
+    .agg(median_pb=("implied_pb", "median"))
+    .reset_index()
+)
+
+fig, ax = plt.subplots(figsize=(12, 6), constrained_layout=True)
+for segment, segment_df in segment_pb.groupby("segment"):
+    ax.plot(segment_df["date"], segment_df["median_pb"], label=segment)
+
+ax.set_title("Implied Price-to-Book Trends in 2025")
+ax.set_ylabel("Median implied P/B")
+ax.set_xlabel("")
+ax.legend(ncol=2, frameon=False)
+
+plot_path = Path("segment-pb-2025.png")
+fig.savefig(plot_path, dpi=200)
+plt.close(fig)
+```
+
+![](segment-pb-2025.png){fig-alt="Median implied price-to-book ratios by segment in 2025."}
+
+**Valuation highlights**
+
+- **Reinsurers** saw their median implied P/B expand into the second half of the year, reflecting
+  investor confidence in sustained pricing discipline and capital return potential.
+- **Large commercial** carriers experienced a steadier path, with implied P/B multiples remaining
+  closer to long-run averages even as returns held up.
+- **Personal lines** valuation paths diverged more dramatically, consistent with the different
+  stages of underwriting recovery and rate adequacy.
+
+## What to watch next
+
+- Underwriting profitability remains the core driver of P/B re-rating. Watch loss cost trends
+  and catastrophe activity as 2026 renewals are negotiated.
+- Capital return announcements and reserve releases can accelerate relative performance, but the
+  market appears increasingly selective about balance sheet quality.
+- The data set is broad; specialty carriers remain a fertile hunting ground for differentiated
+  underwriting stories.
+
+```{python}
+#| output: asis
+print(
+    "*Data source: Problem of Points P&C Stocks Monitor (Yahoo Finance via Netlify function), "
+    f"pulled on {payload['generated_at']} ({payload_source}).*"
+)
+```

@@ -4,16 +4,22 @@ let yahooFinance;
 
 const TICKERS = {
   AIG: "American International Group",
+  AIZ: "Assurant, Inc.",
   ALL: "The Allstate Corporation",
   ACGL: "Arch Capital Group",
+  AMSF: "AMERISAFE, Inc.",
   AXS: "AXIS Capital Holdings",
   CB: "Chubb Limited",
   "CS.PA": "AXA SA",
   CINF: "Cincinnati Financial Corporation",
   EG: "Everest Group",
   EIG: "Employers Holdings",
+  "FFH.TO": "Fairfax Financial Holdings Limited",
+  FIHL: "Fidelis Insurance Holdings Limited",
   "HNR1.DE": "Hannover Rück SE",
   HCI: "HCI Group",
+  HG: "Hamilton Insurance Group",
+  HIPO: "Hippo Holdings Inc.",
   HRTG: "Heritage Insurance Holdings",
   HIG: "The Hartford Financial Services Group",
   "HSX.L": "Hiscox Ltd",
@@ -22,6 +28,7 @@ const TICKERS = {
   KMPR: "Kemper Corporation",
   KNSL: "Kinsale Capital Group",
   "LRE.L": "Lancashire Holdings",
+  LMND: "Lemonade, Inc.",
   MCY: "Mercury General Corporation",
   MKL: "Markel Group",
   "MUV2.DE": "Munich Re",
@@ -33,6 +40,7 @@ const TICKERS = {
   "QBE.AX": "QBE Insurance Group",
   RLI: "RLI Corp.",
   RNR: "RenaissanceRe Holdings",
+  ROOT: "Root, Inc.",
   "SCR.PA": "SCOR SE",
   SAFT: "Safety Insurance Group",
   SKWD: "Skyward Specialty Insurance Group",
@@ -65,6 +73,10 @@ const RETURN_DEFINITIONS = {
 
 const TRADING_DAYS_PER_YEAR = 252;
 const HISTORY_LOOKBACK_DAYS = 365 * 2 + 30;
+const CACHE_TTL_MS = 15 * 60 * 1000;
+
+let cachedResponse = null;
+let cachedAt = 0;
 
 function toISODate(date) {
   return date.toISOString().slice(0, 10);
@@ -344,9 +356,19 @@ function computeAggregates(companies) {
 }
 
 exports.handler = async () => {
+  const now = Date.now();
+  const cacheFresh = cachedResponse && now - cachedAt < CACHE_TTL_MS;
+  if (cacheFresh) {
+    return cachedResponse;
+  }
+
   try {
-    yahooFinance = new YahooFinance({
-      suppressNotices: ["yahooSurvey"]
+    yahooFinance = YahooFinance;
+    yahooFinance.suppressNotices(["yahooSurvey"]);
+    yahooFinance.setGlobalConfig({
+      queue: {
+        concurrency: 2
+      }
     });
 
     const symbols = [...Object.keys(TICKERS), ...BENCHMARK_SYMBOLS];
@@ -408,7 +430,7 @@ exports.handler = async () => {
       errors
     };
 
-    return {
+    const response = {
       statusCode: errors.length && !companies.length ? 502 : 200,
       headers: {
         "Content-Type": "application/json",
@@ -417,8 +439,20 @@ exports.handler = async () => {
       },
       body: JSON.stringify(responseBody)
     };
+
+    if (response.statusCode === 200) {
+      cachedResponse = response;
+      cachedAt = now;
+    } else if (cacheFresh) {
+      return cachedResponse;
+    }
+
+    return response;
   } catch (error) {
     console.error("pcd-dashboard error", error);
+    if (cacheFresh) {
+      return cachedResponse;
+    }
     return {
       statusCode: 500,
       headers: {

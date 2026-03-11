@@ -1,0 +1,867 @@
+---
+title: "Winter Storm Showdown: Uri (2021) vs. Fern (2026)"
+date: 2026-01-27
+categories: [analysis, severe-weather, insurance, visualization]
+subtitle: "Animated temperature timelapse maps reveal how Uri's historic freeze dwarfed Fern in duration and severity"
+draft: false
+freeze: true
+---
+
+Winter Storm Uri (February 2021) and Winter Storm Fern (January 2026) are two of the most significant winter weather events to strike the southern United States in recent memory. Both involved polar vortex disruptions pushing Arctic air deep into the continental U.S., but the two storms differ dramatically in duration, severity, and ultimate impact. This interactive analysis uses animated timelapse maps to compare the day-by-day temperature progression of each storm, with a focus on how long different regions endured below-freezing conditions.
+
+```{=html}
+<div id="storm-comparison-root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+<script>
+(function() {
+  const { useState, useEffect, useRef, useCallback, createElement: h } = React;
+
+  // ── US State SVG paths ──
+  const statePaths = {
+    'AL': { d: 'M628,396 L631,442 L633,467 L605,470 L602,456 L589,455 L589,391 L628,388 Z', name: 'Alabama' },
+    'AZ': { d: 'M205,340 L270,350 L260,420 L245,445 L175,435 L175,340 Z', name: 'Arizona' },
+    'AR': { d: 'M520,380 L585,378 L588,390 L588,435 L520,438 L515,395 Z', name: 'Arkansas' },
+    'CA': { d: 'M120,240 L175,250 L185,340 L175,435 L140,430 L95,350 L95,280 Z', name: 'California' },
+    'CO': { d: 'M280,280 L370,285 L370,345 L280,340 Z', name: 'Colorado' },
+    'CT': { d: 'M795,205 L820,200 L822,218 L798,225 Z', name: 'Connecticut' },
+    'DE': { d: 'M765,265 L775,260 L778,285 L765,290 Z', name: 'Delaware' },
+    'FL': { d: 'M635,470 L695,465 L730,520 L700,565 L660,540 L635,505 L620,475 Z', name: 'Florida' },
+    'GA': { d: 'M635,395 L690,390 L695,465 L635,470 L630,445 Z', name: 'Georgia' },
+    'ID': { d: 'M195,120 L240,130 L235,220 L195,215 L180,180 Z', name: 'Idaho' },
+    'IL': { d: 'M570,250 L600,248 L610,330 L585,375 L555,375 L555,290 Z', name: 'Illinois' },
+    'IN': { d: 'M605,255 L640,252 L645,340 L605,345 L600,290 Z', name: 'Indiana' },
+    'IA': { d: 'M490,230 L560,225 L565,280 L490,285 Z', name: 'Iowa' },
+    'KS': { d: 'M375,295 L470,290 L475,350 L375,355 Z', name: 'Kansas' },
+    'KY': { d: 'M590,330 L680,315 L690,345 L615,365 L590,360 Z', name: 'Kentucky' },
+    'LA': { d: 'M520,445 L580,440 L590,500 L550,510 L515,495 Z', name: 'Louisiana' },
+    'ME': { d: 'M820,100 L850,90 L855,165 L820,180 L815,140 Z', name: 'Maine' },
+    'MD': { d: 'M720,275 L765,265 L770,295 L725,305 Z', name: 'Maryland' },
+    'MA': { d: 'M800,185 L840,178 L842,198 L802,205 Z', name: 'Massachusetts' },
+    'MI': { d: 'M580,150 L635,145 L650,220 L600,240 L575,215 Z', name: 'Michigan' },
+    'MN': { d: 'M480,120 L545,115 L555,200 L485,205 Z', name: 'Minnesota' },
+    'MS': { d: 'M570,395 L600,392 L605,470 L570,473 Z', name: 'Mississippi' },
+    'MO': { d: 'M490,295 L565,290 L575,370 L490,375 Z', name: 'Missouri' },
+    'MT': { d: 'M220,95 L330,100 L330,170 L220,165 Z', name: 'Montana' },
+    'NE': { d: 'M355,235 L460,230 L465,285 L355,290 Z', name: 'Nebraska' },
+    'NV': { d: 'M150,200 L200,210 L195,330 L145,320 Z', name: 'Nevada' },
+    'NH': { d: 'M805,140 L820,135 L822,180 L805,185 Z', name: 'New Hampshire' },
+    'NJ': { d: 'M770,230 L785,225 L790,275 L772,280 Z', name: 'New Jersey' },
+    'NM': { d: 'M270,355 L350,360 L345,450 L265,445 Z', name: 'New Mexico' },
+    'NY': { d: 'M720,175 L795,160 L800,215 L730,235 L715,210 Z', name: 'New York' },
+    'NC': { d: 'M690,345 L780,330 L785,365 L695,380 Z', name: 'North Carolina' },
+    'ND': { d: 'M355,115 L450,110 L455,170 L355,175 Z', name: 'North Dakota' },
+    'OH': { d: 'M645,255 L700,245 L705,310 L650,325 Z', name: 'Ohio' },
+    'OK': { d: 'M375,360 L470,355 L480,400 L400,420 L375,395 Z', name: 'Oklahoma' },
+    'OR': { d: 'M105,135 L190,145 L195,215 L100,205 Z', name: 'Oregon' },
+    'PA': { d: 'M700,220 L770,210 L775,260 L705,275 Z', name: 'Pennsylvania' },
+    'RI': { d: 'M810,200 L822,198 L823,215 L812,218 Z', name: 'Rhode Island' },
+    'SC': { d: 'M690,380 L745,365 L750,410 L700,420 Z', name: 'South Carolina' },
+    'SD': { d: 'M360,175 L455,170 L460,230 L360,235 Z', name: 'South Dakota' },
+    'TN': { d: 'M580,360 L690,345 L695,380 L585,395 Z', name: 'Tennessee' },
+    'TX': { d: 'M315,390 L400,420 L480,405 L515,445 L510,520 L420,545 L340,510 L280,450 L290,400 Z', name: 'Texas' },
+    'UT': { d: 'M225,220 L280,225 L280,320 L225,315 Z', name: 'Utah' },
+    'VT': { d: 'M790,135 L805,132 L807,180 L792,183 Z', name: 'Vermont' },
+    'VA': { d: 'M695,300 L770,285 L780,325 L700,345 Z', name: 'Virginia' },
+    'WA': { d: 'M120,80 L195,90 L195,145 L120,135 Z', name: 'Washington' },
+    'WV': { d: 'M695,280 L735,270 L745,315 L700,330 Z', name: 'West Virginia' },
+    'WI': { d: 'M545,155 L595,150 L600,230 L545,235 Z', name: 'Wisconsin' },
+    'WY': { d: 'M260,175 L350,180 L350,250 L260,245 Z', name: 'Wyoming' },
+  };
+
+  // ── Temperature categories ──
+  // 0: >40F  1: 33-40F  2: 25-32F  3: 15-24F  4: 5-14F  5: -5 to 4F  6: < -5F
+  const tempLabels = ['>40\u00b0F', '33-40\u00b0F', '25-32\u00b0F', '15-24\u00b0F', '5-14\u00b0F', '-5 to 4\u00b0F', 'Below -5\u00b0F'];
+  const tempDescs = ['No unusual cold', 'Near freezing', 'Below freezing', 'Hard freeze', 'Severe freeze', 'Extreme cold', 'Dangerous cold'];
+  const tempColors = ['#1e293b', '#7dd3fc', '#38bdf8', '#0284c7', '#1e40af', '#312e81', '#581c87'];
+
+  // ── URI daily temperature data (Feb 13-19, 2021) ──
+  // Each array = [Day0..Day6] temperature category for that state
+  const uriTemps = {
+    'AL':[1,2,2,3,2,1,0], 'AZ':[0,0,1,1,0,0,0], 'AR':[2,3,4,5,4,3,2],
+    'CA':[0,0,0,0,0,0,0], 'CO':[3,3,4,4,3,2,2], 'CT':[2,2,3,3,2,2,2],
+    'DE':[2,2,3,3,2,2,1], 'FL':[0,0,1,1,0,0,0], 'GA':[1,1,2,2,2,1,0],
+    'ID':[2,2,3,3,2,2,2], 'IL':[3,3,4,5,4,3,2], 'IN':[2,3,4,4,3,2,2],
+    'IA':[3,4,5,5,4,3,2], 'KS':[3,4,5,6,4,3,2], 'KY':[2,3,4,4,3,2,2],
+    'LA':[1,2,3,4,3,2,1], 'ME':[3,3,4,4,3,3,2], 'MD':[2,2,3,3,2,2,1],
+    'MA':[2,2,3,3,3,2,2], 'MI':[3,3,4,5,4,3,2], 'MN':[4,5,5,6,5,4,3],
+    'MS':[1,2,3,3,3,2,1], 'MO':[3,4,5,5,4,3,2], 'MT':[3,3,4,4,3,3,2],
+    'NE':[3,4,5,5,4,3,2], 'NV':[1,1,2,2,1,1,1], 'NH':[3,3,4,4,3,3,2],
+    'NJ':[2,2,3,3,2,2,1], 'NM':[2,3,3,3,3,2,1], 'NY':[2,2,3,3,3,2,2],
+    'NC':[1,2,2,2,2,1,1], 'ND':[4,5,5,6,5,4,3], 'OH':[2,3,3,4,3,2,2],
+    'OK':[2,4,5,6,4,3,2], 'OR':[1,1,1,1,1,1,1], 'PA':[2,2,3,3,3,2,2],
+    'RI':[2,2,3,3,2,2,2], 'SC':[0,1,1,2,1,1,0], 'SD':[4,5,5,6,5,4,3],
+    'TN':[2,3,4,4,3,2,1], 'TX':[2,3,4,5,3,3,2], 'UT':[2,2,3,3,2,2,1],
+    'VT':[3,3,4,4,3,3,2], 'VA':[2,2,3,3,2,2,1], 'WA':[1,1,1,2,1,1,1],
+    'WV':[2,3,3,4,3,2,2], 'WI':[3,4,5,5,4,3,3], 'WY':[3,3,4,4,3,3,2],
+  };
+
+  // ── FERN daily temperature data (Jan 23-27, 2026) ──
+  const fernTemps = {
+    'AL':[0,2,2,2,1], 'AZ':[0,0,0,0,0], 'AR':[1,3,3,3,3],
+    'CA':[0,0,0,0,0], 'CO':[2,2,2,3,2], 'CT':[2,2,3,3,3],
+    'DE':[1,2,2,3,3], 'FL':[0,0,0,0,0], 'GA':[0,1,1,2,1],
+    'ID':[2,2,2,3,2], 'IL':[2,3,3,3,2], 'IN':[2,3,4,3,3],
+    'IA':[2,3,4,5,4], 'KS':[2,3,3,3,2], 'KY':[1,3,3,3,2],
+    'LA':[1,2,2,3,2], 'ME':[2,3,3,4,3], 'MD':[1,2,2,3,3],
+    'MA':[2,2,3,3,3], 'MI':[2,3,4,6,4], 'MN':[3,4,5,5,4],
+    'MS':[0,2,3,3,2], 'MO':[2,3,3,3,2], 'MT':[2,3,3,4,3],
+    'NE':[2,3,3,4,3], 'NV':[1,1,1,1,1], 'NH':[2,3,3,4,3],
+    'NJ':[2,2,3,3,3], 'NM':[1,2,2,2,1], 'NY':[2,2,3,3,3],
+    'NC':[0,2,2,2,1], 'ND':[3,4,5,6,5], 'OH':[2,3,3,3,3],
+    'OK':[2,4,3,4,3], 'OR':[1,1,1,1,1], 'PA':[2,2,3,3,3],
+    'RI':[2,2,3,3,3], 'SC':[0,1,1,1,1], 'SD':[3,4,4,5,4],
+    'TN':[1,3,3,3,2], 'TX':[1,2,3,4,3], 'UT':[1,2,2,2,1],
+    'VT':[2,3,3,4,3], 'VA':[1,2,2,2,2], 'WA':[1,1,1,1,1],
+    'WV':[1,2,3,3,2], 'WI':[2,3,4,4,3], 'WY':[2,3,3,3,2],
+  };
+
+  const uriDates = ['Feb 13','Feb 14','Feb 15','Feb 16','Feb 17','Feb 18','Feb 19'];
+  const fernDates = ['Jan 23','Jan 24','Jan 25','Jan 26','Jan 27'];
+  const uriDatesFull = ['Feb 13, 2021','Feb 14','Feb 15','Feb 16','Feb 17','Feb 18','Feb 19, 2021'];
+  const fernDatesFull = ['Jan 23, 2026','Jan 24','Jan 25','Jan 26','Jan 27, 2026'];
+  const totalDays = 7; // Uri has 7 days, Fern 5
+
+  // ── Below-freezing duration data (consecutive hours < 32F) ──
+  const freezeData = [
+    { city: 'Waco, TX', uri: 205, fern: 52, uriNote: 'NEW ALL-TIME RECORD', fernNote: '' },
+    { city: 'Austin, TX', uri: 164, fern: 60, uriNote: 'NEW ALL-TIME RECORD', fernNote: '' },
+    { city: 'Dallas/Fort Worth', uri: 139, fern: 65, uriNote: 'Tied 5th longest', fernNote: '' },
+    { city: 'San Antonio, TX', uri: 108, fern: 48, uriNote: 'Missed record by 90 min', fernNote: '' },
+    { city: 'Oklahoma City', uri: 210, fern: 60, uriNote: 'Record at/below 20\u00b0F', fernNote: '' },
+    { city: 'Little Rock, AR', uri: 96, fern: 55, uriNote: '', fernNote: '' },
+    { city: 'Houston, TX', uri: 44, fern: 28, uriNote: '', fernNote: '' },
+  ];
+  const maxFreeze = 210;
+
+  // ── Snowfall comparison ──
+  const snowData = [
+    { city: 'Abilene, TX', uri: 14.8, fern: 4.0 },
+    { city: 'Little Rock, AR', uri: 11.8, fern: 6.0 },
+    { city: 'Waco, TX', uri: 9.0, fern: 2.5 },
+    { city: 'Austin, TX', uri: 6.4, fern: 2.0 },
+    { city: 'Kansas City, MO', uri: 5.0, fern: 5.2 },
+    { city: 'DFW, TX', uri: 5.0, fern: 3.3 },
+    { city: 'Oklahoma City', uri: 4.0, fern: 4.4 },
+    { city: 'San Antonio, TX', uri: 3.7, fern: 1.0 },
+    { city: 'Houston, TX', uri: 3.0, fern: 0.5 },
+    { city: 'Boston, MA', uri: 0, fern: 16.7 },
+    { city: 'Pittsburgh, PA', uri: 0, fern: 11.2 },
+    { city: 'Baltimore, MD', uri: 0, fern: 11.3 },
+  ];
+  const maxSnow = 16.7;
+
+  // ── Key comparison stats ──
+  const compStats = [
+    { metric: 'Duration of Cold', uri: '7 days (Feb 13-19)', fern: '5 days (Jan 23-27)', uriWorse: true },
+    { metric: 'DFW Record Low', uri: '-2\u00b0F', fern: '9\u00b0F', uriWorse: true },
+    { metric: 'Houston Record Low', uri: '13\u00b0F', fern: 'Low 20s', uriWorse: true },
+    { metric: 'Austin Record Low', uri: '6\u00b0F', fern: '~15\u00b0F', uriWorse: true },
+    { metric: 'OKC Record Low', uri: '-14\u00b0F', fern: '8\u00b0F', uriWorse: true },
+    { metric: 'Peak Power Outages', uri: '4.5 million', fern: '~1 million', uriWorse: true },
+    { metric: 'TX Grid Failure', uri: 'Catastrophic collapse', fern: 'Grid held stable', uriWorse: true },
+    { metric: 'Insured Losses', uri: '~$15 billion', fern: '$1-2B (est.)', uriWorse: true },
+    { metric: 'Fatalities', uri: '246+', fern: '50+', uriWorse: true },
+    { metric: 'States Affected', uri: '~23', fern: '24+', uriWorse: false },
+    { metric: 'NE Snowfall', uri: 'Minimal', fern: 'Boston 16.7\u2033', uriWorse: false },
+  ];
+
+  // ── Main component ──
+  function StormComparisonApp() {
+    const [activeTab, setActiveTab] = useState('timelapse');
+    const [currentDay, setCurrentDay] = useState(0);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [hoveredState, setHoveredState] = useState(null);
+    const [hoveredStorm, setHoveredStorm] = useState(null);
+    const [animated, setAnimated] = useState(false);
+    const intervalRef = useRef(null);
+
+    useEffect(() => {
+      setTimeout(() => setAnimated(true), 100);
+    }, []);
+
+    // Playback logic
+    useEffect(() => {
+      if (isPlaying) {
+        intervalRef.current = setInterval(() => {
+          setCurrentDay(d => {
+            if (d >= totalDays - 1) {
+              setIsPlaying(false);
+              return 0;
+            }
+            return d + 1;
+          });
+        }, 1800);
+      }
+      return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    }, [isPlaying]);
+
+    const getColor = (stateCode, storm, day) => {
+      const data = storm === 'uri' ? uriTemps : fernTemps;
+      const temps = data[stateCode];
+      if (!temps) return '#1e293b';
+      const maxDay = temps.length - 1;
+      const d = Math.min(day, maxDay);
+      return tempColors[temps[d]] || '#1e293b';
+    };
+
+    const getTempCategory = (stateCode, storm, day) => {
+      const data = storm === 'uri' ? uriTemps : fernTemps;
+      const temps = data[stateCode];
+      if (!temps) return 0;
+      const maxDay = temps.length - 1;
+      return temps[Math.min(day, maxDay)];
+    };
+
+    const countStatesBelowFreezing = (storm, day) => {
+      const data = storm === 'uri' ? uriTemps : fernTemps;
+      let count = 0;
+      Object.entries(data).forEach(([code, temps]) => {
+        const maxDay = temps.length - 1;
+        const d = Math.min(day, maxDay);
+        if (temps[d] >= 2) count++;
+      });
+      return count;
+    };
+
+    const countStatesExtremeCold = (storm, day) => {
+      const data = storm === 'uri' ? uriTemps : fernTemps;
+      let count = 0;
+      Object.entries(data).forEach(([code, temps]) => {
+        const maxDay = temps.length - 1;
+        const d = Math.min(day, maxDay);
+        if (temps[d] >= 4) count++;
+      });
+      return count;
+    };
+
+    // ── Styles ──
+    const s = {
+      root: {
+        background: 'linear-gradient(135deg, #0c1929 0%, #162033 50%, #0c1929 100%)',
+        padding: '32px 16px',
+        fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+        borderRadius: '12px',
+        marginBottom: '24px',
+      },
+      inner: { maxWidth: '1200px', margin: '0 auto' },
+      header: { textAlign: 'center', marginBottom: '28px' },
+      badge: {
+        display: 'inline-block', padding: '6px 16px',
+        background: 'rgba(139, 92, 246, 0.15)', borderRadius: '20px',
+        marginBottom: '14px', border: '1px solid rgba(139, 92, 246, 0.3)',
+      },
+      badgeText: { color: '#a78bfa', fontSize: '13px', fontWeight: '600', letterSpacing: '0.5px' },
+      title: { fontSize: '32px', fontWeight: '700', color: '#f8fafc', margin: '0 0 6px 0', letterSpacing: '-0.5px' },
+      subtitle: { fontSize: '15px', color: '#94a3b8', margin: 0 },
+      tabs: {
+        display: 'flex', gap: '6px', marginBottom: '20px', padding: '4px',
+        background: 'rgba(255,255,255,0.03)', borderRadius: '12px',
+        width: 'fit-content', flexWrap: 'wrap',
+      },
+      tab: {
+        padding: '10px 18px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+        fontSize: '14px', fontWeight: '500', transition: 'all 0.2s ease',
+      },
+      panel: {
+        background: 'rgba(255,255,255,0.02)', borderRadius: '20px',
+        border: '1px solid rgba(255,255,255,0.06)', padding: '24px',
+      },
+      mapGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
+      mapCard: {
+        background: 'rgba(255,255,255,0.02)', borderRadius: '14px',
+        border: '1px solid rgba(255,255,255,0.06)', padding: '12px', position: 'relative',
+      },
+      mapTitle: { fontSize: '16px', fontWeight: '700', textAlign: 'center', marginBottom: '4px' },
+      mapDate: { fontSize: '13px', color: '#94a3b8', textAlign: 'center', marginBottom: '8px' },
+      controls: {
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        gap: '10px', marginBottom: '16px', flexWrap: 'wrap',
+      },
+      btn: {
+        padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+        fontSize: '13px', fontWeight: '600', transition: 'all 0.15s ease',
+      },
+      dayBtn: {
+        width: '36px', height: '36px', borderRadius: '50%', border: 'none',
+        cursor: 'pointer', fontSize: '13px', fontWeight: '600',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        transition: 'all 0.15s ease',
+      },
+      legend: {
+        display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap', justifyContent: 'center',
+      },
+      legendItem: { display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: '#94a3b8' },
+      legendDot: { width: '12px', height: '12px', borderRadius: '2px', flexShrink: 0 },
+      statRow: {
+        display: 'flex', justifyContent: 'center', gap: '24px', marginTop: '12px', flexWrap: 'wrap',
+      },
+      statBox: {
+        background: 'rgba(255,255,255,0.04)', borderRadius: '10px', padding: '10px 16px',
+        textAlign: 'center', minWidth: '140px',
+      },
+      barRow: {
+        display: 'grid', gridTemplateColumns: '130px 1fr 60px',
+        alignItems: 'center', gap: '12px', padding: '6px 0',
+      },
+      barTrack: {
+        height: '14px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px',
+        overflow: 'hidden', position: 'relative',
+      },
+      bar: { height: '100%', borderRadius: '4px', transition: 'width 0.6s ease' },
+      dualBarRow: {
+        display: 'grid', gridTemplateColumns: '120px 1fr',
+        alignItems: 'start', gap: '12px', padding: '8px 0',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
+      },
+      compRow: {
+        display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
+        gap: '12px', padding: '12px 16px',
+        background: 'rgba(255,255,255,0.02)', borderRadius: '10px',
+        border: '1px solid rgba(255,255,255,0.04)',
+      },
+      callout: {
+        padding: '16px 20px', borderRadius: '12px', marginTop: '20px',
+        border: '1px solid',
+      },
+      footer: { marginTop: '20px', textAlign: 'center', color: '#475569', fontSize: '12px' },
+    };
+
+    // ── Render a single US map ──
+    const renderMap = (storm, day) => {
+      const stormLabel = storm === 'uri' ? 'Winter Storm Uri' : 'Winter Storm Fern';
+      const dates = storm === 'uri' ? uriDates : fernDates;
+      const datesFull = storm === 'uri' ? uriDatesFull : fernDatesFull;
+      const maxDay = dates.length - 1;
+      const d = Math.min(day, maxDay);
+      const stormColor = storm === 'uri' ? '#f97316' : '#3b82f6';
+      const isEnded = day > maxDay;
+      const belowFreezing = countStatesBelowFreezing(storm, day);
+      const extremeCold = countStatesExtremeCold(storm, day);
+
+      return h('div', { style: s.mapCard },
+        h('div', { style: { ...s.mapTitle, color: stormColor } }, stormLabel),
+        h('div', { style: s.mapDate },
+          isEnded
+            ? dates[maxDay] + ' (storm ending)'
+            : datesFull[d] + ' \u2014 Day ' + (d + 1) + ' of ' + dates.length
+        ),
+        h('svg', {
+          viewBox: '80 70 800 520',
+          style: { width: '100%', height: 'auto', minHeight: '220px' },
+        },
+          h('rect', { x: 80, y: 70, width: 800, height: 520, fill: '#0f172a', rx: 8 }),
+          Object.entries(statePaths).map(function(entry) {
+            var code = entry[0]; var state = entry[1];
+            var isHovered = hoveredState === code && hoveredStorm === storm;
+            return h('path', {
+              key: code, d: state.d,
+              fill: getColor(code, storm, day),
+              stroke: isHovered ? '#fff' : '#334155',
+              strokeWidth: isHovered ? 2 : 0.5,
+              style: { transition: 'fill 0.4s ease', cursor: 'pointer' },
+              onMouseEnter: function() { setHoveredState(code); setHoveredStorm(storm); },
+              onMouseLeave: function() { setHoveredState(null); setHoveredStorm(null); },
+            });
+          })
+        ),
+        // Stats below map
+        h('div', { style: { display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '8px' } },
+          h('div', { style: { textAlign: 'center' } },
+            h('div', { style: { color: '#38bdf8', fontSize: '20px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" } }, belowFreezing),
+            h('div', { style: { color: '#64748b', fontSize: '11px' } }, 'States < 32\u00b0F')
+          ),
+          h('div', { style: { textAlign: 'center' } },
+            h('div', { style: { color: '#818cf8', fontSize: '20px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" } }, extremeCold),
+            h('div', { style: { color: '#64748b', fontSize: '11px' } }, 'States < 15\u00b0F')
+          )
+        ),
+        // Tooltip
+        hoveredState && hoveredStorm === storm && h('div', {
+          style: {
+            position: 'absolute', top: '60px', left: '50%', transform: 'translateX(-50%)',
+            background: 'rgba(15,23,42,0.97)', padding: '10px 14px', borderRadius: '8px',
+            border: '1px solid rgba(255,255,255,0.15)', zIndex: 100,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.4)', pointerEvents: 'none',
+          }
+        },
+          h('div', { style: { color: '#f8fafc', fontWeight: '600', fontSize: '14px' } },
+            statePaths[hoveredState] ? statePaths[hoveredState].name : hoveredState
+          ),
+          h('div', { style: { color: tempColors[getTempCategory(hoveredState, storm, day)], fontSize: '13px', marginTop: '4px' } },
+            tempLabels[getTempCategory(hoveredState, storm, day)] + ' \u2014 ' + tempDescs[getTempCategory(hoveredState, storm, day)]
+          )
+        )
+      );
+    };
+
+    // ── Timelapse tab ──
+    const renderTimelapse = () => h('div', null,
+      h('div', { style: { marginBottom: '16px' } },
+        h('div', { style: { color: '#f8fafc', fontSize: '18px', fontWeight: '600', marginBottom: '6px' } },
+          'Day-by-Day Temperature Comparison'
+        ),
+        h('div', { style: { color: '#94a3b8', fontSize: '14px', lineHeight: '1.5' } },
+          'Watch how each storm progressed. Uri sustained extreme cold across Texas for 7 consecutive days; Fern\'s intense cold lasted 5 days but was 10-20\u00b0F warmer at its peak. Colors show overnight low temperature ranges.'
+        )
+      ),
+      // Playback controls
+      h('div', { style: s.controls },
+        h('button', {
+          style: {
+            ...s.btn,
+            background: isPlaying ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.3)',
+            color: isPlaying ? '#ef4444' : '#3b82f6',
+            minWidth: '80px',
+          },
+          onClick: function() { setIsPlaying(!isPlaying); }
+        }, isPlaying ? '\u23f8 Pause' : '\u25b6 Play'),
+        // Day buttons
+        Array.from({ length: totalDays }, function(_, i) {
+          return h('button', {
+            key: i,
+            style: {
+              ...s.dayBtn,
+              background: currentDay === i ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.05)',
+              color: currentDay === i ? '#c4b5fd' : '#64748b',
+              border: currentDay === i ? '1px solid rgba(139,92,246,0.5)' : '1px solid transparent',
+            },
+            onClick: function() { setCurrentDay(i); setIsPlaying(false); }
+          }, String(i + 1));
+        })
+      ),
+      // Side-by-side maps
+      h('div', { style: s.mapGrid },
+        renderMap('uri', currentDay),
+        renderMap('fern', currentDay)
+      ),
+      // Temperature legend
+      h('div', { style: s.legend },
+        tempColors.map(function(color, i) {
+          if (i === 0) return null;
+          return h('div', { key: i, style: s.legendItem },
+            h('div', { style: { ...s.legendDot, background: color } }),
+            h('span', null, tempLabels[i])
+          );
+        })
+      ),
+      // Key insight callout
+      h('div', { style: {
+        ...s.callout,
+        background: 'rgba(249,115,22,0.1)',
+        borderColor: 'rgba(249,115,22,0.25)',
+      }},
+        h('div', { style: { color: '#f97316', fontSize: '14px', fontWeight: '600', marginBottom: '6px' } },
+          'Uri\'s Cold Was Deeper and Longer'
+        ),
+        h('div', { style: { color: '#94a3b8', fontSize: '14px', lineHeight: '1.6' } },
+          'On Uri\'s peak day (Feb 16), Texas plunged to -2\u00b0F in Dallas and sub-zero across Oklahoma\u2014categories of cold that Fern never reached. Uri also maintained below-freezing temperatures for 7 full days vs. Fern\'s 5, resulting in 2-3x longer freezing duration in most Texas cities.'
+        )
+      )
+    );
+
+    // ── Freezing duration tab ──
+    const renderDuration = () => h('div', null,
+      h('div', { style: { marginBottom: '16px' } },
+        h('div', { style: { color: '#f8fafc', fontSize: '18px', fontWeight: '600', marginBottom: '6px' } },
+          'Consecutive Hours Below Freezing'
+        ),
+        h('div', { style: { color: '#94a3b8', fontSize: '14px', lineHeight: '1.5' } },
+          'The duration of sub-freezing temperatures is the single biggest driver of frozen pipe damage and infrastructure failure. Uri kept Texas cities below 32\u00b0F for 2 to 3 times longer than Fern.'
+        )
+      ),
+      h('div', { style: { display: 'flex', gap: '16px', marginBottom: '16px', flexWrap: 'wrap' } },
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: '6px' } },
+          h('div', { style: { width: '14px', height: '14px', borderRadius: '3px', background: '#f97316' } }),
+          h('span', { style: { color: '#94a3b8', fontSize: '13px' } }, 'Uri (2021)')
+        ),
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: '6px' } },
+          h('div', { style: { width: '14px', height: '14px', borderRadius: '3px', background: '#3b82f6' } }),
+          h('span', { style: { color: '#94a3b8', fontSize: '13px' } }, 'Fern (2026)')
+        )
+      ),
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: '4px' } },
+        freezeData.map(function(item, i) {
+          return h('div', { key: i, style: s.dualBarRow },
+            h('div', { style: { color: '#f8fafc', fontWeight: '500', fontSize: '13px' } }, item.city),
+            h('div', { style: { display: 'flex', flexDirection: 'column', gap: '4px' } },
+              // Uri bar
+              h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+                h('div', { style: { ...s.barTrack, flex: 1 } },
+                  h('div', { style: {
+                    ...s.bar,
+                    width: animated ? ((item.uri / maxFreeze) * 100) + '%' : '0%',
+                    background: 'linear-gradient(90deg, #f97316, #ea580c)',
+                    transitionDelay: (i * 80) + 'ms',
+                  }})
+                ),
+                h('div', { style: { color: '#f97316', fontSize: '13px', fontWeight: '600', fontFamily: "'JetBrains Mono', monospace", minWidth: '50px' } },
+                  item.uri + 'h'
+                )
+              ),
+              // Fern bar
+              h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+                h('div', { style: { ...s.barTrack, flex: 1 } },
+                  h('div', { style: {
+                    ...s.bar,
+                    width: animated ? ((item.fern / maxFreeze) * 100) + '%' : '0%',
+                    background: 'linear-gradient(90deg, #3b82f6, #1d4ed8)',
+                    transitionDelay: (i * 80 + 40) + 'ms',
+                  }})
+                ),
+                h('div', { style: { color: '#3b82f6', fontSize: '13px', fontWeight: '600', fontFamily: "'JetBrains Mono', monospace", minWidth: '50px' } },
+                  item.fern + 'h'
+                )
+              ),
+              // Note
+              item.uriNote && h('div', { style: { color: '#f97316', fontSize: '11px', opacity: 0.7, marginTop: '2px' } }, item.uriNote)
+            )
+          );
+        })
+      ),
+      h('div', { style: {
+        ...s.callout,
+        background: 'rgba(239,68,68,0.1)',
+        borderColor: 'rgba(239,68,68,0.25)',
+      }},
+        h('div', { style: { color: '#ef4444', fontSize: '14px', fontWeight: '600', marginBottom: '6px' } },
+          'Why Duration Matters More Than Temperature'
+        ),
+        h('div', { style: { color: '#94a3b8', fontSize: '14px', lineHeight: '1.6' } },
+          'Waco, TX endured 205 consecutive hours (8.5 days) below freezing during Uri\u2014an all-time record\u2014vs. roughly 52 hours during Fern. This extended freeze is what caused catastrophic pipe bursts, because insulation and heat-trace systems are designed for brief cold snaps, not multi-day sieges. Uri\'s duration was the primary driver of its $15 billion insured loss.'
+        )
+      ),
+      // Duration multiple callout
+      h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginTop: '16px' } },
+        h('div', { style: { ...s.statBox, borderLeft: '3px solid #f97316' } },
+          h('div', { style: { color: '#f97316', fontSize: '24px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" } }, '3.1x'),
+          h('div', { style: { color: '#94a3b8', fontSize: '12px', marginTop: '4px' } }, 'longer freeze in Austin')
+        ),
+        h('div', { style: { ...s.statBox, borderLeft: '3px solid #f97316' } },
+          h('div', { style: { color: '#f97316', fontSize: '24px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" } }, '3.9x'),
+          h('div', { style: { color: '#94a3b8', fontSize: '12px', marginTop: '4px' } }, 'longer freeze in Waco')
+        ),
+        h('div', { style: { ...s.statBox, borderLeft: '3px solid #f97316' } },
+          h('div', { style: { color: '#f97316', fontSize: '24px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" } }, '2.1x'),
+          h('div', { style: { color: '#94a3b8', fontSize: '12px', marginTop: '4px' } }, 'longer freeze in DFW')
+        )
+      )
+    );
+
+    // ── Snowfall tab ──
+    const renderSnowfall = () => h('div', null,
+      h('div', { style: { marginBottom: '16px' } },
+        h('div', { style: { color: '#f8fafc', fontSize: '18px', fontWeight: '600', marginBottom: '6px' } },
+          'Snowfall Totals Comparison'
+        ),
+        h('div', { style: { color: '#94a3b8', fontSize: '14px', lineHeight: '1.5' } },
+          'Uri produced heavier snowfall across the South, while Fern\'s major snow totals shifted to the Northeast. Fern was primarily an ice event in the Deep South.'
+        )
+      ),
+      h('div', { style: { display: 'flex', gap: '16px', marginBottom: '16px', flexWrap: 'wrap' } },
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: '6px' } },
+          h('div', { style: { width: '14px', height: '14px', borderRadius: '3px', background: '#f97316' } }),
+          h('span', { style: { color: '#94a3b8', fontSize: '13px' } }, 'Uri (2021)')
+        ),
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: '6px' } },
+          h('div', { style: { width: '14px', height: '14px', borderRadius: '3px', background: '#3b82f6' } }),
+          h('span', { style: { color: '#94a3b8', fontSize: '13px' } }, 'Fern (2026)')
+        )
+      ),
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: '4px' } },
+        snowData.map(function(item, i) {
+          return h('div', { key: i, style: s.dualBarRow },
+            h('div', { style: { color: '#f8fafc', fontWeight: '500', fontSize: '13px' } }, item.city),
+            h('div', { style: { display: 'flex', flexDirection: 'column', gap: '4px' } },
+              h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+                h('div', { style: { ...s.barTrack, flex: 1 } },
+                  h('div', { style: {
+                    ...s.bar,
+                    width: animated ? ((item.uri / maxSnow) * 100) + '%' : '0%',
+                    background: 'linear-gradient(90deg, #f97316, #ea580c)',
+                    transitionDelay: (i * 60) + 'ms',
+                  }})
+                ),
+                h('div', { style: { color: '#f97316', fontSize: '13px', fontWeight: '600', fontFamily: "'JetBrains Mono', monospace", minWidth: '45px' } },
+                  item.uri > 0 ? item.uri + '"' : '\u2014'
+                )
+              ),
+              h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+                h('div', { style: { ...s.barTrack, flex: 1 } },
+                  h('div', { style: {
+                    ...s.bar,
+                    width: animated ? ((item.fern / maxSnow) * 100) + '%' : '0%',
+                    background: 'linear-gradient(90deg, #3b82f6, #1d4ed8)',
+                    transitionDelay: (i * 60 + 30) + 'ms',
+                  }})
+                ),
+                h('div', { style: { color: '#3b82f6', fontSize: '13px', fontWeight: '600', fontFamily: "'JetBrains Mono', monospace", minWidth: '45px' } },
+                  item.fern > 0 ? item.fern + '"' : '\u2014'
+                )
+              )
+            )
+          );
+        })
+      ),
+      h('div', { style: {
+        ...s.callout,
+        background: 'rgba(59,130,246,0.1)',
+        borderColor: 'rgba(59,130,246,0.25)',
+      }},
+        h('div', { style: { color: '#3b82f6', fontSize: '14px', fontWeight: '600', marginBottom: '6px' } },
+          'Fern: An Ice Storm in the South, a Snowstorm in the Northeast'
+        ),
+        h('div', { style: { color: '#94a3b8', fontSize: '14px', lineHeight: '1.6' } },
+          'While Uri buried Texas under snow, Fern\'s primary hazard in the Deep South was ice accumulation\u2014up to 1 inch in Mississippi, causing catastrophic tree and power line damage. Fern\'s heaviest snowfall hit the Northeast corridor (Boston 16.7\u2033, Pittsburgh 11.2\u2033, Baltimore 11.3\u2033), an area largely spared by Uri.'
+        )
+      )
+    );
+
+    // ── Key statistics tab ──
+    const renderStats = () => h('div', null,
+      h('div', { style: { marginBottom: '16px' } },
+        h('div', { style: { color: '#f8fafc', fontSize: '18px', fontWeight: '600', marginBottom: '6px' } },
+          'Head-to-Head Comparison'
+        ),
+        h('div', { style: { color: '#94a3b8', fontSize: '14px' } },
+          'Key metrics comparing the two storms side by side'
+        )
+      ),
+      // Header
+      h('div', { style: { ...s.compRow, background: 'rgba(255,255,255,0.04)', marginBottom: '8px' } },
+        h('div', { style: { color: '#64748b', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase' } }, 'Metric'),
+        h('div', { style: { color: '#f97316', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', textAlign: 'center' } }, 'Uri (2021)'),
+        h('div', { style: { color: '#3b82f6', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', textAlign: 'center' } }, 'Fern (2026)')
+      ),
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: '6px' } },
+        compStats.map(function(item, i) {
+          return h('div', { key: i, style: s.compRow },
+            h('div', { style: { color: '#f8fafc', fontWeight: '500', fontSize: '14px' } }, item.metric),
+            h('div', { style: {
+              color: item.uriWorse ? '#f97316' : '#94a3b8',
+              fontWeight: '600', fontFamily: "'JetBrains Mono', monospace",
+              textAlign: 'center', fontSize: '14px',
+            }}, item.uri),
+            h('div', { style: {
+              color: !item.uriWorse ? '#3b82f6' : '#94a3b8',
+              fontWeight: '600', fontFamily: "'JetBrains Mono', monospace",
+              textAlign: 'center', fontSize: '14px',
+            }}, item.fern)
+          );
+        })
+      ),
+      // Grid resilience callout
+      h('div', { style: {
+        ...s.callout,
+        background: 'rgba(34,197,94,0.1)',
+        borderColor: 'rgba(34,197,94,0.25)',
+      }},
+        h('div', { style: { color: '#22c55e', fontSize: '14px', fontWeight: '600', marginBottom: '6px' } },
+          'Texas Grid: Lessons Learned'
+        ),
+        h('div', { style: { color: '#94a3b8', fontSize: '14px', lineHeight: '1.6' } },
+          'The starkest difference between these storms is grid performance. During Uri, 4.5 million Texas customers lost power for an average of 42 hours, directly causing most of the 246 fatalities and $15 billion in insured losses. During Fern, ERCOT maintained grid stability thanks to 17,000 MW of battery storage (vs. zero in 2021) and mandatory weatherization of natural gas infrastructure. This single factor likely prevented billions in additional losses.'
+        )
+      ),
+      // Loss comparison boxes
+      h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' } },
+        h('div', { style: {
+          background: 'rgba(249,115,22,0.1)', borderRadius: '12px', padding: '20px',
+          border: '1px solid rgba(249,115,22,0.2)', textAlign: 'center',
+        }},
+          h('div', { style: { color: '#f97316', fontSize: '13px', fontWeight: '600', marginBottom: '8px' } }, 'URI INSURED LOSSES'),
+          h('div', { style: { color: '#f8fafc', fontSize: '36px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" } }, '$15B'),
+          h('div', { style: { color: '#94a3b8', fontSize: '13px', marginTop: '6px' } }, '500,000+ claims in TX alone')
+        ),
+        h('div', { style: {
+          background: 'rgba(59,130,246,0.1)', borderRadius: '12px', padding: '20px',
+          border: '1px solid rgba(59,130,246,0.2)', textAlign: 'center',
+        }},
+          h('div', { style: { color: '#3b82f6', fontSize: '13px', fontWeight: '600', marginBottom: '8px' } }, 'FERN INSURED LOSSES (EST.)'),
+          h('div', { style: { color: '#f8fafc', fontSize: '36px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" } }, '$1-2B'),
+          h('div', { style: { color: '#94a3b8', fontSize: '13px', marginTop: '6px' } }, 'Primarily ice damage & frozen pipes')
+        )
+      )
+    );
+
+    // ── Main render ──
+    return h('div', { style: s.root },
+      h('style', null, [
+        "@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');",
+        "@media (max-width: 768px) {",
+        "  #storm-comparison-root .map-grid { grid-template-columns: 1fr !important; }",
+        "  #storm-comparison-root .stats-3col { grid-template-columns: 1fr !important; }",
+        "  #storm-comparison-root .stats-2col { grid-template-columns: 1fr !important; }",
+        "  #storm-comparison-root .comp-row { grid-template-columns: 1fr 1fr 1fr !important; font-size: 12px !important; }",
+        "}",
+      ].join('\n')),
+      h('div', { style: s.inner },
+        // Header
+        h('div', { style: s.header },
+          h('div', { style: s.badge },
+            h('span', { style: s.badgeText }, 'WINTER STORM COMPARISON')
+          ),
+          h('h1', { style: s.title }, 'Uri (2021) vs. Fern (2026)'),
+          h('p', { style: s.subtitle }, 'Side-by-side temperature timelapse and freezing duration analysis')
+        ),
+
+        // Summary stat cards
+        h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }, className: 'stats-3col' },
+          [
+            { label: 'Uri Peak Low', value: '-2\u00b0F', sub: 'Dallas, Feb 16', color: '#f97316' },
+            { label: 'Fern Peak Low', value: '9\u00b0F', sub: 'Dallas, Jan 26', color: '#3b82f6' },
+            { label: 'Uri Freeze Duration', value: '205h', sub: 'Waco (record)', color: '#f97316' },
+            { label: 'Fern Freeze Duration', value: '65h', sub: 'DFW (estimated)', color: '#3b82f6' },
+          ].map(function(stat, i) {
+            return h('div', {
+              key: i,
+              style: {
+                background: 'rgba(255,255,255,0.03)', borderRadius: '14px',
+                padding: '16px', border: '1px solid rgba(255,255,255,0.08)',
+              }
+            },
+              h('div', { style: { fontSize: '11px', color: '#64748b', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' } }, stat.label),
+              h('div', { style: { fontSize: '24px', fontWeight: '700', color: stat.color, fontFamily: "'JetBrains Mono', monospace" } }, stat.value),
+              h('div', { style: { fontSize: '12px', color: '#94a3b8', marginTop: '4px' } }, stat.sub)
+            );
+          })
+        ),
+
+        // Tabs
+        h('div', { style: s.tabs },
+          ['timelapse', 'duration', 'snowfall', 'statistics'].map(function(tab) {
+            return h('button', {
+              key: tab,
+              style: {
+                ...s.tab,
+                background: activeTab === tab ? 'rgba(139,92,246,0.2)' : 'transparent',
+                color: activeTab === tab ? '#a78bfa' : '#64748b',
+              },
+              onClick: function() { setActiveTab(tab); }
+            }, tab === 'timelapse' ? 'Temperature Timelapse' :
+               tab === 'duration' ? 'Freezing Duration' :
+               tab === 'snowfall' ? 'Snowfall' :
+               'Key Statistics');
+          })
+        ),
+
+        // Panel
+        h('div', { style: s.panel, className: 'map-grid-parent' },
+          activeTab === 'timelapse' && renderTimelapse(),
+          activeTab === 'duration' && renderDuration(),
+          activeTab === 'snowfall' && renderSnowfall(),
+          activeTab === 'statistics' && renderStats()
+        ),
+
+        h('div', { style: s.footer },
+          'Temperature data from NWS, NOAA, and Oklahoma Mesonet. Fern freeze duration estimates are preliminary. Uri data from official NWS post-event reports.'
+        )
+      )
+    );
+  }
+
+  var root = ReactDOM.createRoot(document.getElementById('storm-comparison-root'));
+  root.render(h(StormComparisonApp));
+})();
+</script>
+
+<style>
+#storm-comparison-root .map-grid-parent > div > div:nth-child(3) {
+  /* mapGrid class override for responsive */
+}
+@media (max-width: 800px) {
+  #storm-comparison-root div[style*="grid-template-columns: 1fr 1fr;"] {
+    grid-template-columns: 1fr !important;
+  }
+  #storm-comparison-root div[style*="grid-template-columns: repeat(4"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+</style>
+```
+
+## Storm profiles
+
+### Winter Storm Uri (February 13--19, 2021)
+
+Uri was the costliest winter storm in U.S. history. An unusually severe polar vortex disruption drove Arctic air deep into Texas and the southern Plains, producing temperatures 40--60°F below normal across a region unaccustomed to sustained cold.
+
+The defining feature of Uri was **duration**. Dallas spent 139 consecutive hours below freezing. Waco set an all-time record of 205 hours. Austin broke its record at 164 hours. This extended siege overwhelmed building insulation, caused catastrophic pipe bursts, and---most critically---collapsed the Texas power grid. At peak, 4.5 million customers lost power for an average of 42 hours. The cascading infrastructure failure killed 246 people and generated approximately $15 billion in insured losses.
+
+### Winter Storm Fern (January 23--27, 2026)
+
+Fern was among the most geographically expansive winter storms in recent memory, stretching over 2,000 miles from the Texas-Mexico border to Maine and affecting 24+ states. The storm prompted emergency declarations across the country and placed over 230 million Americans under winter weather alerts.
+
+While Fern brought genuinely dangerous cold to Texas---Dallas dropped to 9°F, breaking an 86-year-old record---it was materially less severe than Uri in two critical respects: **temperature** (10--20°F warmer at peak) and **duration** (5 days vs. 7, with roughly half the consecutive below-freezing hours). Fern's primary hazard in the Deep South was ice accumulation, with Mississippi experiencing its worst ice storm since 1994.
+
+## The duration difference
+
+The animated timelapse above makes the key distinction clear: Uri didn't just get colder, it stayed cold **much longer**. This matters enormously for insured losses:
+
+- **Frozen pipes** are the dominant claim type in winter storms, accounting for 80--90% of homeowner claims. Pipes burst not from a single cold night but from sustained exposure that overwhelms insulation. Uri's 139--205 hour freeze duration in Texas cities was roughly 2--4x longer than Fern's 48--65 hours.
+
+- **Power grid failure** compounded Uri's damage. Without electricity, buildings lost heating entirely, accelerating pipe freeze-through. During Fern, the Texas grid held stable---ERCOT now has 17,000 MW of battery storage online (vs. zero in 2021) and mandated natural gas weatherization.
+
+- **Ice dam formation** requires sustained cold to allow ice buildup on roofs. Uri's multi-day freeze created far more severe ice dam damage than Fern's shorter cold window.
+
+## Snowfall and ice: different hazards
+
+The two storms had distinctly different precipitation profiles:
+
+| Metric | Uri (2021) | Fern (2026) |
+|--------|-----------|-------------|
+| **TX snowfall** | Heavy (Abilene 14.8", Austin 6.4") | Moderate (DFW 3.3", Austin ~2") |
+| **Southern ice** | Moderate (0.1--0.25" in Houston) | Severe (1.0" in Oxford, MS; 0.75" Nashville) |
+| **NE snowfall** | Minimal | Heavy (Boston 16.7", Pittsburgh 11.2") |
+| **Primary southern hazard** | Snow + extreme cold | Ice accumulation |
+
+Fern's ice storm in the Deep South---particularly Mississippi and Tennessee---was catastrophic for trees and power lines but generated a different loss profile than Uri's snow-and-freeze combination. Nashville alone saw 189 broken utility poles and 290,000 customers without power.
+
+## Insurance implications
+
+### Loss comparison
+
+| | Uri (2021) | Fern (2026) |
+|--|-----------|-------------|
+| **Insured losses** | ~$15 billion | $1--2 billion (est.) |
+| **Primary claims** | Frozen pipes (TX) | Ice damage (South), frozen pipes |
+| **Claim count** | 500,000+ (TX alone) | TBD |
+| **Grid-related losses** | Massive (business interruption, spoilage) | Minimal |
+
+### Why losses differ by 10x
+
+The order-of-magnitude difference in insured losses between these storms comes down to three factors:
+
+1. **Freeze duration**: Uri's 2--4x longer below-freezing periods caused exponentially more pipe damage
+2. **Grid failure**: Uri's power collapse multiplied losses through business interruption, additional living expenses, and accelerated building freeze-through
+3. **Temperature severity**: Uri's sub-zero readings in Texas exceeded building design limits; Fern's single-digit lows were severe but within a range many structures can withstand temporarily
+
+### Forward-looking considerations
+
+For property-casualty insurers and reinsurers, the Uri-Fern comparison offers several lessons:
+
+1. **Duration is the key variable** for winter storm loss modeling, not just minimum temperature. A storm that maintains 20°F for a week can generate larger losses than one that briefly touches 0°F.
+
+2. **Grid resilience reduces tail risk materially.** Texas's $8+ billion investment in weatherization appears to have prevented a second $15 billion event. This should be reflected in catastrophe model calibrations.
+
+3. **Geographic shifting of winter storm risk.** Fern's heaviest impacts hit the Deep South (ice) and Northeast (snow) rather than Texas. Insurers should monitor whether polar vortex disruptions are producing more varied geographic footprints.
+
+4. **Ice storm losses are growing.** Fern's ice accumulation in Mississippi and Tennessee caused severe infrastructure damage. As the insurance industry tends to focus on snow and freeze, ice-specific exposure assessment may warrant greater attention.
+
+## Data sources
+
+- [NWS Fort Worth -- Feb 2021 Historic Winter Storm](https://www.weather.gov/fwd/Feb-2021-WinterEvent)
+- [NWS Houston -- Valentine's Week Winter Outbreak 2021](https://www.weather.gov/hgx/2021ValentineStorm)
+- [NOAA/NCEI -- The Great Texas Freeze](https://www.ncei.noaa.gov/news/great-texas-freeze-february-2021)
+- [Oklahoma Mesonet -- Historically Frigid February](https://www.mesonet.org/news/historically-frigid-february-punctuates-winter)
+- [Wikipedia -- January 2026 North American winter storm](https://en.wikipedia.org/wiki/January_2026_North_American_winter_storm)
+- [AccuWeather -- $100B+ Fern damage estimate](https://www.accuweather.com/en/press/historic-winter-storm-damage-and-losses-expected-to-top-100-billion-according-to-an-accuweather-preliminary-estimate/1857176)
+- [Texas Department of Insurance -- Uri loss data](https://www.tdi.texas.gov/)
+- [PowerOutage.us](https://poweroutage.us/) -- Real-time outage tracking
+- [ERCOT](https://www.ercot.com/) -- Texas grid status
+
+---
+
+*For the full Winter Storm Fern analysis, see [Winter Storm Fern: Analyzing the Historic January 2026 Freeze](/posts/2026-01-26-winter-storm-fern-analysis/).*

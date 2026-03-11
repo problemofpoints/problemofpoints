@@ -2,6 +2,7 @@ project:
   type: website
   resources:
     - "tools/*/**"
+    - "site_libs/**"
 
 website:
   title: "Problem of Points"
