@@ -6,6 +6,61 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const CURRENT_YEAR_CACHE = globalThis.__swtTornadoCurrentYearCache || new Map();
 globalThis.__swtTornadoCurrentYearCache = CURRENT_YEAR_CACHE;
 
+const STATE_NAMES = {
+  AL: "Alabama",
+  AK: "Alaska",
+  AZ: "Arizona",
+  AR: "Arkansas",
+  CA: "California",
+  CO: "Colorado",
+  CT: "Connecticut",
+  DE: "Delaware",
+  DC: "District of Columbia",
+  FL: "Florida",
+  GA: "Georgia",
+  HI: "Hawaii",
+  ID: "Idaho",
+  IL: "Illinois",
+  IN: "Indiana",
+  IA: "Iowa",
+  KS: "Kansas",
+  KY: "Kentucky",
+  LA: "Louisiana",
+  ME: "Maine",
+  MD: "Maryland",
+  MA: "Massachusetts",
+  MI: "Michigan",
+  MN: "Minnesota",
+  MS: "Mississippi",
+  MO: "Missouri",
+  MT: "Montana",
+  NE: "Nebraska",
+  NV: "Nevada",
+  NH: "New Hampshire",
+  NJ: "New Jersey",
+  NM: "New Mexico",
+  NY: "New York",
+  NC: "North Carolina",
+  ND: "North Dakota",
+  OH: "Ohio",
+  OK: "Oklahoma",
+  OR: "Oregon",
+  PA: "Pennsylvania",
+  PR: "Puerto Rico",
+  RI: "Rhode Island",
+  SC: "South Carolina",
+  SD: "South Dakota",
+  TN: "Tennessee",
+  TX: "Texas",
+  UT: "Utah",
+  VT: "Vermont",
+  VA: "Virginia",
+  WA: "Washington",
+  WV: "West Virginia",
+  WI: "Wisconsin",
+  WY: "Wyoming"
+};
+
 const SECTION_HEADERS = {
   tornado: /^Time\s*,\s*F_Scale/i,
   wind: /^Time\s*,\s*Speed/i,
@@ -79,10 +134,12 @@ function toDailyFilename(date) {
 }
 
 function parseDailyTornadoCount(csvText) {
-  if (!csvText) return 0;
+  if (!csvText) return { total: 0, byState: {} };
   const lines = csvText.split(/\r?\n/);
   let inTornadoSection = false;
-  let count = 0;
+  let total = 0;
+  const byState = new Map();
+  let tornadoHeader = [];
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
@@ -90,6 +147,7 @@ function parseDailyTornadoCount(csvText) {
 
     if (SECTION_HEADERS.tornado.test(line)) {
       inTornadoSection = true;
+      tornadoHeader = splitCsvLine(line).map((col) => col.toLowerCase());
       continue;
     }
     if (SECTION_HEADERS.wind.test(line) || SECTION_HEADERS.hail.test(line)) {
@@ -98,11 +156,24 @@ function parseDailyTornadoCount(csvText) {
     }
 
     if (inTornadoSection) {
-      count += 1;
+      const parts = splitCsvLine(line);
+      if (!tornadoHeader.length) {
+        total += 1;
+        continue;
+      }
+      const stateIndex = tornadoHeader.indexOf("state");
+      const state = stateIndex >= 0 ? (parts[stateIndex] || "").trim().toUpperCase() : null;
+      total += 1;
+      if (state) {
+        byState.set(state, (byState.get(state) || 0) + 1);
+      }
     }
   }
 
-  return count;
+  return {
+    total,
+    byState: Object.fromEntries(byState)
+  };
 }
 
 async function fetchDailyTornadoCount(date) {
@@ -126,7 +197,7 @@ async function fetchDailyTornadoCount(date) {
       throw error;
     }
   }
-  return 0;
+  return { total: 0, byState: {} };
 }
 
 async function mapWithConcurrency(items, handler, limit = 6) {
@@ -160,6 +231,7 @@ async function buildCurrentYearSeriesFromDaily(year, todayUtc) {
 
   let series = [];
   let cumulative = 0;
+  const seriesByState = new Map();
   let fetchStartDate = new Date(startDate.getTime());
 
   if (cacheEntry && cacheEntry.lastDate) {
@@ -189,23 +261,39 @@ async function buildCurrentYearSeriesFromDaily(year, todayUtc) {
       return await fetchDailyTornadoCount(date);
     } catch (error) {
       if (error.statusCode === 404) {
-        return 0;
+        return { total: 0, byState: {} };
       }
       throw error;
     }
   });
 
   datesToFetch.forEach((date, idx) => {
-    const count = counts[idx] || 0;
+    const { total, byState } = counts[idx] || { total: 0, byState: {} };
     const dayOfYear = dayOfYearFromParts(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate());
-    cumulative += count;
+    cumulative += total;
     series.push({
       dayOfYear,
       date: formatIsoDate(date),
       cumulative,
-      daily: count,
+      daily: total,
       injuries: null,
       fatalities: null
+    });
+
+    Object.entries(byState || {}).forEach(([state, dailyCount]) => {
+      if (!seriesByState.has(state)) {
+        seriesByState.set(state, { cumulative: 0, series: [] });
+      }
+      const bucket = seriesByState.get(state);
+      bucket.cumulative += dailyCount;
+      bucket.series.push({
+        dayOfYear,
+        date: formatIsoDate(date),
+        cumulative: bucket.cumulative,
+        daily: dailyCount,
+        injuries: null,
+        fatalities: null
+      });
     });
   });
 
@@ -217,7 +305,22 @@ async function buildCurrentYearSeriesFromDaily(year, todayUtc) {
     fatalities: null,
     firstReportDate: series.length ? series[0].date : null,
     lastReportDate: series.length ? series[series.length - 1].date : null,
-    source: `${REPORTS_BASE_URL}YYMMDD_rpts.csv`
+    source: `${REPORTS_BASE_URL}YYMMDD_rpts.csv`,
+    byState: Object.fromEntries(
+      Array.from(seriesByState.entries()).map(([state, { series: stateSeries, cumulative: totalReports }]) => [
+        state,
+        {
+          state,
+          series: stateSeries,
+          totalReports,
+          injuries: null,
+          fatalities: null,
+          firstReportDate: stateSeries.length ? stateSeries[0].date : null,
+          lastReportDate: stateSeries.length ? stateSeries[stateSeries.length - 1].date : null,
+          source: `${REPORTS_BASE_URL}YYMMDD_rpts.csv`
+        }
+      ])
+    )
   };
 
   CURRENT_YEAR_CACHE.set(year, {
@@ -232,6 +335,37 @@ function parseInteger(value) {
   if (value == null || value === "") return 0;
   const numeric = Number.parseInt(value, 10);
   return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function buildSeriesFromDailyMap(dailyMap, year) {
+  const sortedDays = Array.from(dailyMap.keys()).sort((a, b) => a - b);
+  let cumulative = 0;
+  let totalInjuries = 0;
+  let totalFatalities = 0;
+
+  const series = sortedDays.map((dayKey) => {
+    const { count, injuries, fatalities } = dailyMap.get(dayKey);
+    cumulative += count;
+    totalInjuries += injuries;
+    totalFatalities += fatalities;
+    return {
+      dayOfYear: dayKey,
+      date: isoFromDayOfYear(year, dayKey),
+      cumulative,
+      daily: count,
+      injuries,
+      fatalities
+    };
+  });
+
+  return {
+    series,
+    totalReports: cumulative,
+    injuries: totalInjuries,
+    fatalities: totalFatalities,
+    firstReportDate: sortedDays.length ? isoFromDayOfYear(year, sortedDays[0]) : null,
+    lastReportDate: sortedDays.length ? isoFromDayOfYear(year, sortedDays[sortedDays.length - 1]) : null
+  };
 }
 
 function parseTornadoYear(csvText, expectedYear) {
@@ -252,6 +386,7 @@ function parseTornadoYear(csvText, expectedYear) {
 
   const injuryIndex = indexByName.get("inj");
   const fatalityIndex = indexByName.get("fat");
+  const stateIndex = indexByName.get("st");
 
   const entries = [];
 
@@ -275,6 +410,7 @@ function parseTornadoYear(csvText, expectedYear) {
 
     const dayKey = dayOfYearFromParts(year, month, day);
     const isoDate = `${year}-${pad(month)}-${pad(day)}`;
+    const state = stateIndex != null ? (parts[stateIndex] || "").trim().toUpperCase() : null;
 
     entries.push({
       year,
@@ -283,7 +419,8 @@ function parseTornadoYear(csvText, expectedYear) {
       dayOfYear: dayKey,
       isoDate,
       injuries: injuryIndex != null ? parseInteger(parts[injuryIndex]) : 0,
-      fatalities: fatalityIndex != null ? parseInteger(parts[fatalityIndex]) : 0
+      fatalities: fatalityIndex != null ? parseInteger(parts[fatalityIndex]) : 0,
+      state
     });
   }
 
@@ -302,6 +439,7 @@ function parseTornadoYear(csvText, expectedYear) {
   entries.sort((a, b) => a.dayOfYear - b.dayOfYear);
 
   const daily = new Map();
+  const dailyByState = new Map();
   for (const entry of entries) {
     if (!daily.has(entry.dayOfYear)) {
       daily.set(entry.dayOfYear, {
@@ -314,39 +452,40 @@ function parseTornadoYear(csvText, expectedYear) {
     current.count += 1;
     current.injuries += entry.injuries;
     current.fatalities += entry.fatalities;
+
+    if (entry.state) {
+      if (!dailyByState.has(entry.state)) {
+        dailyByState.set(entry.state, new Map());
+      }
+      const stateMap = dailyByState.get(entry.state);
+      if (!stateMap.has(entry.dayOfYear)) {
+        stateMap.set(entry.dayOfYear, { count: 0, injuries: 0, fatalities: 0 });
+      }
+      const stateBucket = stateMap.get(entry.dayOfYear);
+      stateBucket.count += 1;
+      stateBucket.injuries += entry.injuries;
+      stateBucket.fatalities += entry.fatalities;
+    }
   }
 
-  const sortedDays = Array.from(daily.keys()).sort((a, b) => a - b);
-  let cumulative = 0;
-  let totalInjuries = 0;
-  let totalFatalities = 0;
-  const series = sortedDays.map((dayKey) => {
-    const { count, injuries, fatalities } = daily.get(dayKey);
-    cumulative += count;
-    totalInjuries += injuries;
-    totalFatalities += fatalities;
-    return {
-      dayOfYear: dayKey,
-      date: isoFromDayOfYear(expectedYear || entries[0].year, dayKey),
-      cumulative,
-      daily: count,
-      injuries,
-      fatalities
-    };
-  });
-
-  const firstDay = sortedDays[0];
-  const lastDay = sortedDays[sortedDays.length - 1];
   const seriesYear = expectedYear || entries[0].year;
+  const globalSeries = buildSeriesFromDailyMap(daily, seriesYear);
+  const byState = Object.fromEntries(
+    Array.from(dailyByState.entries()).map(([state, stateDaily]) => [
+      state,
+      {
+        state,
+        ...buildSeriesFromDailyMap(stateDaily, seriesYear),
+        source: `${TORNADO_BASE_URL}${seriesYear}_torn.csv`
+      }
+    ])
+  );
 
   return {
     year: seriesYear,
-    series,
-    totalReports: cumulative,
-    injuries: totalInjuries,
-    fatalities: totalFatalities,
-    firstReportDate: firstDay ? isoFromDayOfYear(seriesYear, firstDay) : null,
-    lastReportDate: lastDay ? isoFromDayOfYear(seriesYear, lastDay) : null
+    ...globalSeries,
+    byState,
+    source: `${TORNADO_BASE_URL}${seriesYear}_torn.csv`
   };
 }
 
@@ -407,6 +546,75 @@ function computeLatestPoint(series) {
   return series[series.length - 1];
 }
 
+function extendSeriesToDate(series, targetDate) {
+  if (!Array.isArray(series) || !series.length) return series;
+  const targetYear = targetDate.getUTCFullYear();
+  const targetDay = dayOfYearFromParts(
+    targetDate.getUTCFullYear(),
+    targetDate.getUTCMonth() + 1,
+    targetDate.getUTCDate()
+  );
+  const lastPoint = series[series.length - 1];
+  if (lastPoint.dayOfYear >= targetDay || !lastPoint.date.startsWith(String(targetYear))) {
+    return series;
+  }
+  const extended = [...series];
+  extended.push({
+    dayOfYear: targetDay,
+    date: formatIsoDate(targetDate),
+    cumulative: lastPoint.cumulative,
+    daily: 0,
+    injuries: lastPoint.injuries ?? null,
+    fatalities: lastPoint.fatalities ?? null
+  });
+  return extended;
+}
+
+function normalizeStateCode(code) {
+  if (!code) return null;
+  const normalized = code.trim().toUpperCase();
+  if (normalized === "ALL") return null;
+  return normalized;
+}
+
+function computeAvailableStates(seriesByYear) {
+  const stateSet = new Set();
+  seriesByYear.forEach((entry) => {
+    Object.keys(entry.byState || {}).forEach((code) => stateSet.add(code));
+  });
+  return Array.from(stateSet).sort();
+}
+
+function selectSeriesForState(seriesByYear, stateCode) {
+  const normalized = normalizeStateCode(stateCode);
+  if (!normalized) {
+    return {
+      selectedSeries: seriesByYear.map(({ byState, ...rest }) => rest),
+      stateLabel: "All States",
+      stateCode: null
+    };
+  }
+
+  const selectedSeries = seriesByYear
+    .map((entry) => {
+      const stateEntry = entry.byState?.[normalized];
+      if (!stateEntry || !stateEntry.series?.length) {
+        return null;
+      }
+      return {
+        ...stateEntry,
+        year: entry.year
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    selectedSeries,
+    stateLabel: STATE_NAMES[normalized] || normalized,
+    stateCode: normalized
+  };
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") {
     return {
@@ -434,6 +642,7 @@ exports.handler = async (event) => {
     const requestedCurrentYear = Number.parseInt(params.currentYear, 10);
     const endYear = Number.isFinite(requestedCurrentYear) ? requestedCurrentYear : now.getUTCFullYear();
     const requestedStartYear = Number.parseInt(params.startYear, 10);
+    const requestedState = params.state ? params.state.trim().toUpperCase() : null;
 
     const startYear = Number.isFinite(requestedStartYear)
       ? Math.max(DEFAULT_START_YEAR, requestedStartYear)
@@ -500,20 +709,60 @@ exports.handler = async (event) => {
     }
 
     seriesByYear.sort((a, b) => a.year - b.year);
+    const availableStates = computeAvailableStates(seriesByYear);
+    if (requestedState && requestedState !== "ALL") {
+      if (STATE_NAMES[requestedState] == null && !availableStates.includes(requestedState)) {
+        return {
+          statusCode: 400,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+          },
+          body: JSON.stringify({ error: `Unsupported state code: ${requestedState}` })
+        };
+      }
+    }
 
-    const availableYears = seriesByYear.map((item) => item.year);
+    const { selectedSeries, stateLabel, stateCode } = selectSeriesForState(seriesByYear, requestedState);
+    if (!selectedSeries.length) {
+      return {
+        statusCode: 404,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        },
+        body: JSON.stringify({
+          error: "No tornado history datasets were available for the requested state and range.",
+          range: { startYear, endYear },
+          state: requestedState || "ALL"
+        })
+      };
+    }
+
+    const todayUtc = new Date();
+    const normalizedSeries = selectedSeries.map((entry) => {
+      if (entry.year === calendarCurrentYear) {
+        return {
+          ...entry,
+          series: extendSeriesToDate(entry.series, todayUtc)
+        };
+      }
+      return entry;
+    });
+
+    const availableYears = normalizedSeries.map((item) => item.year);
     const currentYear = calendarCurrentYear;
     const comparisonYearCandidate = currentYear - 1;
     const comparisonYear = availableYears.includes(comparisonYearCandidate)
       ? comparisonYearCandidate
       : null;
 
-    const currentSeries = seriesByYear.find((item) => item.year === currentYear)
-      || seriesByYear.find((item) => item.year === availableYears[availableYears.length - 1]);
+    const currentSeries = normalizedSeries.find((item) => item.year === currentYear)
+      || normalizedSeries.find((item) => item.year === availableYears[availableYears.length - 1]);
     const comparisonSeries = comparisonYear
-      ? seriesByYear.find((item) => item.year === comparisonYear)
+      ? normalizedSeries.find((item) => item.year === comparisonYear)
       : null;
-    const ensembleStats = computeEnsembleStats(seriesByYear, currentYear, comparisonYear);
+    const ensembleStats = computeEnsembleStats(normalizedSeries, currentYear, comparisonYear);
     const currentLatestPoint = computeLatestPoint(currentSeries?.series || []);
     const primarySource =
       currentSeries?.source ||
@@ -535,9 +784,15 @@ exports.handler = async (event) => {
         comparisonYear,
         currentLatestPoint,
         ensembleStats,
-        years: seriesByYear,
+        years: normalizedSeries,
         missingYears: errors,
-        notes: "Data represents preliminary tornado reports as published by SPC. Counts are cumulative by day of year."
+        notes: "Data represents preliminary tornado reports as published by SPC. Counts are cumulative by day of year.",
+        stateCode,
+        stateLabel,
+        availableStates: availableStates.map((code) => ({
+          code,
+          name: STATE_NAMES[code] || code
+        }))
       })
     };
   } catch (error) {
