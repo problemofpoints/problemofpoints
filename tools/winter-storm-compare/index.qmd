@@ -1,0 +1,8 @@
+---
+title: "Winter Storm Event Comparator"
+description: "Compare temperature, snowfall, and freezing-duration maps across two winter storm events."
+page-layout: full
+image: thumbnail.svg
+---
+
+{{< include app.html >}}
